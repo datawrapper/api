@@ -16,7 +16,9 @@ Will serve via HTTPS on port 443, e.g.
     PUT https://api.datawrapper.de/v3/charts/12345/data
     ...
 
-Will be used by our own web app as well as third-party apps maintained by our customers
+Will be used by our own web app as well as third-party apps maintained by our customers.
+
+For a while we also need to support the old API endpoint via https://api.datawrapper.de/v2/ and https://api.datawrapper.de/ which will be proxied to the PHP app. Eventually the old endpoints will be retired and replaced with v3 versions.
 
 ## Raw Socket API
 
