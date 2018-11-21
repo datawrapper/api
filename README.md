@@ -6,7 +6,7 @@ It will consist of several interfaces:
 
 * REST API with JSON
 * Websocket API 
-* Raw Socket API for PNG/.. to communicate with internal render clients (EC2 nodes)
+* Raw Socket API
 
 ## REST API with JSON
 
