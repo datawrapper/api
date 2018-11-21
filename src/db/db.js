@@ -1,7 +1,16 @@
 // const mysql = require('mysql');
-const orm = require('orm');
+const Sequelize = require('sequelize');
 const config = require('../../config');
 
-const db = orm.connect(config.db);
+const sequelize = new Sequelize(
+	config.db.database,
+	config.db.user,
+	config.db.password, {
+		host: config.db.host,
+		port: config.db.port,
+		dialect: config.db.dialect,
+		operatorsAliases: false
+	},
+);
 
-module.exports = db;
+module.exports = sequelize;

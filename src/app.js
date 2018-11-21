@@ -1,19 +1,63 @@
 const express = require('express');
 const app = express();
-const {Chart} = require('./db/models');
+const {Chart, ExportJob} = require('./db/models');
 
 module.exports = app;
 
-Chart.find({ id: "08QXP" }, function (err, charts) {
-    // SQL: "SELECT * FROM person WHERE surname = 'Doe'"
-    if (err) throw err;
-
-    console.log("Charts found: %d", charts.length);
-    console.log("First chart", charts[0].metadata.visualize);
-
-    // charts[0].deleted = true;
-    // charts[0].save(function (err) {
-    //     console.log(err);
-    //     // err.msg == "under-age";
-    // });
+Chart.findById('sgBf1').then(chart => {
+    console.log(chart.metadata.visualize);
 });
+
+function newJob() {
+    ExportJob.create({
+        priority: 0,
+        chart_id: 'sgBf1',
+        status: 'queued',
+        created_at: new Date(),
+        data: {
+            tasks: [{
+                action: 'png',
+                params: {
+                    url: 'https://datawrapper.dwcdn.net/cYj95/4/plain.html',
+                    sizes: [{
+                        zoom: 4,
+                        width: 400-20,
+                        height: 300-20,
+                        out: './output/twitter.png'
+                    }, {
+                        zoom: 2,
+                        width: 600,
+                        height: 'auto',
+                        out: './output/bars-full.png'
+                    }]
+                }
+            }, {
+                action: 'border',
+                params: {
+                    image: './output/twitter.png',
+                    padding: 10,
+                    color: '#ffffff',
+                    out: './output/twitter.png',
+                }
+            }, {
+                action: 's3',
+                params: {
+                    file: './output/twitter.png',
+                    bucket: 'local-dw-gka',
+                    path: 'test/twitter.png'
+                }
+            }, {
+                action: 's3',
+                params: {
+                    file: './output/bars-full.png',
+                    bucket: 'local-dw-gka',
+                    path: 'test/bars-full.png'
+                }
+            }]
+        }
+    }).then(job => {
+        console.log(JSON.stringify(job));
+    })
+}
+
+newJob();

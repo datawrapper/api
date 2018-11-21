@@ -1,36 +1,42 @@
+const SQ = require('sequelize');
+
 module.exports = (db) => {
 
-    return db.define('chart', {
-        id:                 {type: 'text', size: 5, key: true, unique: true}, // the auto-incrementing primary key
-        title:              {type: 'text', size:255},
-        theme:              {type: 'text', size:255},
+    const Chart = db.define('chart', {
+        id: { type: SQ.STRING(5), primaryKey: true },
+        type: SQ.STRING,
+        title: SQ.STRING,
+        theme: SQ.STRING,
 
-        author_id:          {type: 'integer'},
-        guest_session:      {type: 'text', size: 255},
-        organization_id:    {type: 'text', size: 128},
-        folder_id:          {type: 'integer', mapsTo: 'in_folder'},
+        author_id: SQ.INTEGER,
+        guest_session: SQ.STRING,
+        organization_id: SQ.STRING(128),
+        folder_id: {type: SQ.INTEGER, field: 'in_folder'},
 
-        created_at:         {type: 'date', time: true},
-        last_modified_at:   {type: 'date', time: true},
-        last_edit_step:     {type: 'integer', size:2},
+        created_at: SQ.DATE,
+        last_modified_at: SQ.DATE,
+        last_edit_step: SQ.INTEGER,
 
-        published_at:       {type: 'date', time: true},
-        public_url:         {type: 'text', size: 255},
-        public_version:     {type: 'integer', size: 4},
+        published_at: SQ.DATE,
+        public_url: SQ.STRING,
+        public_version: SQ.INTEGER,
 
-        deleted:            {type: 'boolean'},
-        deleted_at:         {type: 'date', time: true},
+        deleted: SQ.BOOLEAN,
+        deleted_at: SQ.DATE,
 
-        forkable:           {type: 'boolean'},
-        is_fork:            {type: 'boolean'},
-        forked_from:        {type: 'text', size: 5},
+        forkable: SQ.BOOLEAN,
+        is_fork: SQ.BOOLEAN,
+        forked_from: SQ.STRING(5),
 
-        type:               {type: 'text', size:255},
-        metadata:           {type: 'object'},
-        language:           {type: 'text', size: 5},
-        external_data:      {type: 'text', size: 255},
+        metadata: SQ.JSON,
+        language: SQ.STRING(5),
+        external_data: SQ.STRING(),
     }, {
-        methods : {
-        }
+        timestamps: false,
+        tableName: 'chart'
     });
+
+    Chart.sync();
+
+    return Chart;
 }
