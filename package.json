@@ -1,0 +1,19 @@
+{
+  "name": "datawrapper-api",
+  "version": "1.0.0",
+  "description": "This repository contains the new Node.js based API that will power the future of Datawrapper.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/datawrapper/datawrapper-api.git"
+  },
+  "author": "Datawrapper GmbH",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4",
+    "mysql": "^2.16.0"
+  }
+}
