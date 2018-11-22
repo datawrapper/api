@@ -11,7 +11,13 @@ What ORM to use? Currently trying: [sequelize](http://docs.sequelizejs.com/)
 
 How to deal with plugins in the future. In the PHP app we would decide on each request what plugins to load, based on the authenticated user and his organizations and products. In Node I guess we need to load all plugins but then find another way to manage the access levels. This is a big question. Also, since we're probably splitting the datawrapper api and the frontend in the future (or not?), does this mean we are going to need two kinds of plugins? api-plugins and frontend-plugins?
 
-### ...
+### Frontend framework
+
+The current favorite is [Sapper](http://sapper.svelte.technology/) since it's designed to work with Svelte and it's following the same design principles. Other ideas?
+
+### Should frontend and backend (api) be two different projects or live in one repository?
+
+In the end they're going to be two web-apps running on separate domains (app.datawrapper.de and api.datawrapper.de). So we might split them into two repositories. But there might be some overlap, like the ORM models would be good to be able to use in both projects. Thoughts?
 
 ## Interfaces
 
