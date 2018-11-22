@@ -13,7 +13,11 @@ const rest_server = rest_app.listen(port, () => {
 // TLS SOCKET server
 const socket_app = require('./src/socket/server');
 socket_app.listen(config.socket.port, config.socket.host, () => {
-  	console.log("Socket listening at %s, on port %s", config.socket.host, config.socket.port);
+  	console.log("Socket server listening at %s, on port %s", config.socket.host, config.socket.port);
 });
 
 // Websockets?
+
+
+// Crons for maintainance
+require('./src/cron');

@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 module.exports = {
     db: {
     	dialect: 'mysql',
@@ -6,5 +8,16 @@ module.exports = {
         user: '',
         password: '',
         database: ''
+    },
+
+    socket: {
+    	host: 'api.datawrapper.de',
+    	port: 9838,
+    	tls: {
+    		requestCert: true,
+    		cert: fs.readFileSync('server-cert.pem'),
+    		key: fs.readFileSync('server-key.pem'),
+    		ca: [fs.readFileSync('client-cert.pem')]
+    	}
     }
 }
