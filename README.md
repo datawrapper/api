@@ -2,13 +2,26 @@
 
 This repository contains the new Node.js based API that will power the future of Datawrapper.
 
+## Open questions
+
+### ORM
+What ORM to use? Currently trying: [sequelize](http://docs.sequelizejs.com/)
+
+### Plugins
+
+How to deal with plugins in the future. In the PHP app we would decide on each request what plugins to load, based on the authenticated user and his organizations and products. In Node I guess we need to load all plugins but then find another way to manage the access levels. This is a big question. Also, since we're probably splitting the datawrapper api and the frontend in the future (or not?), does this mean we are going to need two kinds of plugins? api-plugins and frontend-plugins?
+
+### ...
+
+## Interfaces
+
 It will consist of several interfaces:
 
 * REST API with JSON
 * Websocket API 
 * Raw Socket API
 
-## REST API with JSON
+### REST API with JSON
 
 Will serve via HTTPS on port 443, e.g. 
 
@@ -20,10 +33,10 @@ Will be used by our own web app as well as third-party apps maintained by our cu
 
 For a while we also need to support the old API endpoint via https://api.datawrapper.de/v2/ and https://api.datawrapper.de/ which will be proxied to the PHP app. Eventually the old endpoints will be retired and replaced with v3 versions.
 
-## Raw Socket API
+### Raw Socket API
 
 The Raw Socket API will be used by our render clients (formerly known as chromeshots) to get export jobs assigned to them.
 
-## Websocket API
+### Websocket API
 
 Will be used by own own web app to enable real-time two-way communication while using the chart editor (e.g. to push changes made by user A to the open chart editor in user B's browser)
