@@ -1,6 +1,12 @@
 const fs = require('fs');
 
 module.exports = {
+
+	core: {
+	    domain: 'app.datawrapper.local',
+	    img_domain: 'img.datawrapper.local'
+	},
+
     db: {
     	dialect: 'mysql',
         host: '127.0.0.1',
