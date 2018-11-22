@@ -19,7 +19,7 @@ module.exports = (async () => {
                 // chart not deleted AND
                 {deleted: false},
                 // chart edited within last 90 seconds
-                db.where(edited_ago, Op.lt, 300000),
+                db.where(edited_ago, Op.lt, 90),
             ]
         }
     });
