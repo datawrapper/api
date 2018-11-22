@@ -4,8 +4,8 @@ const {Chart, ExportJob} = require('./models');
 
 const controllers = require('./controllers');
 
-for (let key in Object.keys(controllers)) {
-  console.log(key);
+for (let key of Object.keys(controllers)) {
+    app.use(`/${key}`, controllers[key]);
 }
 
 // var UserController = require('./user/UserController');
