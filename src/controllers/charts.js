@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
 
-const {Chart} = require('../models');
+const {Chart} = require('datawrapper-orm/models');
 
 // create a new chart
 router.post('/', (req, res) => {

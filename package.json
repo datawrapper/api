@@ -13,6 +13,7 @@
   "author": "Datawrapper GmbH",
   "dependencies": {
     "body-parser": "^1.18.3",
+    "datawrapper-orm": "git+ssh://git@github.com/datawrapper/datawrapper-orm.git",
     "express": "^4.16.4",
     "mysql2": "^1.6.4",
     "sequelize": "^4.41.2"
