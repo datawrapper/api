@@ -1,21 +1,19 @@
-// REST API server
+// initialize database
 const ORM = require('datawrapper-orm');
 const config = require('./config');
 ORM.init(config.db);
 
-const app = require('./src/app');
+// REST API
+const rest_app = require('./src/rest/app');
 const port = process.env.PORT || 3000;
-
-const api_server = app.listen(port, () => {
+const rest_server = rest_app.listen(port, () => {
   console.log('Express server listening on port ' + port);
 });
 
-const socket = require('./src/socket');
-
 // TLS SOCKET server
-socket.listen(config.socket.port, config.socket.host, () => {
+const socket_app = require('./src/socket/server');
+socket_app.listen(config.socket.port, config.socket.host, () => {
   	console.log("Socket listening at %s, on port %s", config.socket.host, config.socket.port);
 });
-
 
 // Websockets?

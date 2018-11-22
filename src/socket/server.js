@@ -1,7 +1,7 @@
 const fs = require('fs');
 const tls = require('tls');
 const shuffle = require('lodash.shuffle');
-const config = require('../config').socket;
+const config = require('../../config').socket;
 
 console.log(config);
 
