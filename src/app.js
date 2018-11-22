@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const {Chart, ExportJob} = require('./db/models');
+const {Chart, ExportJob} = require('./models');
 
 module.exports = app;
 
