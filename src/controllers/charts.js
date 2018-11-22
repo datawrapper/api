@@ -30,7 +30,6 @@ router.get('/', (req, res) => {
         order: [['last_modified_at', 'DESC']],
         limit: 100
     }).then(charts => {
-        console.log(charts.length);
         res.status(200).send(charts);
     }).catch(err => {
         console.warn(err);
@@ -39,7 +38,7 @@ router.get('/', (req, res) => {
 
 });
 
-
+// return a single chart
 router.get('/:id', (req, res) => {
 
     Chart.findByPk(req.params.id).then(chart => {
@@ -48,6 +47,30 @@ router.get('/:id', (req, res) => {
         console.warn(err);
         res.status(500).send("There was a problem finding the charts.");
     });
+
+});
+
+// update a chart
+router.put('/:id', (req, res) => {
+
+    // Chart.findByPk(req.params.id).then(chart => {
+    //     res.status(200).send(chart);
+    // }).catch(err => {
+    //     console.warn(err);
+    //     res.status(500).send("There was a problem finding the charts.");
+    // });
+
+});
+
+// update new chart data
+router.put('/:id/data', (req, res) => {
+
+    // Chart.findByPk(req.params.id).then(chart => {
+    //     res.status(200).send(chart);
+    // }).catch(err => {
+    //     console.warn(err);
+    //     res.status(500).send("There was a problem finding the charts.");
+    // });
 
 });
 
