@@ -33,20 +33,21 @@ router.get('/', (req, res) => {
 
 });
 
-// return a single chart
-router.get('/:id', (req, res) => {
-
+function checkChartAccess(req, res, next) {
     Chart.findByPk(req.params.id).then(chart => {
-        res.status(200).send(chart);
-    }).catch(err => {
-        console.warn(err);
-        res.status(500).send("There was a problem finding the charts.");
-    });
+        if (!chart) return next('chart not found');
+        res.locals.chart = chart;
+        next();
+    }).catch(next);
+}
 
+// return a single chart
+router.get('/:id', checkChartAccess, (req, res, next) => {
+    res.status(200).send(res.locals.chart.toJSON());
 });
 
 // update a chart
-router.put('/:id', (req, res) => {
+router.put('/:id', checkChartAccess, (req, res) => {
 
     // Chart.findByPk(req.params.id).then(chart => {
     //     res.status(200).send(chart);
@@ -58,7 +59,7 @@ router.put('/:id', (req, res) => {
 });
 
 // update new chart data
-router.put('/:id/data', (req, res) => {
+router.put('/:id/data', checkChartAccess, (req, res) => {
 
     // Chart.findByPk(req.params.id).then(chart => {
     //     res.status(200).send(chart);
