@@ -1,24 +1,24 @@
 const express = require('express');
 const app = express();
 
-const auth = authentication().for(bearer(verify));
-const authentication = require('express-authentication'),
-const bearer = require('express-authentication-bearer'),
+// const auth = authentication().for(bearer(verify));
+// const authentication = require('express-authentication'),
+// const bearer = require('express-authentication-bearer'),
 
 
-function verify(data, callback) {
-	// check that auth token exists
+// function verify(data, callback) {
+// 	// check that auth token exists
 
-	redis.get(key(data), function done(err, result) {
-		if (err) {
-			return callback(err);
-		} else {
-			var authed = !!data,
-				output = result ? JSON.parse(result) : { error: 'NO_TOKEN' };
-			callback(null, authed, output);
-		}
-	});
-}
+// 	redis.get(key(data), function done(err, result) {
+// 		if (err) {
+// 			return callback(err);
+// 		} else {
+// 			var authed = !!data,
+// 				output = result ? JSON.parse(result) : { error: 'NO_TOKEN' };
+// 			callback(null, authed, output);
+// 		}
+// 	});
+// }
 
 
 app.get('/', (req, res) => {
