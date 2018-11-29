@@ -1,7 +1,7 @@
 // initialize database
 const ORM = require('datawrapper-orm');
 const config = require('./config');
-ORM.init(config.db);
+ORM.init(config);
 
 // REST API
 const rest_app = require('./src/app');
