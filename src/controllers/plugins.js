@@ -1,9 +1,11 @@
 const getRouter = require('../lib/getRouter');
 const config = require('../../config');
 const router = getRouter();
+const models = require('datawrapper-orm/models');
 
 // load plugins
-for (let plugin_name of config.plugins) {
+for (let pid of config.plugins) {
+    const [plugin_name, version] = pid.split('#');
     // load the plugin
     const plugin = require(`datawrapper-plugin-${plugin_name}`);
 
@@ -11,7 +13,7 @@ for (let plugin_name of config.plugins) {
         // the plugin wants to define api routes
         const plugin_router = getRouter();
         router.use(`/${plugin_name}`, plugin_router);
-        plugin.api({router: plugin_router});
+        plugin.api({router: plugin_router, models});
     }
 
 }
