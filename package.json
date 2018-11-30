@@ -15,6 +15,7 @@
   "author": "Datawrapper GmbH",
   "dependencies": {
     "body-parser": "^1.18.3",
+    "cookie-parser": "^1.4.3",
     "datawrapper-orm": "git+ssh://git@github.com/datawrapper/datawrapper-orm.git",
     "datawrapper-plugin-hello-world": "git+ssh://git@github.com/datawrapper/plugin-hello-world.git",
     "express": "^4.16.4",

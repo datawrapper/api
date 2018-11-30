@@ -1,8 +1,13 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const router = express.Router();
 
 // v3 supports authentication via Bearer
-router.use(require('./lib/authBearer'));
+router.use(require('./lib/auth/bearer'));
+
+// v3 also supports cookie authentication
+router.use(cookieParser());
+router.use(require('./lib/auth/session'));
 
 router.use('/account', require('./controllers/account'));
 router.use('/charts', require('./controllers/charts'));
