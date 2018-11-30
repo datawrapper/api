@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
         .send('hello world!');
 });
 
-app.use(`/v3`, require('./v3'));
+app.use(`/3`, require('./v3'));
 
 // custom error handler
 app.use(function(err, req, res, next) {
