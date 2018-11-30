@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "bin/install-plugins"
+    "postinstall": "bin/install-plugins",
+    "dev": "nodemon index.js"
   },
   "repository": {
     "type": "git",
@@ -15,9 +16,8 @@
   "dependencies": {
     "body-parser": "^1.18.3",
     "datawrapper-orm": "git+ssh://git@github.com/datawrapper/datawrapper-orm.git",
+    "datawrapper-plugin-hello-world": "git+ssh://git@github.com/datawrapper/plugin-hello-world.git",
     "express": "^4.16.4",
-    "express-authentication": "^0.3.2",
-    "express-authentication-bearer": "^0.2.1",
     "lodash.shuffle": "^4.2.0",
     "mysql2": "^1.6.4",
     "sequelize": "^4.41.2"

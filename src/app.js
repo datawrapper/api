@@ -28,7 +28,6 @@ app.get('/', (req, res) => {
 
 app.use(`/v3`, require('./v3'));
 
-
 // custom error handler
 app.use(function(err, req, res, next) {
     if (res.headersSent) return next(err)

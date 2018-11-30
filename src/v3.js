@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
+// v3 authentication via Bearer
+router.use(require('./lib/authBearer'));
 
+router.use('/account', require('./controllers/account'));
 router.use('/charts', require('./controllers/charts'));
 router.use('/jobs', require('./controllers/jobs'));
 
