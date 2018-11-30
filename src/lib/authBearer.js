@@ -16,10 +16,10 @@ module.exports = async (req, res, next) => {
                     next(e);
                 }
             } else {
-                next(`bearer token must not be empty`);
+                next(`Authentication failed. Bearer token must not be empty!`);
             }
         } else {
-            next(`unsupported authentication type '${type}'`);
+            next(`Authentication failed. Unsupported authentication type '${type}'!`);
         }
     }
     next();
