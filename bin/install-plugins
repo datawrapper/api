@@ -6,7 +6,7 @@ const config = require('../config');
 const packages = config.plugins
     .map(name => `git+ssh://git@github.com:datawrapper/plugin-${name}`);
 
-const npm = spawn('npm', ['install', '--no-save'].concat(packages));
+const npm = spawn('npm', ['install', '--no-save', '--production'].concat(packages));
 
 // npm.stdout.pipe(process.stdout);
 // npm.stderr.pipe(process.stderr);
