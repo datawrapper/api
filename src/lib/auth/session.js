@@ -7,7 +7,12 @@ module.exports = async (req, res, next) => {
             if (session.data['dw-user-id']) {
                 const user = await User.findByPk(session.data['dw-user-id']);
                 if (user) {
-                    res.user = user;
+
+                    res.locals.user = user;
+
+                    const plugins = await user.getPlugins();
+                    res.locals.plugins = plugins;
+
                     next();
                 } else {
                     next('Authentication error: user not found');

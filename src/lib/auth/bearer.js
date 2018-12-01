@@ -10,7 +10,12 @@ module.exports = async (req, res, next) => {
                     const at = await AuthToken.findOne({where: {token:token.trim()}});
                     if (!at) return next('Authentication failed. Unknown Bearer token!');
 
-                    res.user = await at.getUser();
+                    const user = await at.getUser();
+                    res.locals.user = user;
+
+                    const plugins = await user.getPlugins();
+                    res.locals.plugins = plugins;
+
                     next();
                 } catch(e) {
                     next(e);

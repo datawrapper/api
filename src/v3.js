@@ -1,6 +1,10 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const router = express.Router();
+const bodyParser = require('body-parser');
+
+router.use(bodyParser.urlencoded({ extended: true }));
+router.use(bodyParser.json());
 
 // v3 supports authentication via Bearer
 router.use(require('./lib/auth/bearer'));

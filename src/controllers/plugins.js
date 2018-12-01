@@ -1,8 +1,11 @@
+const express = require('express');
+const router = express.Router();
+
 const getRouter = require('../lib/getRouter');
 const config = require('../../config');
-const router = getRouter();
 const models = require('datawrapper-orm/models');
 
+const requirePlugin = require('../lib/requirePlugin');
 const lib = require('../lib');
 
 // load plugins
@@ -14,10 +17,13 @@ for (let pid of config.plugins) {
     if (plugin && plugin.api) {
         // the plugin wants to define api routes
         const plugin_router = getRouter();
-        router.use(`/${plugin_name}`, plugin_router);
-        plugin.api({router: plugin_router, models, lib});
-    }
 
+        plugin.api({ router: plugin_router, models });
+
+        router.use(`/${plugin_name}`,
+            requirePlugin(plugin_name),
+            plugin_router);
+    }
 }
 
 module.exports = router;

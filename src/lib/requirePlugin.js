@@ -1,11 +1,20 @@
+const {Plugin} = require('datawrapper-orm/models');
+const requireUser = require('./requireUser');
+
 module.exports = (plugin_id) => {
-    return async (req, res, next) => {
-        const allow = await res.user.mayUsePlugin(plugin_id);
-        if (!allow) {
-            return res.status(403).send({
-                error: 'Your account is lacking privileges to access this endpoint.'
-            });
+    return (req, res, next) => {
+        // private plugins require authentication
+        if (!res.locals.user) {
+            return requireUser(req, res, next);
         }
-        next();
+
+        const allowed_plugins = res.locals.plugins.map(d => d.id);
+        const allow = allowed_plugins.indexOf(plugin_id) > -1;
+
+        if (allow) return next();
+
+        return res.status(403).send({
+            error: 'Your account is lacking privileges to access this endpoint.'
+        });
     };
 }
