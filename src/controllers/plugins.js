@@ -18,7 +18,7 @@ for (let pid of config.plugins) {
         // the plugin wants to define api routes
         const plugin_router = getRouter();
 
-        plugin.api({ router: plugin_router, models });
+        plugin.api({ router: plugin_router, models, config });
 
         router.use(`/${plugin_name}`,
             requirePlugin(plugin_name),

@@ -3,6 +3,7 @@ const fs = require('fs');
 module.exports = {
 
     core: {
+        https: false,
         domain: 'app.datawrapper.local',
         img_domain: 'img.datawrapper.local'
     },
