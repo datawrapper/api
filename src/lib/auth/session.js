@@ -1,6 +1,7 @@
 const {Session, User} = require('datawrapper-orm/models');
+const asyncHandler = require('../asyncHandler');
 
-module.exports = async (req, res, next) => {
+module.exports = asyncHandler(async (req, res, next) => {
     if (req.cookies['DW-SESSION']) {
         const session = await Session.findByPk(req.cookies['DW-SESSION']);
         if (session) {
@@ -24,6 +25,7 @@ module.exports = async (req, res, next) => {
         } else {
             next('Authentication error: invalid session id');
         }
+    } else {
+        next();
     }
-    next();
-}
+});
