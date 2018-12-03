@@ -5,7 +5,7 @@ ORM.init(config);
 
 // register api plugins with core db
 const Plugin = require('datawrapper-orm/models/Plugin');
-Plugin.register('datawrapper-api', config.plugins);
+Plugin.register('datawrapper-api', Object.keys(config.plugins));
 
 // REST API
 const rest_app = require('./src/app');

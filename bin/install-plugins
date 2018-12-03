@@ -3,7 +3,7 @@ const {spawn} = require('child_process');
 
 const config = require('../config');
 
-const packages = config.plugins
+const packages = Object.keys(config.plugins)
     .map(name => `git+ssh://git@github.com:datawrapper/plugin-${name}`);
 
 const npm = spawn('npm', ['install', '--no-save', '--production'].concat(packages));

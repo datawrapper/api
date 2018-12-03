@@ -2,11 +2,22 @@ const fs = require('fs');
 
 module.exports = {
 
-    core: {
+    frontend: {
         https: false,
         domain: 'app.datawrapper.local',
         img_domain: 'img.datawrapper.local'
     },
+
+    api: {
+        domain: 'api.datawrapper.local',
+        https: false
+    },
+
+    plugins: {
+        // 'hello-world': {
+        //     name: 'foo'
+        // }
+    }
 
     db: {
         dialect: 'mysql',
