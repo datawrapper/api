@@ -16,6 +16,7 @@ router.use(require('./lib/auth/session'));
 router.use('/account', require('./controllers/account'));
 router.use('/charts', require('./controllers/charts'));
 router.use('/jobs', require('./controllers/jobs'));
+router.use('/stats', require('./controllers/stats'));
 
 // plugin hooks
 router.use('/plugins', require('./controllers/plugins'));

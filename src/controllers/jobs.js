@@ -5,66 +5,48 @@ const {ExportJob} = require('datawrapper-orm/models');
 // returns all the charts in the database
 
 const jobList = (where) => {
-    return (req, res) => {
+    return async (req, res) => {
         // priority filter using ?priority=2
         if (req.query.priority !== undefined) {
             where.priority = req.query.priority;
         }
-        ExportJob.findAll({
-            where,
-            order: [['created_at', 'DESC']],
-            limit: 100
-        }).then(jobs => {
+        try {
+            const jobs = await ExportJob.findAll({
+                where,
+                order: [['created_at', 'DESC']],
+                limit: 100
+            });
             res.status(200).send(jobs);
-        }).catch(err => {
-            console.warn(err);
+        } catch (err) {
             res.status(500).send("There was a problem finding the jobs.");
-        });
+        }
     };
 };
 
 // list all jobs
+// https://api.datawrapper.de/3/jobs/
 router.get('/', jobList({}));
 
 // separate lists for each status /queued /done /failed etc
+// https://api.datawrapper.de/3/jobs/queued
+// https://api.datawrapper.de/3/jobs/in_progres
+// https://api.datawrapper.de/3/jobs/failed
+// https://api.datawrapper.de/3/jobs/done
 for (let s of ['queued', 'in_progress', 'done', 'failed']) {
     router.get('/'+s, jobList({status: s}));
 }
 
-// return a single job
-router.get('/:id', (req, res) => {
-
-    ExportJob.findByPk(req.params.id).then(job => {
-        res.status(200).send(job);
-    }).catch(err => {
-        console.warn(err);
-        res.status(500).send("There was a problem finding the charts.");
-    });
-
+// return a single job, e.g.
+// https://api.datawrapper.de/3/jobs/22821
+router.get('/:id', async (req, res) => {
+    const job = ExportJob.findByPk(req.params.id);
+    res.status(200).send(job);
 });
 
-// update a chart
-router.put('/:id', (req, res) => {
-
-    // Chart.findByPk(req.params.id).then(chart => {
-    //     res.status(200).send(chart);
-    // }).catch(err => {
-    //     console.warn(err);
-    //     res.status(500).send("There was a problem finding the charts.");
-    // });
-
+router.get('/:id', async (req, res) => {
+    const job = ExportJob.findByPk(req.params.id);
+    res.status(200).send(job);
 });
 
-// update new chart data
-router.put('/:id/data', (req, res) => {
-
-    // Chart.findByPk(req.params.id).then(chart => {
-    //     res.status(200).send(chart);
-    // }).catch(err => {
-    //     console.warn(err);
-    //     res.status(500).send("There was a problem finding the charts.");
-    // });
-
-});
 
 module.exports = router;
