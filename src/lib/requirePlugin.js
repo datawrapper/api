@@ -1,4 +1,3 @@
-const {Plugin} = require('datawrapper-orm/models');
 const requireUser = require('./requireUser');
 
 module.exports = (plugin_id) => {

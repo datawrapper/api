@@ -4,7 +4,7 @@ const {spawn} = require('child_process');
 const config = require('../config');
 
 const packages = Object.keys(config.plugins)
-    .map(name => `git+ssh://git@github.com:datawrapper/plugin-${name}`);
+    .map(name => `@datawrapper/plugin-${name}`);
 
 const npm = spawn('npm', ['install', '--no-save', '--production'].concat(packages));
 
@@ -23,5 +23,4 @@ npm.stderr.on('data', (data) => {
 npm.on('close', (code) => {
   if (code) console.warn(`npm exited with code ${code}`);
 });
-
 

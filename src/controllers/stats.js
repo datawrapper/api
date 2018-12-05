@@ -1,6 +1,6 @@
 const {Op} = require('sequelize');
 const {groupBy, values} = require('underscore');
-const {Stats} = require('datawrapper-orm/models');
+const {Stats} = require('@datawrapper/orm/models');
 const {csvFormat} = require('d3-dsv');
 
 const router = require('../lib/getRouter')();

@@ -1,6 +1,6 @@
 const router = require('../lib/getRouter')();
 
-const {ExportJob} = require('datawrapper-orm/models');
+const {ExportJob} = require('@datawrapper/orm/models');
 
 // returns all the charts in the database
 

@@ -1,4 +1,4 @@
-const {AuthToken} = require('datawrapper-orm/models');
+const {AuthToken} = require('@datawrapper/orm/models');
 const asyncHandler = require('../asyncHandler');
 
 module.exports = asyncHandler(async (req, res, next) => {

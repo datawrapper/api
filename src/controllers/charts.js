@@ -1,6 +1,6 @@
 const router = require('../lib/getRouter')();
 
-const {Chart} = require('datawrapper-orm/models');
+const {Chart} = require('@datawrapper/orm/models');
 
 // create a new chart
 router.post('/', (req, res) => {

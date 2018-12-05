@@ -3,23 +3,22 @@ const router = express.Router();
 
 const getRouter = require('../lib/getRouter');
 const config = require('../../config');
-const models = require('datawrapper-orm/models');
+const models = require('@datawrapper/orm/models');
 
 const requirePlugin = require('../lib/requirePlugin');
-const lib = require('../lib');
 
 // load plugins
 for (let pid of Object.keys(config.plugins)) {
     const [plugin_name, version] = pid.split('#');
     // load the plugin
-    const plugin = require(`datawrapper-plugin-${plugin_name}`);
+    const plugin = require(`@datawrapper/plugin-${plugin_name}`);
 
     if (plugin && plugin.api) {
 
         let plugin_cfg = {};
         try {
             // load plugin default config
-            plugin_cfg = require(`datawrapper-plugin-${plugin_name}/config`)
+            plugin_cfg = require(`@datawrapper/plugin-${plugin_name}/config`)
         } catch (e) {
             console.log('no default config');
         }

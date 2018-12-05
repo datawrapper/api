@@ -1,4 +1,4 @@
-const {Session, User} = require('datawrapper-orm/models');
+const {Session, User} = require('@datawrapper/orm/models');
 const asyncHandler = require('../asyncHandler');
 
 module.exports = asyncHandler(async (req, res, next) => {
