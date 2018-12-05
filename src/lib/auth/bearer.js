@@ -5,7 +5,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     const auth = req.get('Authentication');
     if (auth) {
         const [type, token] = auth.split(' ');
-        if (type.toLowerCase() == 'bearer') {
+        if (type.toLowerCase() === 'bearer') {
             if (token) {
                 const at = await AuthToken.findOne({where: {token:token.trim()}});
                 if (!at) return next('Authentication failed. Unknown Bearer token!');
