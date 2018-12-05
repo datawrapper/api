@@ -1,5 +1,5 @@
 {
-  "name": "datawrapper-api",
+  "name": "@datawrapper/api",
   "version": "1.0.0",
   "description": "This repository contains the new Node.js based API that will power the future of Datawrapper.",
   "main": "server.js",
