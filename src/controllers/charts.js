@@ -1,5 +1,6 @@
 const router = require('../lib/getRouter')();
 
+const requireUser = require('../lib/requireUser');
 const {Chart} = require('@datawrapper/orm/models');
 
 // create a new chart
@@ -17,11 +18,22 @@ router.post('/', (req, res) => {
 
 });
 
-// returns all the charts in the database
+// returns all public charts in the database
 router.get('/', (req, res) => {
 
+    let where = { deleted:0 };
+    if (res.locals.user) {
+        // user is signed in, return the users charts
+        where.author_id = res.locals.user.id;
+    } else if (res.locals.session) {
+        // guest session. return the guests chart
+        where.guest_session = res.locals.session.id;
+    } else {
+        return requireUser(req, res);
+    }
+
     Chart.findAll({
-        where: { deleted: 0 },
+        where: where,
         order: [['last_modified_at', 'DESC']],
         limit: 100
     }).then(charts => {
