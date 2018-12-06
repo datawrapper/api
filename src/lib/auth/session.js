@@ -19,6 +19,7 @@ module.exports = asyncHandler(async (req, res, next) => {
                     next('Authentication error: user not found');
                 }
             } else {
+                res.locals.session = session;
                 // guest session
                 next();
             }
