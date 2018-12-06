@@ -1,4 +1,5 @@
 const router = require('../lib/getRouter')();
+const requireAdmin = require('../lib/requireAdmin');
 
 const {ExportJob} = require('@datawrapper/orm/models');
 
@@ -25,7 +26,7 @@ const jobList = (where) => {
 
 // list all jobs
 // https://api.datawrapper.de/3/jobs/
-router.get('/', jobList({}));
+router.get('/', requireAdmin, jobList({}));
 
 // separate lists for each status /queued /done /failed etc
 // https://api.datawrapper.de/3/jobs/queued
@@ -33,17 +34,17 @@ router.get('/', jobList({}));
 // https://api.datawrapper.de/3/jobs/failed
 // https://api.datawrapper.de/3/jobs/done
 for (let s of ['queued', 'in_progress', 'done', 'failed']) {
-    router.get('/'+s, jobList({status: s}));
+    router.get('/'+s, requireAdmin, jobList({status: s}));
 }
 
 // return a single job, e.g.
 // https://api.datawrapper.de/3/jobs/22821
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAdmin, async (req, res) => {
     const job = ExportJob.findByPk(req.params.id);
     res.status(200).send(job);
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAdmin, async (req, res) => {
     const job = ExportJob.findByPk(req.params.id);
     res.status(200).send(job);
 });

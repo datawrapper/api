@@ -4,10 +4,10 @@ module.exports = (req, res, next) => {
             error: 'This endpoint requires authentication'
         });
     }
-    if (res.locals.user.role != 'admin' && res.locals.user.role != 'sysadmin') {
-    	return res.status(403).send({
-    	    error: 'You\'re not allowed to access this endpoint.'
-    	});
+    if (!['admin', 'sysadmin'].includes(res.locals.user.role)) {
+        return res.status(403).send({
+            error: 'You\'re not allowed to access this endpoint.'
+        });
     }
     next();
 };
