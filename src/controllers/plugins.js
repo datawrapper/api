@@ -3,15 +3,21 @@ const router = express.Router();
 
 const getRouter = require('../lib/getRouter');
 const config = require('../../config');
+const logger = require('../lib/logger');
 const models = require('@datawrapper/orm/models');
 
 const requirePlugin = require('../lib/requirePlugin');
 
 // load plugins
 for (let pid of Object.keys(config.plugins)) {
-    const [plugin_name, version] = pid.split('#');
+    const [plugin_name, version] = pid.split('@');
     // load the plugin
-    const plugin = require(`@datawrapper/plugin-${plugin_name}`);
+    let plugin;
+    try {
+        plugin = require(`@datawrapper/plugin-${plugin_name}`);
+    } catch (e) {
+        logger.error('could not load the plugin '+plugin_name);
+    }
 
     if (plugin && plugin.api) {
 
@@ -20,7 +26,7 @@ for (let pid of Object.keys(config.plugins)) {
             // load plugin default config
             plugin_cfg = require(`@datawrapper/plugin-${plugin_name}/config`)
         } catch (e) {
-            console.log('no default config');
+            // console.log('no default config');
         }
         // extend default plugin cfg with our custom config
         Object.assign(plugin_cfg, config.plugins[pid]);
@@ -31,6 +37,8 @@ for (let pid of Object.keys(config.plugins)) {
         plugin.api({ router: plugin_router, models, config: {
             global: config, plugin: plugin_cfg
         }});
+
+        logger.info(`hooked in plugin ${plugin_name}`);
 
         router.use(`/${plugin_name}`,
             requirePlugin(plugin_name),
