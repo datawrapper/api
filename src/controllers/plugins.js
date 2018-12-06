@@ -16,7 +16,7 @@ for (let pid of Object.keys(config.plugins)) {
     try {
         plugin = require(`@datawrapper/plugin-${plugin_name}`);
     } catch (e) {
-        logger.error('could not load the plugin '+plugin_name);
+        logger.error(`could not load the plugin ${plugin_name}. Try npm install...`);
     }
 
     if (plugin && plugin.api) {

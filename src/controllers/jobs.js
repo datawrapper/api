@@ -40,12 +40,7 @@ for (let s of ['queued', 'in_progress', 'done', 'failed']) {
 // return a single job, e.g.
 // https://api.datawrapper.de/3/jobs/22821
 router.get('/:id', requireAdmin, async (req, res) => {
-    const job = ExportJob.findByPk(req.params.id);
-    res.status(200).send(job);
-});
-
-router.get('/:id', requireAdmin, async (req, res) => {
-    const job = ExportJob.findByPk(req.params.id);
+    const job = await ExportJob.findByPk(req.params.id);
     res.status(200).send(job);
 });
 
