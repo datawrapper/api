@@ -40,9 +40,13 @@ for (let pid of Object.keys(config.plugins)) {
 
         logger.info(`hooked in plugin ${plugin_name}`);
 
-        router.use(`/${plugin_name}`,
-            requirePlugin(plugin_name),
-            plugin_router);
+        if (plugin_cfg.open_access) {
+            router.use(`/${plugin_name}`, plugin_router);
+        } else {
+            router.use(`/${plugin_name}`,
+                requirePlugin(plugin_name),
+                plugin_router);
+        }
     }
 }
 
