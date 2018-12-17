@@ -54,12 +54,12 @@ function checkChartAccess(req, res, next) {
 }
 
 // return a single chart
-router.get('/:id', checkChartAccess, (req, res, next) => {
+router.get('/:id', checkChartAccess, (req, res) => {
     res.status(200).send(res.locals.chart.toJSON());
 });
 
 // update a chart
-router.put('/:id', checkChartAccess, (req, res) => {
+router.put('/:id', checkChartAccess, () => {
 
     // Chart.findByPk(req.params.id).then(chart => {
     //     res.status(200).send(chart);
@@ -71,7 +71,7 @@ router.put('/:id', checkChartAccess, (req, res) => {
 });
 
 // update new chart data
-router.put('/:id/data', checkChartAccess, (req, res) => {
+router.put('/:id/data', checkChartAccess, () => {
 
     // Chart.findByPk(req.params.id).then(chart => {
     //     res.status(200).send(chart);

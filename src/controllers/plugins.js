@@ -38,7 +38,7 @@ for (let pid of Object.keys(config.plugins)) {
             global: config, plugin: plugin_cfg
         }});
 
-        logger.info(`hooked in plugin ${plugin_name}`);
+        logger.info(`hooked in plugin ${plugin_name} (on ${version || 'master'})`);
 
         if (plugin_cfg.open_access) {
             router.use(`/${plugin_name}`, plugin_router);

@@ -1,7 +1,10 @@
+/* globals process */
+
 const logger = require('./src/lib/logger');
-// initialize database
 const ORM = require('@datawrapper/orm');
 const config = require('./config');
+
+// initialize database
 ORM.init(config);
 
 // register api plugins with core db
