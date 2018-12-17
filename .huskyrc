@@ -1,0 +1,5 @@
+{
+  "hooks": {
+    "pre-commit": "eslint index.js src"
+  }
+}
