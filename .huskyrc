@@ -1,5 +1,5 @@
 {
    "hooks": {
-      "pre-commit": "git diff --cached --name-only | grep '.js$' | xargs eslint"
+      "pre-commit": "eslint index.js src"
    }
 }
