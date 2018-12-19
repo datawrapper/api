@@ -2,9 +2,15 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const router = express.Router();
 const bodyParser = require('body-parser');
+const cors = require('cors');
 
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
+
+router.use(cors({
+	credentials: true,
+	origin: 'http://app.datawrapper.local'
+}));
 
 // v3 supports authentication via Bearer
 router.use(require('./lib/auth/bearer'));

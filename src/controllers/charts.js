@@ -1,11 +1,11 @@
 const router = require('../lib/getRouter')();
 
 const requireUser = require('../lib/requireUser');
+const checkChartWriteAccess = require('../lib/checkChartWriteAccess');
 const {Chart} = require('@datawrapper/orm/models');
 
 // create a new chart
 router.post('/', (req, res) => {
-
     // auto-generate ID
     Chart.create({
         // name : req.body.name,
@@ -20,7 +20,6 @@ router.post('/', (req, res) => {
 
 // returns all public charts in the database
 router.get('/', (req, res) => {
-
     let where = { deleted:0 };
     if (res.locals.user) {
         // user is signed in, return the users charts
@@ -45,33 +44,42 @@ router.get('/', (req, res) => {
 
 });
 
-function checkChartAccess(req, res, next) {
-    Chart.findByPk(req.params.id).then(chart => {
-        if (!chart) return next('chart not found');
-        res.locals.chart = chart;
-        next();
-    }).catch(next);
-}
 
 // return a single chart
-router.get('/:id', checkChartAccess, (req, res) => {
+router.get('/:id', checkChartWriteAccess, (req, res) => {
     res.status(200).send(res.locals.chart.toJSON());
 });
 
 // update a chart
-router.put('/:id', checkChartAccess, () => {
+router.put('/:id', checkChartWriteAccess, (req, res) => {
 
-    // Chart.findByPk(req.params.id).then(chart => {
-    //     res.status(200).send(chart);
-    // }).catch(err => {
-    //     console.warn(err);
-    //     res.status(500).send("There was a problem finding the charts.");
-    // });
+    const {chart} = res.locals;
+
+    const data = req.body;
+    let changed = false;
+
+    ['title', 'type', 'theme', 'last_edit_step', 'language', 'metadata'].forEach(key => {
+        // todo: compare metadata json structure
+        if (data[key] && data[key] !== chart[key]) {
+            changed = true;
+            chart[key] = data[key];
+        }
+    })
+
+    if (changed) {
+        chart.last_modified_at = new Date();
+
+        chart.save().then(() => {
+            res.status(200).send({status: 'ok'});
+        });
+    } else {
+        res.send({status: 'ok', message: 'no changes'});
+    }
 
 });
 
 // update new chart data
-router.put('/:id/data', checkChartAccess, () => {
+router.put('/:id/data', checkChartWriteAccess, () => {
 
     // Chart.findByPk(req.params.id).then(chart => {
     //     res.status(200).send(chart);

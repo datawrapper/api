@@ -20,6 +20,7 @@
     "babel-eslint": "^10.0.1",
     "body-parser": "^1.18.3",
     "cookie-parser": "^1.4.3",
+    "cors": "^2.8.5",
     "d3-dsv": "^1.0.10",
     "express": "^4.16.4",
     "lodash.shuffle": "^4.2.0",
