@@ -34,9 +34,14 @@ for (let pid of Object.keys(config.plugins)) {
         // the plugin wants to define api routes
         const plugin_router = getRouter();
 
-        plugin.api({ router: plugin_router, models, config: {
-            global: config, plugin: plugin_cfg
-        }});
+        plugin.api({
+            router: plugin_router,
+            models, logger,
+            config: {
+                global: config,
+                plugin: plugin_cfg
+            }
+        });
 
         logger.info(`hooked in plugin ${plugin_name} (on ${version || 'master'})`);
 
