@@ -8,9 +8,12 @@ const {ExportJob} = require('@datawrapper/orm/models');
 const jobList = (where) => {
     return async (req, res) => {
         // priority filter using ?priority=2
-        if (req.query.priority !== undefined) {
+        if (req.query.priority !== undefined)
             where.priority = req.query.priority;
-        }
+        if (req.query.chart_id !== undefined)
+            where.chart_id = req.query.chart_id;
+        if (req.query.key !== undefined)
+            where.key = req.query.key;
         try {
             const jobs = await ExportJob.findAll({
                 where,
@@ -29,13 +32,14 @@ const jobList = (where) => {
 router.get('/', requireAdmin, jobList({}));
 
 // separate lists for each status /queued /done /failed etc
-// https://api.datawrapper.de/3/jobs/queued
+// https://api.datawrapper.de/3/jobs/status/queued
 // https://api.datawrapper.de/3/jobs/in_progres
 // https://api.datawrapper.de/3/jobs/failed
 // https://api.datawrapper.de/3/jobs/done
 for (let s of ['queued', 'in_progress', 'done', 'failed']) {
     router.get('/'+s, requireAdmin, jobList({status: s}));
 }
+
 
 // return a single job, e.g.
 // https://api.datawrapper.de/3/jobs/22821
