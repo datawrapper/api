@@ -3,11 +3,11 @@
 /* eslint no-console: "off" */
 const fs = require('fs');
 const path = require('path');
-const {spawn} = require('child_process');
+const { spawn } = require('child_process');
 const chalk = require('chalk');
 
 // see https://github.com/npm/npm/issues/16990#issuecomment-349731142
-const projectDir = process.env.INIT_CWD || path.resolve("../../", __dirname);
+const projectDir = process.env.INIT_CWD || path.resolve('../../', __dirname);
 const pkgJSON = path.resolve(projectDir, 'package.json');
 
 // add start script to the parent projects package.json
@@ -19,16 +19,24 @@ if (fs.existsSync(pkgJSON)) {
     fs.writeFileSync(pkgJSON, JSON.stringify(pkg, null, 2));
     console.log(chalk.green('  package.json updated.'));
     console.log(chalk`  run {yellow npm start} to start the API`);
-    console.log(chalk`  run {yellow npm run sync} to synchronize the database schema\n`);
+    console.log(chalk`  run {yellow npm run sync} to synchronize the db schema\n`);
 } else {
     console.error(chalk.red('error: no package.json found'));
     process.exit(1);
 }
 
 // install plugins (in this package)
-const cfg_path = path.relative(__dirname, path.resolve(__dirname, '../src/config.js'));
-console.log(cfg_path);
-const config = require(cfg_path);
+const nodeModulesPkgDir = process.cwd();
+const cfgPath = path.resolve(process.cwd(), './src/config.js');
+
+// move up to the project folder (where datawrapper-api is installed into)
+// so we can find the actual config.js
+process.chdir(projectDir);
+const config = require(cfgPath);
+
+// now move back to node_modules/@datawrapper/api so we're
+// installing the plugins into the correct repo
+process.chdir(nodeModulesPkgDir);
 
 const packages = Object.keys(config.plugins)
     .map(name => `@datawrapper/plugin-${name}`);
