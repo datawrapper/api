@@ -17,7 +17,7 @@ module.exports = {
         // 'hello-world': {
         //     name: 'foo'
         // }
-    }
+    },
 
     db: {
         dialect: 'mysql',

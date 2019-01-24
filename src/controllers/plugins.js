@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const getRouter = require('../lib/getRouter');
-const config = require('../../config');
+const config = require('../config');
 const logger = require('../lib/logger');
 const models = require('@datawrapper/orm/models');
 
