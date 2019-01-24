@@ -1,14 +1,34 @@
 {
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "prettier --write",
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "scripts": {
+    "format": "prettier src/**/*.js --write && eslint src --fix",
+    "lint": "eslint src",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "scripts/install",
+    "postupgrade": "scripts/install",
+    "dev": "nodemon src/index.js"
+  },
+  "prettier": {
+    "tabWidth": 4,
+    "semi": true,
+    "printWidth": 100,
+    "singleQuote": true
+  },
   "name": "@datawrapper/api",
   "version": "1.1.4",
   "description": "This repository contains the new Node.js based API that will power the future of Datawrapper.",
   "main": "src/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "scripts/install",
-    "postupgrade": "scripts/install",
-    "dev": "nodemon index.js"
-  },
   "bin": {
     "datawrapper-api": "scripts/start",
     "datawrapper-orm-sync": "scripts/sync-db"
@@ -17,6 +37,11 @@
     "type": "git",
     "url": "git+https://github.com/datawrapper/datawrapper-api.git"
   },
+  "files": [
+    "src",
+    "scripts",
+    "config.tpl.js"
+  ],
   "author": "Datawrapper GmbH",
   "dependencies": {
     "@datawrapper/blocks": "0.0.2",
@@ -26,16 +51,23 @@
     "cookie-parser": "^1.4.3",
     "cors": "^2.8.5",
     "d3-dsv": "^1.0.10",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.15.0",
+    "eslint-plugin-node": "^8.0.1",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0",
     "express": "^4.16.4",
+    "lint-staged": "^8.1.0",
     "lodash.shuffle": "^4.2.0",
     "mysql2": "^1.6.4",
+    "prettier": "^1.16.1",
     "underscore": "^1.9.1",
     "winston": "^3.1.0"
   },
   "devDependencies": {
     "babel-eslint": "^10.0.1",
-    "eslint": "^5.10.0",
-    "husky": "^1.3.0",
+    "eslint": "^5.12.1",
+    "husky": "^1.3.1",
     "nodemon": "^1.18.7"
   },
   "bugs": {
