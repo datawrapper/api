@@ -26,7 +26,7 @@ if (fs.existsSync(pkgJSON)) {
 }
 
 // install plugins (in this package)
-const config = require('../src/config');
+const config = require(path.resolve(__dirname, '../src/config'));
 
 const packages = Object.keys(config.plugins)
     .map(name => `@datawrapper/plugin-${name}`);
