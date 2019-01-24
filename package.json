@@ -17,7 +17,7 @@
   "author": "Datawrapper GmbH",
   "dependencies": {
     "@datawrapper/blocks": "0.0.2",
-    "@datawrapper/orm": "^1.1.1",
+    "@datawrapper/orm": "^1.2.2",
     "body-parser": "^1.18.3",
     "cookie-parser": "^1.4.3",
     "cors": "^2.8.5",

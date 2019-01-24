@@ -39,7 +39,8 @@ router.get('/:prefix/:metrics?.(json|csv)', requireAdmin, async (req,res) => {
     });
 
     if (req.params[0] === 'csv') {
-        res.header('Content-Type', 'text/csv').send(csvFormat(result));
+        res.header('Content-Type', 'text/csv')
+            .send(csvFormat(result));
     } else {
         res.send(result);
     }
