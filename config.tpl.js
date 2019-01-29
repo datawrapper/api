@@ -9,7 +9,9 @@ module.exports = {
     },
 
     api: {
+        port: 18080, // internal port
         domain: 'api.datawrapper.local',
+        cors: /\.datawrapper\.de$/.test,
         https: false
     },
 
@@ -28,7 +30,7 @@ module.exports = {
         database: ''
     },
 
-    socket() {
+    socket () {
         return {
             host: 'api.datawrapper.de',
             port: 9838,
@@ -38,7 +40,7 @@ module.exports = {
                 key: fs.readFileSync('server-key.pem'),
                 ca: [fs.readFileSync('client-cert.pem')]
             }
-        }
-    },
+        };
+    }
 
-}
+};
