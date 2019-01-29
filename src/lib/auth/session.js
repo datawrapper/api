@@ -1,4 +1,4 @@
-const {Session, User} = require('@datawrapper/orm/models');
+const { Session, User } = require('@datawrapper/orm/models');
 const asyncHandler = require('../asyncHandler');
 
 module.exports = asyncHandler(async (req, res, next) => {
@@ -8,7 +8,6 @@ module.exports = asyncHandler(async (req, res, next) => {
             if (session.data['dw-user-id']) {
                 const user = await User.findByPk(session.data['dw-user-id']);
                 if (user) {
-
                     res.locals.user = user;
 
                     const plugins = await user.getPlugins();

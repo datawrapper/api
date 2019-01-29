@@ -11,10 +11,10 @@ const Plugin = require('@datawrapper/orm/models/Plugin');
 Plugin.register('datawrapper-api', Object.keys(config.plugins));
 
 // REST API
-const rest_app = require('./app');
-const port = (config.api && config.api.port ? config.api.port :
-    process.env.PORT || 3000);
+const app = require('./app');
+const port = (config.api && config.api.port ? config.api.port
+    : process.env.PORT || 3000);
 
-rest_app.listen(port, () => {
+app.listen(port, () => {
     logger.info('API server listening on port ' + port);
 });

@@ -1,14 +1,14 @@
 const requireUser = require('./requireUser');
 
-module.exports = (plugin_id) => {
+module.exports = pluginId => {
     return (req, res, next) => {
         // private plugins require authentication
         if (!res.locals.user) {
             return requireUser(req, res, next);
         }
 
-        const allowed_plugins = res.locals.plugins.map(d => d.id);
-        const allow = allowed_plugins.indexOf(plugin_id) > -1;
+        const allowedPlugins = res.locals.plugins.map(d => d.id);
+        const allow = allowedPlugins.indexOf(pluginId) > -1;
 
         if (allow) return next();
 
@@ -16,4 +16,4 @@ module.exports = (plugin_id) => {
             error: 'Your account is lacking privileges to access this endpoint.'
         });
     };
-}
+};

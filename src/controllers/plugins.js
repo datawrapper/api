@@ -10,47 +10,45 @@ const requirePlugin = require('../lib/requirePlugin');
 
 // load plugins
 for (let pid of Object.keys(config.plugins)) {
-    const [plugin_name, version] = pid.split('@');
+    const [pluginName, version] = pid.split('@');
     // load the plugin
     let plugin;
     try {
-        plugin = require(`@datawrapper/plugin-${plugin_name}`);
+        plugin = require(`@datawrapper/plugin-${pluginName}`);
     } catch (e) {
-        logger.error(`could not load the plugin ${plugin_name}. Try npm install...`);
+        logger.error(`could not load the plugin ${pluginName}. Try npm install...`);
     }
 
     if (plugin && plugin.api) {
-
-        let plugin_cfg = {};
+        let pluginConfig = {};
         try {
             // load plugin default config
-            plugin_cfg = require(`@datawrapper/plugin-${plugin_name}/config`)
+            pluginConfig = require(`@datawrapper/plugin-${pluginName}/config`);
         } catch (e) {
             // console.log('no default config');
         }
         // extend default plugin cfg with our custom config
-        Object.assign(plugin_cfg, config.plugins[pid]);
+        Object.assign(pluginConfig, config.plugins[pid]);
 
         // the plugin wants to define api routes
-        const plugin_router = getRouter();
+        const pluginRouter = getRouter();
 
         plugin.api({
-            router: plugin_router,
-            models, logger,
+            router: pluginRouter,
+            models,
+            logger,
             config: {
                 global: config,
-                plugin: plugin_cfg
+                plugin: pluginConfig
             }
         });
 
-        logger.info(`hooked in plugin ${plugin_name} (on ${version || 'master'})`);
+        logger.info(`hooked in plugin ${pluginName} (on ${version || 'master'})`);
 
-        if (plugin_cfg.open_access) {
-            router.use(`/${plugin_name}`, plugin_router);
+        if (pluginConfig.open_access) {
+            router.use(`/${pluginName}`, pluginRouter);
         } else {
-            router.use(`/${plugin_name}`,
-                requirePlugin(plugin_name),
-                plugin_router);
+            router.use(`/${pluginName}`, requirePlugin(pluginName), pluginRouter);
         }
     }
 }

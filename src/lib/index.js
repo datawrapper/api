@@ -1,4 +1,4 @@
 module.exports = {
-	requireUser: require('./requireUser'),
-	requirePlugin:  require('./requirePlugin')
-}
+    requireUser: require('./requireUser'),
+    requirePlugin: require('./requirePlugin')
+};

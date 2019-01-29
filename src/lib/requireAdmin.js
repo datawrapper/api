@@ -6,7 +6,7 @@ module.exports = (req, res, next) => {
     }
     if (!['admin', 'sysadmin'].includes(res.locals.user.role)) {
         return res.status(403).send({
-            error: 'You\'re not allowed to access this endpoint.'
+            error: "You're not allowed to access this endpoint."
         });
     }
     next();

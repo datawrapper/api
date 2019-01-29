@@ -1,4 +1,4 @@
-const {AuthToken} = require('@datawrapper/orm/models');
+const { AuthToken } = require('@datawrapper/orm/models');
 const asyncHandler = require('../asyncHandler');
 
 module.exports = asyncHandler(async (req, res, next) => {
@@ -7,7 +7,7 @@ module.exports = asyncHandler(async (req, res, next) => {
         const [type, token] = auth.split(' ');
         if (type.toLowerCase() === 'bearer') {
             if (token) {
-                const at = await AuthToken.findOne({where: {token:token.trim()}});
+                const at = await AuthToken.findOne({ where: { token: token.trim() } });
                 if (!at) return next('Authentication failed. Unknown Bearer token!');
 
                 const user = await at.getUser();
@@ -25,4 +25,4 @@ module.exports = asyncHandler(async (req, res, next) => {
     } else {
         next();
     }
-})
+});
