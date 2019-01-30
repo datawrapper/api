@@ -37,6 +37,7 @@
     "express": "^4.16.4",
     "lodash.shuffle": "^4.2.0",
     "mysql2": "^1.6.4",
+    "sequelize": "^4.42.0",
     "underscore": "^1.9.1",
     "winston": "^3.1.0"
   },
