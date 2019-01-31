@@ -13,10 +13,7 @@
     "lint": "eslint src",
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "scripts/install",
-    "postupgrade": "scripts/install",
-    "dev": "nodemon src/index.js",
-    "start": "datawrapper-api",
-    "sync": "datawrapper-orm-sync"
+    "dev": "nodemon src/index.js"
   },
   "repository": {
     "type": "git",
