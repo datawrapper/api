@@ -36,10 +36,6 @@ if (fs.existsSync(pkgJSON)) {
 
 const config = require(cfgPath);
 
-// now move back to node_modules/@datawrapper/api so we're
-// installing the plugins into the correct repo
-process.chdir(nodeModulesPkgDir);
-
 const packages = Object.keys(config.plugins)
     .map(name => `@datawrapper/plugin-${name}`);
 
