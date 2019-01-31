@@ -27,7 +27,7 @@ if (fs.existsSync(pkgJSON)) {
     pkg.scripts.sync = 'datawrapper-orm-sync';
     fs.writeFileSync(pkgJSON, JSON.stringify(pkg, null, 2));
     console.log(chalk.green('  package.json updated.'));
-    console.log(chalk`  run {yellow npm start} to start the API`);
+    console.log(chalk`  run {yellow npm run api} to start the API`);
     console.log(chalk`  run {yellow npm run sync} to synchronize the db schema\n`);
 } else {
     console.error(chalk.red('error: no package.json found'));
