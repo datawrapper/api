@@ -1,6 +1,6 @@
-# datawrapper-api
+# @datawrapper/api
 
-This repository contains the new Node.js based API that will power the future of Datawrapper.
+This repository contains the new Node.js API that is the backbone of Datawrapper 2.0.
 
 ### Installation
 
