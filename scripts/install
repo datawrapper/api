@@ -7,16 +7,21 @@ const { spawn } = require('child_process');
 const chalk = require('chalk');
 
 // see https://github.com/npm/npm/issues/16990#issuecomment-349731142
-const projectDir = process.env.INIT_CWD || path.resolve('../../', __dirname);
+function getProjectDir() {
+    if (fs.existsSync(path.resolve(process.env.INIT_CWD, 'config.js'))) {
+        return process.env.INIT_CWD;
+    } else if (fs.existsSync(path.resolve(path.resolve('../../', __dirname), 'config.js'))) {
+        return path.resolve('../../', __dirname);
+    } else {
+        console.log('skipping install because there is no config.js');
+        process.exit();
+    }
+}
+
+const projectDir = getProjectDir();
 
 // install plugins (in this package)
 const cfgPath = path.resolve(projectDir, 'config.js');
-
-if (!fs.existsSync(cfgPath)) {
-    console.log('skipping install because there is no config.js (expected in ' + cfgPath + ')');
-    process.exit();
-}
-
 const pkgJSON = path.resolve(projectDir, 'package.json');
 
 // add start script to the parent projects package.json
