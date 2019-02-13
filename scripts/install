@@ -8,9 +8,11 @@ const chalk = require('chalk');
 
 // see https://github.com/npm/npm/issues/16990#issuecomment-349731142
 function getProjectDir() {
-    if (fs.existsSync(path.resolve(process.env.INIT_CWD, 'config.js'))) {
+    if (process.env.INIT_CWD && fs.existsSync(path.resolve(process.env.INIT_CWD, 'config.js'))) {
+        console.log("using " + path.resolve(process.env.INIT_CWD, 'config.js'));
         return process.env.INIT_CWD;
     } else if (fs.existsSync(path.resolve(path.resolve('../../', __dirname), 'config.js'))) {
+        console.log("using " + path.resolve(path.resolve('../../', __dirname), 'config.js'));
         return path.resolve('../../', __dirname);
     } else {
         console.log('skipping install because there is no config.js');
