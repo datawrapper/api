@@ -9,11 +9,13 @@ ORM.init(config);
 
 // add missing tables without touching existing ones
 require('@datawrapper/orm/models');
-ORM.db.sync().then(() => {
-    console.log(chalk.green('database sync complete.\n'));
-    ORM.db.close();
-}).catch(error => {
-    console.error(error);
-    ORM.db.close();
-});
-
+ORM.db
+    .sync()
+    .then(() => {
+        console.log(chalk.green('database sync complete.\n'));
+        ORM.db.close();
+    })
+    .catch(error => {
+        console.error(error);
+        ORM.db.close();
+    });

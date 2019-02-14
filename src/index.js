@@ -12,8 +12,7 @@ Plugin.register('datawrapper-api', Object.keys(config.plugins));
 
 // REST API
 const app = require('./app');
-const port = (config.api && config.api.port ? config.api.port
-    : process.env.PORT || 3000);
+const port = config.api && config.api.port ? config.api.port : process.env.PORT || 3000;
 
 app.listen(port, () => {
     logger.info('API server listening on port ' + port);

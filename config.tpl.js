@@ -1,7 +1,6 @@
 const fs = require('fs');
 
 module.exports = {
-
     frontend: {
         https: false,
         domain: 'app.datawrapper.local',
@@ -30,7 +29,7 @@ module.exports = {
         database: ''
     },
 
-    socket () {
+    socket() {
         return {
             host: 'api.datawrapper.de',
             port: 9838,
@@ -42,5 +41,4 @@ module.exports = {
             }
         };
     }
-
 };

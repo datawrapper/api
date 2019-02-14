@@ -9,10 +9,10 @@ const chalk = require('chalk');
 // see https://github.com/npm/npm/issues/16990#issuecomment-349731142
 function getProjectDir() {
     if (process.env.INIT_CWD && fs.existsSync(path.resolve(process.env.INIT_CWD, 'config.js'))) {
-        console.log("using " + path.resolve(process.env.INIT_CWD, 'config.js'));
+        console.log('using ' + path.resolve(process.env.INIT_CWD, 'config.js'));
         return process.env.INIT_CWD;
     } else if (fs.existsSync(path.resolve(path.resolve('../../', __dirname), 'config.js'))) {
-        console.log("using " + path.resolve(path.resolve('../../', __dirname), 'config.js'));
+        console.log('using ' + path.resolve(path.resolve('../../', __dirname), 'config.js'));
         return path.resolve('../../', __dirname);
     } else {
         console.log('skipping install because there is no config.js');
@@ -43,16 +43,14 @@ if (fs.existsSync(pkgJSON)) {
 
 const config = require(cfgPath);
 
-const packages = Object.keys(config.plugins)
-    .map(name => `@datawrapper/plugin-${name}`);
+const packages = Object.keys(config.plugins).map(name => `@datawrapper/plugin-${name}`);
 
 const npm = spawn('npm', ['install', '--no-save', '--production'].concat(packages));
 
-npm.stdout.on('data', (data) => process.stdout.write(data));
-npm.stderr.on('data', (data) => process.stderr.write(data));
+npm.stdout.on('data', data => process.stdout.write(data));
+npm.stderr.on('data', data => process.stderr.write(data));
 
-npm.on('close', (code) => {
+npm.on('close', code => {
     if (code) console.warn(chalk.red(`  plugin install failed. npm exited with code ${code}`));
     console.log(packages.length ? chalk.green(`  ${packages.length} plugins installed.\n`) : '');
 });
-

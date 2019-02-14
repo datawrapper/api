@@ -25,9 +25,20 @@ To make sure the database is in sync after ORM updates, run:
 npm run sync
 ```
 
+### Local development
+
+```sh
+> git clone git@github.com:datawrapper/api.git
+> npm install
+> cp config.tpl.js config.js
+# edit config.js and enter local database location and user credentials
+> npm run dev
+# API running on some port
+```
+
 ### REST API with JSON
 
-Will serve via HTTPS on port 443, e.g. 
+Will serve via HTTPS on port 443, e.g.
 
     GET https://api.datawrapper.de/v3/charts/12345
     PUT https://api.datawrapper.de/v3/charts/12345/datae
@@ -35,4 +46,3 @@ Will serve via HTTPS on port 443, e.g.
 Will be used by our own web app as well as third-party apps maintained by our customers.
 
 For a while we also need to support the old API endpoint via https://api.datawrapper.de/v2/ and https://api.datawrapper.de/ which will be proxied to the PHP app. Eventually the old endpoints will be retired and replaced with v3 versions.
-
