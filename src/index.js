@@ -1,19 +1,62 @@
-/* globals process */
-const logger = require('./lib/logger');
-const ORM = require('@datawrapper/orm');
-const config = require('./config');
+const Hapi = require('hapi');
+const AuthBearer = require('hapi-auth-bearer-token');
 
-// initialize database
+const ORM = require('@datawrapper/orm');
+const config = require('../config');
+
 ORM.init(config);
 
-// register api plugins with core db
-const Plugin = require('@datawrapper/orm/models/Plugin');
-Plugin.register('datawrapper-api', Object.keys(config.plugins));
+const AuthCookie = require('./auth/cookieAuth');
+const bearerValidation = require('./auth/bearerValidation');
+const cookieValidation = require('./auth/cookieValidation');
 
-// REST API
-const app = require('./app');
-const port = config.api && config.api.port ? config.api.port : process.env.PORT || 3000;
-
-app.listen(port, () => {
-    logger.info('API server listening on port ' + port);
+const server = Hapi.server({
+    port: 3000,
+    host: 'localhost'
 });
+
+async function init() {
+    await server.register({
+        plugin: require('hapi-pino'),
+        options: {
+            prettyPrint: process.env.DEV,
+            logEvents: ['request', 'onPostStart']
+        }
+    });
+
+    await server.register([AuthCookie, AuthBearer]);
+
+    server.auth.strategy('simple', 'bearer-access-token', {
+        validate: bearerValidation
+    });
+
+    server.auth.strategy('session', 'cookie-auth', {
+        validate: cookieValidation
+    });
+
+    server.auth.default('simple');
+
+    server.route({
+        method: 'GET',
+        path: '/',
+        config: {
+            auth: {
+                strategies: ['session', 'simple']
+            }
+        },
+        handler: (request, h) => {
+            return {
+                info: 'successful authentication'
+            };
+        }
+    });
+
+    await server.start();
+}
+
+process.on('unhandledRejection', err => {
+    console.error(err);
+    process.exit(1);
+});
+
+init();
