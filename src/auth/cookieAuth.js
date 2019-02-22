@@ -15,17 +15,23 @@ internals.implementation = (server, options) => {
     const opts = { ...internals.defaults, ...options };
     Joi.assert(opts, internals.schema);
 
+    server.state(opts.cookie, {
+        ttl: 1000 * 3600 * 24 * 365, // 1000ms = 1s -> 3600s = 1h -> 24h = 1d -> 365d = 1y
+        strictHeader: true
+    });
+
     const scheme = {
         authenticate: async (request, h) => {
-            const session = request.state['DW-SESSION'];
+            const session = request.state[opts.cookie];
 
             const {
                 isValid,
                 credentials,
-                message = Boom.unauthorized(null, 'session')
+                message = Boom.unauthorized(null, 'Session')
             } = await opts.validate(request, session, h);
 
             if (isValid) {
+                h.state(opts.cookie, session);
                 return h.authenticated({ credentials });
             }
 

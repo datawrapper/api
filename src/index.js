@@ -1,5 +1,8 @@
 const Hapi = require('hapi');
 const AuthBearer = require('hapi-auth-bearer-token');
+const HapiSwagger = require('hapi-swagger');
+
+const pkg = require('../package.json');
 
 const ORM = require('@datawrapper/orm');
 const config = require('../config');
@@ -9,6 +12,26 @@ ORM.init(config);
 const AuthCookie = require('./auth/cookieAuth');
 const bearerValidation = require('./auth/bearerValidation');
 const cookieValidation = require('./auth/cookieValidation');
+
+const Routes = require('./routes');
+
+const OpenAPI = {
+    plugin: HapiSwagger,
+    options: {
+        info: {
+            title: 'Datawrapper API v3 Documentation',
+            version: pkg.version,
+            'x-info': process.env.DEV
+                ? {
+                      node: process.version,
+                      hapi: pkg.dependencies.hapi
+                  }
+                : undefined
+        },
+        documentationPage: false,
+        swaggerUI: false
+    }
+};
 
 const server = Hapi.server({
     port: 3000,
@@ -36,20 +59,7 @@ async function init() {
 
     server.auth.default('simple');
 
-    server.route({
-        method: 'GET',
-        path: '/',
-        config: {
-            auth: {
-                strategies: ['session', 'simple']
-            }
-        },
-        handler: (request, h) => {
-            return {
-                info: 'successful authentication'
-            };
-        }
-    });
+    await server.register([OpenAPI, Routes]);
 
     await server.start();
 }
