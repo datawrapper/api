@@ -1,5 +1,6 @@
 const Joi = require('joi');
 const { getAllUsers, getUser, editUser, createUser } = require('./admin-users');
+const { login, logout } = require('./auth');
 
 const routes = {
     pkg: require('../../package.json'),
@@ -12,6 +13,36 @@ const routes = {
                 auth: false
             },
             handler: (request, h) => h.redirect('/swagger.json')
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/auth/login',
+            config: {
+                tags: ['api'],
+                auth: false,
+                validate: {
+                    payload: {
+                        email: Joi.string()
+                            .email()
+                            .required(),
+                        password: Joi.string()
+                            .min(8)
+                            .required()
+                    }
+                }
+            },
+            handler: login
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/auth/logout',
+            config: {
+                tags: ['api'],
+                auth: 'session'
+            },
+            handler: logout
         });
 
         server.route({
@@ -45,6 +76,7 @@ const routes = {
             method: 'GET',
             path: '/admin/users/{id}',
             config: {
+                tags: process.env.DEV ? ['api'] : undefined,
                 auth: {
                     strategies: ['session', 'simple']
                 },
@@ -61,6 +93,7 @@ const routes = {
             method: 'PUT',
             path: '/admin/users/{id}',
             config: {
+                tags: process.env.DEV ? ['api'] : undefined,
                 auth: {
                     strategies: ['session', 'simple']
                 },
@@ -90,6 +123,7 @@ const routes = {
             method: 'POST',
             path: '/admin/users',
             config: {
+                tags: process.env.DEV ? ['api'] : undefined,
                 auth: {
                     strategies: ['session', 'simple']
                 },
