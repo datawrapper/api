@@ -59,6 +59,7 @@
     ],
     "dependencies": {
         "@datawrapper/orm": "2.0.0",
+        "bcrypt": "3.0.4",
         "boom": "7.3.0",
         "hapi": "18.1.0",
         "hapi-auth-bearer-token": "6.1.1",
@@ -67,6 +68,7 @@
         "hapi-swagger": "9.3.1",
         "humps": "2.0.1",
         "joi": "14.3.1",
+        "nanoid": "2.0.1",
         "sequelize": "4.42.0"
     },
     "devDependencies": {

@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const { getAllUsers, getUser, editUser } = require('./admin-users');
+const { getAllUsers, getUser, editUser, createUser } = require('./admin-users');
 
 const routes = {
     pkg: require('../../package.json'),
@@ -84,6 +84,34 @@ const routes = {
                 }
             },
             handler: editUser
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/admin/users',
+            config: {
+                auth: {
+                    strategies: ['session', 'simple']
+                },
+                validate: {
+                    payload: {
+                        name: Joi.string(),
+                        email: Joi.string()
+                            .email()
+                            .required(),
+                        role: Joi.string().valid([
+                            'admin',
+                            'editor',
+                            'pending',
+                            'guest',
+                            'sysadmin',
+                            'graphic-editor'
+                        ]),
+                        language: Joi.string()
+                    }
+                }
+            },
+            handler: createUser
         });
     }
 };

@@ -1,4 +1,6 @@
 const sequelize = require('sequelize');
+const nanoid = require('nanoid');
+const bcrypt = require('bcrypt');
 const { decamelize, camelizeKeys } = require('humps');
 const { User, Chart } = require('@datawrapper/orm/models');
 
@@ -59,8 +61,23 @@ async function editUser(request, h) {
     };
 }
 
+async function createUser(request, h) {
+    const password = await bcrypt.hash(nanoid(), 14);
+
+    const newUser = {
+        role: 'pending',
+        ...request.payload,
+        pwd: password
+    };
+
+    const userModel = await User.create(newUser);
+    const { pwd, ...user } = userModel.dataValues;
+    return h.response(user).code(201);
+}
+
 module.exports = {
     getAllUsers,
     getUser,
-    editUser
+    editUser,
+    createUser
 };
