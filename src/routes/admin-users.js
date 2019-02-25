@@ -4,6 +4,9 @@ const bcrypt = require('bcrypt');
 const { decamelize, camelizeKeys } = require('humps');
 const { User, Chart } = require('@datawrapper/orm/models');
 
+User.hasMany(Chart, { foreignKey: 'author_id' });
+Chart.belongsTo(User, { foreignKey: 'author_id' });
+
 const { Op } = sequelize;
 const attributes = ['id', 'email', 'name', 'role', 'language', 'created_at'];
 
@@ -13,6 +16,12 @@ async function getAllUsers(request, h) {
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
         attributes,
+        include: [
+            {
+                model: Chart,
+                attributes: ['id']
+            }
+        ],
         limit: query.limit,
         offset: query.offset
     };
@@ -25,25 +34,32 @@ async function getAllUsers(request, h) {
         };
     }
 
-    const { count, rows } = await User.findAndCountAll(options);
+    const [users, count] = await Promise.all([
+        User.findAll(options),
+        User.count({ where: options.where })
+    ]);
 
     return {
-        list: rows.map(({ dataValues }) => camelizeKeys(dataValues)),
+        list: users.map(({ dataValues }) => {
+            const { charts, ...data } = dataValues;
+            return camelizeKeys({ ...data, chartCount: charts.length });
+        }),
         total: count
     };
 }
 
 async function getUser(request, h) {
     const userId = request.params.id;
-    const [user, chartCount] = await Promise.all([
-        User.findByPk(userId, { attributes }),
-        Chart.count({ where: { author_id: userId } })
-    ]);
+    const { dataValues } = await User.findByPk(userId, {
+        attributes,
+        include: [{ model: Chart, attributes: ['id'] }]
+    });
 
-    return {
-        ...camelizeKeys(user.dataValues),
-        chartCount
-    };
+    const { charts, ...data } = dataValues;
+    return camelizeKeys({
+        ...data,
+        chartCount: charts.length
+    });
 }
 
 async function editUser(request, h) {
