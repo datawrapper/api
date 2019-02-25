@@ -36,7 +36,14 @@ const OpenAPI = {
 
 const server = Hapi.server({
     port: 3000,
-    host: 'localhost'
+    host: 'localhost',
+    router: { stripTrailingSlash: true },
+    routes: {
+        cors: {
+            origin: ['*'],
+            credentials: true
+        }
+    }
 });
 
 async function init() {
