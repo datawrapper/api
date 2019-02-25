@@ -10,6 +10,7 @@ const config = require('../config');
 ORM.init(config);
 
 const AuthCookie = require('./auth/cookieAuth');
+const AuthAdmin = require('./auth/adminAuth');
 const bearerValidation = require('./auth/bearerValidation');
 const cookieValidation = require('./auth/cookieValidation');
 
@@ -47,7 +48,7 @@ async function init() {
         }
     });
 
-    await server.register([AuthCookie, AuthBearer]);
+    await server.register([AuthCookie, AuthBearer, AuthAdmin]);
 
     server.auth.strategy('simple', 'bearer-access-token', {
         validate: bearerValidation
@@ -56,6 +57,8 @@ async function init() {
     server.auth.strategy('session', 'cookie-auth', {
         validate: cookieValidation
     });
+
+    server.auth.strategy('admin', 'admin-auth');
 
     server.auth.default('simple');
 

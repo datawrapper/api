@@ -27,12 +27,13 @@ internals.implementation = (server, options) => {
             const {
                 isValid,
                 credentials,
+                artifacts,
                 message = Boom.unauthorized(null, 'Session')
             } = await opts.validate(request, session, h);
 
             if (isValid) {
                 h.state(opts.cookie, session);
-                return h.authenticated({ credentials });
+                return h.authenticated({ credentials, artifacts });
             }
 
             return message;

@@ -50,7 +50,7 @@ const routes = {
             path: '/admin/users',
             config: {
                 auth: {
-                    strategies: ['session', 'simple']
+                    strategies: ['admin']
                 },
                 validate: {
                     query: {
@@ -78,7 +78,7 @@ const routes = {
             config: {
                 tags: process.env.DEV ? ['api'] : undefined,
                 auth: {
-                    strategies: ['session', 'simple']
+                    strategies: ['admin']
                 },
                 validate: {
                     params: {
@@ -95,7 +95,7 @@ const routes = {
             config: {
                 tags: process.env.DEV ? ['api'] : undefined,
                 auth: {
-                    strategies: ['session', 'simple']
+                    strategies: ['admin']
                 },
                 validate: {
                     params: {
@@ -125,7 +125,7 @@ const routes = {
             config: {
                 tags: process.env.DEV ? ['api'] : undefined,
                 auth: {
-                    strategies: ['session', 'simple']
+                    strategies: ['admin']
                 },
                 validate: {
                     payload: {
