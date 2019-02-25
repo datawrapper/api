@@ -49,6 +49,7 @@ const routes = {
             method: 'GET',
             path: '/admin/users',
             config: {
+                tags: process.env.DEV ? ['api'] : undefined,
                 auth: {
                     strategies: ['admin']
                 },
