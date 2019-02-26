@@ -15,7 +15,7 @@
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.{js,html}' && healthier '**/*.{js,html}'",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "nodemon src/index.js"
+        "dev": "DEV=true nodemon src/index.js"
     },
     "prettier": {
         "tabWidth": 4,
