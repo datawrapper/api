@@ -3,6 +3,7 @@ const router = express.Router();
 
 const getRouter = require('../lib/getRouter');
 const config = require('../config');
+const hooks = require('../hooks');
 const logger = require('../lib/logger');
 const models = require('@datawrapper/orm/models');
 
@@ -37,6 +38,7 @@ for (let pid of Object.keys(config.plugins)) {
             router: pluginRouter,
             models,
             logger,
+            hooks,
             config: {
                 global: config,
                 plugin: pluginConfig
