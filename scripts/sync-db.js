@@ -1,6 +1,8 @@
+#! /usr/bin/env node
 /* eslint no-console: "off" */
+const path = require('path');
 const ORM = require('@datawrapper/orm');
-const config = require('../config');
+const config = require(path.join(process.cwd(), 'config'));
 
 ORM.init(config);
 

@@ -15,7 +15,9 @@
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.{js,html}' && healthier '**/*.{js,html}'",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "DEV=true nodemon src/index.js"
+        "dev": "DEV=true nodemon src/index.js",
+        "postinstall": "node scripts/postinstall.js",
+        "start": "dw-api"
     },
     "prettier": {
         "tabWidth": 4,
@@ -49,6 +51,10 @@
     "author": "Datawrapper GmbH",
     "description": "This repository contains the new Node.js based API that will power the future of Datawrapper.",
     "main": "src/index.js",
+    "bin": {
+        "dw-api": "src/index.js",
+        "dw-sync": "scripts/sync-db.js"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
