@@ -2,6 +2,9 @@
 const logger = require('./lib/logger');
 const ORM = require('@datawrapper/orm');
 const config = require('./config');
+const { version } = require('../package.json');
+
+logger.info(`starting @datawrapper/api v${version}`);
 
 // initialize database
 ORM.init(config);
