@@ -60,16 +60,10 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "license": "MIT",
-    "author": "Datawrapper GmbH",
     "files": [
         "src",
         "config.tpl.js"
     ],
-    "main": "src/index.js",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/datawrapper/datawrapper-api.git"
-    },
     "dependencies": {
         "@datawrapper/orm": "2.0.0",
         "bcrypt": "3.0.4",
