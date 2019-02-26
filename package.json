@@ -49,6 +49,10 @@
     "author": "Datawrapper GmbH",
     "description": "This repository contains the new Node.js based API that will power the future of Datawrapper.",
     "main": "src/index.js",
+    "bin": {
+        "dw-api": "src/index.js",
+        "dw-sync": "scripts/sync-db.js"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"

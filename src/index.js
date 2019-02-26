@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+const path = require('path');
 const Hapi = require('hapi');
 const AuthBearer = require('hapi-auth-bearer-token');
 const HapiSwagger = require('hapi-swagger');
@@ -5,7 +7,7 @@ const HapiSwagger = require('hapi-swagger');
 const pkg = require('../package.json');
 
 const ORM = require('@datawrapper/orm');
-const config = require('../config');
+const config = require(path.join(process.cwd(), 'config'));
 
 ORM.init(config);
 
