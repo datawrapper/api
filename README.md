@@ -41,7 +41,7 @@ npm run sync
 Will serve via HTTPS on port 443, e.g.
 
     GET https://api.datawrapper.de/v3/charts/12345
-    PUT https://api.datawrapper.de/v3/charts/12345/datae
+    PUT https://api.datawrapper.de/v3/charts/12345/data
 
 Will be used by our own web app as well as third-party apps maintained by our customers.
 
