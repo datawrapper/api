@@ -12,8 +12,7 @@ const globby = require('globby');
 
 async function loadPlugins() {
     const paths = await globby('plugins/**/index.js');
-
-    return paths.map(p => require(path.join(__dirname, '..', p)));
+    return paths.map(p => require(path.join(process.cwd(), p)));
 }
 
 module.exports = {
