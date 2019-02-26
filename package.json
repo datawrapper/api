@@ -47,7 +47,7 @@
         }
     },
     "name": "@datawrapper/api",
-    "version": "1.2.8",
+    "version": "2.0.0-alpha.1",
     "author": "Datawrapper GmbH",
     "description": "This repository contains the new Node.js based API that will power the future of Datawrapper.",
     "main": "src/index.js",
