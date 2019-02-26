@@ -11,7 +11,7 @@ const requirePlugin = require('../lib/requirePlugin');
 
 // load plugins
 for (let pid of Object.keys(config.plugins)) {
-    const [pluginName, version] = pid.split('@');
+    const pluginName = pid.split('@')[0];
     // load the plugin
     let plugin;
     try {
@@ -45,7 +45,9 @@ for (let pid of Object.keys(config.plugins)) {
             }
         });
 
-        logger.info(`hooked in plugin ${pluginName} (on ${version || 'master'})`);
+        const { version } = require(`@datawrapper/plugin-${pluginName}/package.json`);
+
+        logger.info(`hooked in plugin ${pluginName} (on v${version || 'latest'})`);
 
         if (pluginConfig.open_access) {
             router.use(`/${pluginName}`, pluginRouter);
