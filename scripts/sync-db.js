@@ -9,7 +9,7 @@ require('@datawrapper/orm/models');
 ORM.db
     .sync()
     .then(() => {
-        console.log('database sync complete.\n');
+        console.log('🎉 Database sync complete.\n');
         ORM.db.close();
     })
     .catch(error => {
