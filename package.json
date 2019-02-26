@@ -30,7 +30,7 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/orm": "^2.0.0",
+        "@datawrapper/orm": "^2.0.2",
         "body-parser": "^1.18.3",
         "chalk": "^2.4.2",
         "cookie-parser": "^1.4.3",
