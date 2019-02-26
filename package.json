@@ -61,6 +61,7 @@
     },
     "files": [
         "src",
+        "scripts",
         "config.tpl.js"
     ],
     "dependencies": {
