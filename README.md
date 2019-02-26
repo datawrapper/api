@@ -16,7 +16,7 @@ npm install @datawrapper/api
 Then you can start the server using:
 
 ```sh
-npm run apicore
+npm run api
 ```
 
 To make sure the database is in sync after ORM updates, run:
