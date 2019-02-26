@@ -10,13 +10,13 @@ router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
 
 if (config.api.cors) {
-    logger.info('allowing CORS requests');
-    router.use(
-        cors({
-            credentials: true,
-            origin: config.api.cors
-        })
-    );
+	logger.info('allowing CORS requests');
+	router.use(
+		cors({
+			credentials: true,
+			origin: config.api.cors
+		})
+	);
 }
 
 // v3 supports authentication via Bearer
