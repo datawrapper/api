@@ -14,6 +14,8 @@ const AuthAdmin = require('./auth/adminAuth');
 const bearerValidation = require('./auth/bearerValidation');
 const cookieValidation = require('./auth/cookieValidation');
 
+const LoadPlugins = require('./plugin-loader');
+
 const Routes = require('./routes');
 
 const OpenAPI = {
@@ -35,8 +37,8 @@ const OpenAPI = {
 };
 
 const server = Hapi.server({
-    port: 3000,
-    host: 'localhost',
+    port: config.port,
+    host: config.host,
     router: { stripTrailingSlash: true },
     routes: {
         cors: {
@@ -69,7 +71,7 @@ async function init() {
 
     server.auth.default('simple');
 
-    await server.register([OpenAPI, Routes]);
+    await server.register([OpenAPI, Routes, LoadPlugins]);
 
     await server.start();
 }

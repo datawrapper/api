@@ -2,3 +2,4 @@ node_modules
 config.js
 !src/config.js
 *.pem
+plugins
