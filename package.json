@@ -1,68 +1,34 @@
 {
-    "husky": {
-        "hooks": {
-            "pre-commit": "lint-staged"
-        }
-    },
-    "lint-staged": {
-        "*.js": [
-            "prettier --write",
-            "healthier",
-            "git add"
-        ]
-    },
-    "scripts": {
-        "format": "prettier '**/*.js' --write",
-        "lint": "prettier --check '**/*.{js,html}' && healthier '**/*.{js,html}'",
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "nodemon src/index.js",
-        "postinstall": "node scripts/install.js"
-    },
-    "prettier": {
-        "tabWidth": 4,
-        "semi": true,
-        "printWidth": 100,
-        "singleQuote": true
-    },
-    "eslintConfig": {
-        "parser": "babel-eslint",
-        "rules": {
-            "no-console": [
-                "error",
-                {
-                    "allow": [
-                        "warn",
-                        "error"
-                    ]
-                }
-            ],
-            "camelcase": [
-                "warn",
-                {
-                    "ignoreDestructuring": true,
-                    "properties": "never"
-                }
-            ]
-        }
-    },
     "name": "@datawrapper/api",
     "version": "1.2.8",
-    "author": "Datawrapper GmbH",
     "description": "This repository contains the new Node.js based API that will power the future of Datawrapper.",
-    "main": "src/index.js",
-    "bin": {
-        "datawrapper-api": "scripts/start.js",
-        "datawrapper-orm-sync": "scripts/sync-db.js"
+    "homepage": "https://github.com/datawrapper/datawrapper-api#readme",
+    "bugs": {
+        "url": "https://github.com/datawrapper/datawrapper-api/issues"
     },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/datawrapper/datawrapper-api.git"
-    },
+    "license": "MIT",
+    "author": "Datawrapper GmbH",
     "files": [
         "src",
         "scripts",
         "config.tpl.js"
     ],
+    "main": "src/index.js",
+    "bin": {
+        "datawrapper-api": "scripts/start.js",
+        "datawrapper-orm-sync": "scripts/sync-db.js"
+    },
+    "scripts": {
+        "format": "prettier 'src/**/*.js' --write",
+        "lint": "prettier --check 'src/**/*.{js,html}' && healthier 'src/**/*.{js,html}'",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "nodemon src/index.js",
+        "postinstall": "node scripts/install.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/datawrapper/datawrapper-api.git"
+    },
     "dependencies": {
         "@datawrapper/orm": "^2.0.0",
         "body-parser": "^1.18.3",
@@ -85,9 +51,43 @@
         "nodemon": "^1.18.7",
         "prettier": "^1.16.4"
     },
-    "bugs": {
-        "url": "https://github.com/datawrapper/datawrapper-api/issues"
+    "prettier": {
+        "tabWidth": 4,
+        "semi": true,
+        "printWidth": 100,
+        "singleQuote": true
     },
-    "homepage": "https://github.com/datawrapper/datawrapper-api#readme",
-    "license": "MIT"
+    "lint-staged": {
+        "*.js": [
+            "prettier --write",
+            "healthier",
+            "git add"
+        ]
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "lint-staged"
+        }
+    },
+    "eslintConfig": {
+        "parser": "babel-eslint",
+        "rules": {
+            "no-console": [
+                "error",
+                {
+                    "allow": [
+                        "warn",
+                        "error"
+                    ]
+                }
+            ],
+            "camelcase": [
+                "warn",
+                {
+                    "ignoreDestructuring": true,
+                    "properties": "never"
+                }
+            ]
+        }
+    }
 }
