@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const { getAllUsers, getUser, editUser, createUser } = require('./admin-users');
+const { getAllUsers, getUser, editUser, createUser } = require('./users');
 const { login, logout } = require('./auth');
 
 const routes = {
@@ -47,9 +47,9 @@ const routes = {
 
         server.route({
             method: 'GET',
-            path: '/admin/users',
+            path: '/users',
             config: {
-                tags: process.env.DEV ? ['api'] : undefined,
+                tags: ['api'],
                 auth: {
                     strategies: ['admin']
                 },
@@ -75,9 +75,9 @@ const routes = {
 
         server.route({
             method: 'GET',
-            path: '/admin/users/{id}',
+            path: '/users/{id}',
             config: {
-                tags: process.env.DEV ? ['api'] : undefined,
+                tags: ['api'],
                 auth: {
                     strategies: ['admin']
                 },
@@ -91,10 +91,10 @@ const routes = {
         });
 
         server.route({
-            method: 'PUT',
-            path: '/admin/users/{id}',
+            method: 'PATCH',
+            path: '/users/{id}',
             config: {
-                tags: process.env.DEV ? ['api'] : undefined,
+                tags: ['api'],
                 auth: {
                     strategies: ['admin']
                 },
@@ -122,9 +122,9 @@ const routes = {
 
         server.route({
             method: 'POST',
-            path: '/admin/users',
+            path: '/users',
             config: {
-                tags: process.env.DEV ? ['api'] : undefined,
+                tags: ['api'],
                 auth: {
                     strategies: ['admin']
                 },
