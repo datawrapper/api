@@ -22,18 +22,17 @@
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "DEV=true nodemon src/index.js",
-        "postinstall": "node scripts/postinstall.js"
+        "dev": "DEV=true nodemon src/index.js"
     },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/orm": "2.0.0",
+        "@datawrapper/orm": "2.0.3",
         "bcrypt": "3.0.4",
         "boom": "7.3.0",
-        "globby": "9.0.0",
+        "globby": "9.1.0",
         "hapi": "18.1.0",
         "hapi-auth-bearer-token": "6.1.1",
         "hapi-auth-cookie": "9.1.0",
@@ -42,13 +41,13 @@
         "humps": "2.0.1",
         "joi": "14.3.1",
         "nanoid": "2.0.1",
-        "sequelize": "4.42.0"
+        "sequelize": "4.43.0"
     },
     "devDependencies": {
         "babel-eslint": "^10.0.1",
         "healthier": "^2.0.0",
         "husky": "^1.3.1",
-        "lint-staged": "^8.1.4",
+        "lint-staged": "^8.1.5",
         "nodemon": "^1.18.7",
         "prettier": "^1.16.4"
     },
