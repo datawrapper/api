@@ -28,7 +28,7 @@ async function main() {
 
    https://github.com/datawrapper/api#installation
 `);
-        process.exit();
+        process.exit(1);
     }
 
     const { plugins } = require(configPath);
@@ -48,7 +48,7 @@ async function main() {
     npm.on('close', code => {
         if (code) console.log(`Something went wrong. Code: ${code}`);
 
-        const rebuild = spawn('npm', ['rebuild', '--update-binary']);
+        const rebuild = spawn('npm', ['rebuild', '--build-from-source']);
 
         rebuild.stdout.on('data', data => process.stdout.write(data));
         rebuild.stderr.on('data', data => process.stderr.write(data));
