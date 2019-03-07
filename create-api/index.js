@@ -13,9 +13,6 @@ const pkg = {
     scripts: {
         start: 'dw-api',
         sync: 'dw-sync'
-    },
-    dependencies: {
-        '@datawrapper/api': '2.0.0-alpha.3'
     }
 };
 
@@ -40,7 +37,10 @@ async function main() {
         encoding: 'utf-8'
     });
 
-    const npm = spawn('npm', ['install', '-SE', '--production'].concat(plugins));
+    const npm = spawn(
+        'npm',
+        ['install', '-SE', '--production', '@datawrapper/api@2.0.0-alpha.3'].concat(plugins)
+    );
 
     npm.stdout.on('data', data => process.stdout.write(data));
     npm.stderr.on('data', data => process.stderr.write(data));
