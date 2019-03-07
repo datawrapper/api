@@ -45,16 +45,6 @@ async function main() {
 
     npm.stdout.on('data', data => process.stdout.write(data));
     npm.stderr.on('data', data => process.stderr.write(data));
-
-    npm.on('close', code => {
-        if (code) console.log(`Something went wrong. Code: ${code}`);
-
-        console.log('[npm] Rebuild packages.');
-        const rebuild = spawn('npm', ['rebuild', '--build-from-source']);
-
-        rebuild.stdout.on('data', data => process.stdout.write(data));
-        rebuild.stderr.on('data', data => process.stderr.write(data));
-    });
 }
 
 main();
