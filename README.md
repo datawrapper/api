@@ -9,8 +9,7 @@ This repository contains the new Node.js API that is the backbone of Datawrapper
 mkdir /path/to/datawrapper-api
 cp /my/secret/config.js .
 # install the API
-npm init -y
-npm install @datawrapper/api
+npm init @datawrapper/api
 ```
 
 Then you can start the server using:
