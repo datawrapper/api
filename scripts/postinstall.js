@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const pkgPath = path.join(process.cwd(), 'package.json');
+const CWD = process.env.INIT_CWD || process.cwd();
+
+const pkgPath = path.join(CWD, 'package.json');
 const pkg = require(pkgPath);
 
 pkg.scripts['start'] = 'dw-api';
