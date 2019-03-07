@@ -22,8 +22,7 @@
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "DEV=true nodemon src/index.js",
-        "postinstall": "node scripts/postinstall.js"
+        "dev": "DEV=true nodemon src/index.js"
     },
     "repository": {
         "type": "git",
