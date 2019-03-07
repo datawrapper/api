@@ -3,6 +3,7 @@
     "version": "1.0.0-alpha.2",
     "description": "Scaffolding tool to create a Datawrapper API",
     "main": "index.js",
+    "bin": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
     },
