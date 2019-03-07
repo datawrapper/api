@@ -5,11 +5,13 @@ This repository contains the new Node.js API that is the backbone of Datawrapper
 ### Installation
 
 ```sh
-# create folder and copy config.js
-mkdir /path/to/datawrapper-api
-cp /my/secret/config.js .
-# install the API
-npm init @datawrapper/api
+# Create an empty folder where you want the API to initialize
+> mkdir new-api
+> cd new-api
+# Copy config (not needed if `config.js` is anywhere up in the tree from `new-api/`)
+> cp ./secret/config.js config.js
+# Initialize API with npm
+> npm init @datawrapper/api
 ```
 
 Then you can start the server using:
