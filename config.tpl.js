@@ -2,6 +2,7 @@ module.exports = {
     api: {
         port: 3000,
         domain: '<domain>',
+        sid: 'DW-SESSION',
         https: false,
         /**
          * This key is deprecated and only used for legacy hash comparison.
