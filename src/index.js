@@ -55,7 +55,8 @@ async function init() {
         plugin: require('hapi-pino'),
         options: {
             prettyPrint: process.env.DEV,
-            logEvents: ['request', 'onPostStart']
+            logEvents: ['request', 'response', 'onPostStart', 'onPostStop'],
+            redact: ['req.headers.authorization']
         }
     });
 
