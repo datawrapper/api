@@ -1,6 +1,9 @@
 module.exports = {
-    port: 3000,
-    host: 'localhost',
+    api: {
+        port: 3000,
+        domain: '<domain>',
+        https: false
+    },
     db: {
         dialect: 'mysql',
         host: '<host>',
