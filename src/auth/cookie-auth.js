@@ -2,8 +2,10 @@ const Boom = require('boom');
 const Joi = require('joi');
 const internals = {};
 
+const { api } = require('../../config');
+
 internals.defaults = {
-    cookie: 'DW-SESSION'
+    cookie: api.sid
 };
 
 internals.schema = Joi.object().keys({

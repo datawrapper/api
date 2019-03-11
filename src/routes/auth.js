@@ -101,22 +101,25 @@ async function login(request, h) {
 
     const session = await Session.create({
         id: nanoid(),
-        data: { 'dw-user-id': user.id }
+        data: {
+            'dw-user-id': user.id,
+            persistent: true
+        }
     });
 
     return h
         .response({
-            'DW-SESSION': session.id
+            [config.api.sid]: session.id
         })
-        .state('DW-SESSION', session.id);
+        .state(config.api.sid, session.id);
 }
 
 async function logout(request, h) {
-    const session = await Session.findByPk(request.state['DW-SESSION'], { attributes: ['id'] });
+    const session = await Session.findByPk(request.state[config.api.sid], { attributes: ['id'] });
     await session.destroy();
     return h
         .response()
         .code(205)
-        .unstate('DW-SESSION')
+        .unstate(config.api.sid)
         .header('Clear-Site-Data', '"cookies", "storage", "executionContexts"');
 }
