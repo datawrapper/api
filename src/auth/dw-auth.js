@@ -1,6 +1,6 @@
 const Boom = require('boom');
 const AuthBearer = require('hapi-auth-bearer-token');
-const AuthCookie = require('./cookieAuth');
+const AuthCookie = require('./cookie-auth');
 
 const { AuthToken, Session, User } = require('@datawrapper/orm/models');
 
