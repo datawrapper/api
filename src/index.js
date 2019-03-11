@@ -78,6 +78,14 @@ async function init() {
 
     await server.register([OpenAPI, Routes, LoadPlugins], { routes: { prefix: '/v3' } });
 
+    server.ext('onRequest', (request, h) => {
+        const { pathname } = request.url;
+        if (pathname.startsWith('/3')) {
+            request.setUrl(pathname.replace('/3', '/v3'));
+        }
+        return h.continue;
+    });
+
     await server.start();
 }
 
