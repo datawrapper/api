@@ -1,13 +1,14 @@
 #! /usr/bin/env node
-const path = require('path');
 const Hapi = require('hapi');
 const AuthBearer = require('hapi-auth-bearer-token');
 const HapiSwagger = require('hapi-swagger');
+const findUp = require('find-up');
+const ORM = require('@datawrapper/orm');
 
 const pkg = require('../package.json');
 
-const ORM = require('@datawrapper/orm');
-const config = require(path.join(process.cwd(), 'config'));
+const configPath = findUp.sync('config.js');
+const config = require(configPath);
 
 ORM.init(config);
 
@@ -41,8 +42,9 @@ const OpenAPI = {
 };
 
 const server = Hapi.server({
-    port: config.port || 3000,
-    host: config.host,
+    port: config.api.port || 3000,
+    host: config.api.domain,
+    tls: config.api.https,
     router: { stripTrailingSlash: true },
     routes: {
         cors: {
