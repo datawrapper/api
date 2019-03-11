@@ -60,7 +60,7 @@ async function init() {
         }
     });
 
-    await server.register([DWAuth]);
+    await server.register(DWAuth);
 
     server.auth.strategy('simple', 'dw-auth');
 

@@ -1,14 +1,110 @@
+const Joi = require('joi');
 const sequelize = require('sequelize');
 const nanoid = require('nanoid');
 const bcrypt = require('bcrypt');
 const { decamelize, camelizeKeys } = require('humps');
 const { User, Chart } = require('@datawrapper/orm/models');
 
-User.hasMany(Chart, { foreignKey: 'author_id' });
-Chart.belongsTo(User, { foreignKey: 'author_id' });
-
 const { Op } = sequelize;
 const attributes = ['id', 'email', 'name', 'role', 'language', 'created_at'];
+
+module.exports = {
+    name: 'users-routes',
+    version: '1.0.0',
+    register: (server, options) => {
+        server.route({
+            method: 'GET',
+            path: '/',
+            config: {
+                tags: ['api'],
+                validate: {
+                    query: {
+                        search: Joi.string(),
+                        order: Joi.string()
+                            .uppercase()
+                            .valid(['ASC', 'DESC'])
+                            .default('ASC'),
+                        orderBy: Joi.string()
+                            .valid(['id', 'email', 'name', 'createdAt'])
+                            .default('id'),
+                        limit: Joi.number()
+                            .integer()
+                            .default(100),
+                        offset: Joi.number().integer()
+                    }
+                }
+            },
+            handler: getAllUsers
+        });
+
+        server.route({
+            method: 'GET',
+            path: '/{id}',
+            config: {
+                tags: ['api'],
+                validate: {
+                    params: {
+                        id: Joi.number().required()
+                    }
+                }
+            },
+            handler: getUser
+        });
+
+        server.route({
+            method: 'PATCH',
+            path: '/{id}',
+            config: {
+                tags: ['api'],
+                validate: {
+                    params: {
+                        id: Joi.number().required()
+                    },
+                    payload: {
+                        name: Joi.string(),
+                        email: Joi.string().email(),
+                        role: Joi.string().valid([
+                            'admin',
+                            'editor',
+                            'pending',
+                            'guest',
+                            'sysadmin',
+                            'graphic-editor'
+                        ]),
+                        language: Joi.string()
+                    }
+                }
+            },
+            handler: editUser
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/',
+            config: {
+                tags: ['api'],
+                validate: {
+                    payload: {
+                        name: Joi.string(),
+                        email: Joi.string()
+                            .email()
+                            .required(),
+                        role: Joi.string().valid([
+                            'admin',
+                            'editor',
+                            'pending',
+                            'guest',
+                            'sysadmin',
+                            'graphic-editor'
+                        ]),
+                        language: Joi.string()
+                    }
+                }
+            },
+            handler: createUser
+        });
+    }
+};
 
 async function getAllUsers(request, h) {
     const { query } = request;
@@ -90,10 +186,3 @@ async function createUser(request, h) {
     const { pwd, ...user } = userModel.dataValues;
     return h.response(user).code(201);
 }
-
-module.exports = {
-    getAllUsers,
-    getUser,
-    editUser,
-    createUser
-};
