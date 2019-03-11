@@ -40,7 +40,7 @@ const routes = {
             path: '/auth/logout',
             config: {
                 tags: ['api'],
-                auth: 'session'
+                auth: 'simple'
             },
             handler: logout
         });
@@ -50,9 +50,6 @@ const routes = {
             path: '/users',
             config: {
                 tags: ['api'],
-                auth: {
-                    strategies: ['admin']
-                },
                 validate: {
                     query: {
                         search: Joi.string(),
@@ -78,9 +75,6 @@ const routes = {
             path: '/users/{id}',
             config: {
                 tags: ['api'],
-                auth: {
-                    strategies: ['admin']
-                },
                 validate: {
                     params: {
                         id: Joi.number().required()
@@ -95,9 +89,6 @@ const routes = {
             path: '/users/{id}',
             config: {
                 tags: ['api'],
-                auth: {
-                    strategies: ['admin']
-                },
                 validate: {
                     params: {
                         id: Joi.number().required()
@@ -125,9 +116,6 @@ const routes = {
             path: '/users',
             config: {
                 tags: ['api'],
-                auth: {
-                    strategies: ['admin']
-                },
                 validate: {
                     payload: {
                         name: Joi.string(),
