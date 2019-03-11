@@ -1,6 +1,5 @@
 #! /usr/bin/env node
 const Hapi = require('hapi');
-const AuthBearer = require('hapi-auth-bearer-token');
 const HapiSwagger = require('hapi-swagger');
 const findUp = require('find-up');
 const ORM = require('@datawrapper/orm');
@@ -12,10 +11,7 @@ const config = require(configPath);
 
 ORM.init(config);
 
-const AuthCookie = require('./auth/cookieAuth');
-const AuthAdmin = require('./auth/adminAuth');
-const bearerValidation = require('./auth/bearerValidation');
-const cookieValidation = require('./auth/cookieValidation');
+const DWAuth = require('./auth/dw-auth');
 
 const LoadPlugins = require('./plugin-loader');
 
@@ -64,17 +60,9 @@ async function init() {
         }
     });
 
-    await server.register([AuthCookie, AuthBearer, AuthAdmin]);
+    await server.register([DWAuth]);
 
-    server.auth.strategy('simple', 'bearer-access-token', {
-        validate: bearerValidation
-    });
-
-    server.auth.strategy('session', 'cookie-auth', {
-        validate: cookieValidation
-    });
-
-    server.auth.strategy('admin', 'admin-auth');
+    server.auth.strategy('simple', 'dw-auth');
 
     server.auth.default('simple');
 
