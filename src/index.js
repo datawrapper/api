@@ -39,7 +39,7 @@ const OpenAPI = {
 };
 
 const server = Hapi.server({
-    port: config.port,
+    port: config.port || 3000,
     host: config.host,
     router: { stripTrailingSlash: true },
     routes: {
