@@ -12,7 +12,7 @@ const routes = {
                 tags: ['api'],
                 auth: false
             },
-            handler: (request, h) => h.redirect('/swagger.json')
+            handler: (request, h) => h.redirect('v3/open-api.json')
         });
 
         server.route({

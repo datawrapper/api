@@ -33,6 +33,8 @@ const OpenAPI = {
                   }
                 : undefined
         },
+        jsonPath: '/open-api.json',
+        basePath: '/v3/',
         documentationPage: false,
         swaggerUI: false
     }
@@ -74,7 +76,7 @@ async function init() {
 
     server.auth.default('simple');
 
-    await server.register([OpenAPI, Routes, LoadPlugins]);
+    await server.register([OpenAPI, Routes, LoadPlugins], { routes: { prefix: '/v3' } });
 
     await server.start();
 }
