@@ -17,11 +17,18 @@ async function getUser(userId, credentials, strategy) {
 }
 
 async function cookieValidation(request, session, h) {
-    const row = await Session.findByPk(session);
+    let row = await Session.findByPk(session);
 
     if (!row) {
         return { isValid: false, message: Boom.unauthorized('Session not found', 'Session') };
     }
+
+    row = await row.update({
+        data: {
+            ...row.data,
+            last_action_time: Math.floor(Date.now() / 1000)
+        }
+    });
 
     return getUser(row.data['dw-user-id'], { session }, 'Session');
 }
