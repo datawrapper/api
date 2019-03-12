@@ -1,5 +1,6 @@
 const Boom = require('boom');
 const Joi = require('joi');
+const { cookieTTL } = require('../utils');
 const internals = {};
 
 const { api } = require('../../config');
@@ -18,8 +19,11 @@ internals.implementation = (server, options) => {
     Joi.assert(opts, internals.schema);
 
     server.state(opts.cookie, {
-        ttl: 1000 * 3600 * 24 * 365, // 1000ms = 1s -> 3600s = 1h -> 24h = 1d -> 365d = 1y
-        strictHeader: true
+        ttl: cookieTTL(90),
+        strictHeader: true,
+        domain: api.domain,
+        isSecure: api.tls,
+        path: '/'
     });
 
     const scheme = {

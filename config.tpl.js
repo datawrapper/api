@@ -1,7 +1,8 @@
 module.exports = {
     api: {
         port: 3000,
-        domain: '<domain>',
+        domain: '<domain>.<tld>',
+        subdomain: '<subdomain>',
         sid: 'DW-SESSION',
         https: false,
         /**

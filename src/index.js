@@ -30,16 +30,16 @@ const OpenAPI = {
                   }
                 : undefined
         },
-        jsonPath: '/open-api.json',
+        jsonPath: '/',
         basePath: '/v3/',
-        documentationPage: false,
-        swaggerUI: false
+        documentationPage: !!process.env.DEV,
+        swaggerUI: !!process.env.DEV
     }
 };
 
 const server = Hapi.server({
     port: config.api.port || 3000,
-    host: config.api.domain,
+    host: `${config.api.subdomain}.${config.api.domain}`,
     tls: config.api.https,
     router: { stripTrailingSlash: true },
     routes: {
@@ -56,9 +56,17 @@ async function init() {
         options: {
             prettyPrint: process.env.DEV,
             logEvents: ['request', 'response', 'onPostStart', 'onPostStop'],
-            redact: ['req.headers.authorization']
+            redact: !process.env.DEV && [
+                'req.headers.authorization',
+                'req.headers.cookie',
+                'res.headers["set-cookie"]'
+            ]
         }
     });
+
+    if (process.env.DEV) {
+        server.register([require('inert'), require('vision')]);
+    }
 
     await server.register(DWAuth);
 
