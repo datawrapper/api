@@ -4,10 +4,11 @@ const nanoid = require('nanoid');
 const Joi = require('joi');
 const Boom = require('boom');
 const { User, Session } = require('@datawrapper/orm/models');
-
-const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
+const { cookieTTL } = require('../utils');
 
 const config = require('../../config');
+
+const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
 
 /**
  * The old PHP API used sha256 to hash passwords with constant salts.
@@ -53,7 +54,8 @@ module.exports = {
                         email: Joi.string()
                             .email()
                             .required(),
-                        password: Joi.string().required()
+                        password: Joi.string().required(),
+                        keepSession: Joi.boolean().default(true)
                     }
                 }
             },
@@ -73,7 +75,7 @@ module.exports = {
 };
 
 async function login(request, h) {
-    const { email, password } = request.payload;
+    const { email, password, keepSession } = request.payload;
     const user = await User.findOne({
         where: { email },
         attributes: ['id', 'pwd']
@@ -103,7 +105,8 @@ async function login(request, h) {
         id: nanoid(),
         data: {
             'dw-user-id': user.id,
-            persistent: true
+            persistent: keepSession,
+            last_action_time: Math.floor(Date.now() / 1000)
         }
     });
 
@@ -111,7 +114,9 @@ async function login(request, h) {
         .response({
             [config.api.sid]: session.id
         })
-        .state(config.api.sid, session.id);
+        .state(config.api.sid, session.id, {
+            ttl: cookieTTL(keepSession ? 90 : 30)
+        });
 }
 
 async function logout(request, h) {
