@@ -1,6 +1,7 @@
 const Boom = require('boom');
 const AuthBearer = require('hapi-auth-bearer-token');
 const AuthCookie = require('./cookie-auth');
+const get = require('lodash/get');
 
 const { AuthToken, Session, User } = require('@datawrapper/orm/models');
 
@@ -13,7 +14,7 @@ async function getUser(userId, credentials, strategy) {
         return { isValid: false, message: Boom.unauthorized('User not found', strategy) };
     }
 
-    return { isValid: true, credentials, artifacts: user.dataValues };
+    return { isValid: true, credentials, artifacts: user.serialize() };
 }
 
 async function cookieValidation(request, session, h) {
@@ -88,6 +89,18 @@ const DWAuth = {
         server.auth.strategy('session', 'cookie-auth', {
             validate: cookieValidation
         });
+
+        function isAdmin(request, { throwError = false } = {}) {
+            const check = get(request, ['auth', 'artifacts', 'role'], '') === 'admin';
+
+            if (throwError && !check) {
+                throw Boom.unauthorized();
+            }
+
+            return check;
+        }
+
+        server.method('isAdmin', isAdmin);
 
         server.auth.scheme('dw-auth', internals.implementation);
     }

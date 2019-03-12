@@ -3,6 +3,7 @@ const sequelize = require('sequelize');
 const nanoid = require('nanoid');
 const bcrypt = require('bcrypt');
 const { decamelize, camelizeKeys } = require('humps');
+const set = require('lodash/set');
 const { User, Chart } = require('@datawrapper/orm/models');
 
 const { Op } = sequelize;
@@ -30,7 +31,9 @@ module.exports = {
                         limit: Joi.number()
                             .integer()
                             .default(100),
-                        offset: Joi.number().integer()
+                        offset: Joi.number()
+                            .integer()
+                            .default(0)
                     }
                 }
             },
@@ -107,7 +110,7 @@ module.exports = {
 };
 
 async function getAllUsers(request, h) {
-    const { query } = request;
+    const { query, auth, url } = request;
 
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
@@ -123,11 +126,11 @@ async function getAllUsers(request, h) {
     };
 
     if (query.search) {
-        options.where = {
-            email: {
-                [Op.like]: `%${query.search}%`
-            }
-        };
+        set(options, ['where', 'email', Op.like], `%${query.search}%`);
+    }
+
+    if (!request.server.methods.isAdmin(request)) {
+        set(options, ['where', 'id'], auth.artifacts.id);
     }
 
     const [users, count] = await Promise.all([
@@ -135,17 +138,39 @@ async function getAllUsers(request, h) {
         User.count({ where: options.where })
     ]);
 
-    return {
+    const userList = {
         list: users.map(({ dataValues }) => {
             const { charts, ...data } = dataValues;
-            return camelizeKeys({ ...data, chartCount: charts.length });
+            return camelizeKeys({
+                ...data,
+                chartCount: charts.length,
+                url: `${url.origin}${url.pathname}/${data.id}`
+            });
         }),
         total: count
     };
+
+    if (query.limit + query.offset < count) {
+        const nextParams = new URLSearchParams({
+            ...query,
+            offset: query.limit + query.offset,
+            limit: query.limit
+        });
+
+        set(userList, 'next', `${url.origin}${url.pathname}?${nextParams.toString()}`);
+    }
+
+    return userList;
 }
 
 async function getUser(request, h) {
-    const userId = request.params.id;
+    const { params, url, auth } = request;
+    const userId = params.id;
+
+    if (userId !== auth.artifacts.id) {
+        request.server.methods.isAdmin(request, { throwError: true });
+    }
+
     const { dataValues } = await User.findByPk(userId, {
         attributes,
         include: [{ model: Chart, attributes: ['id'] }]
@@ -154,12 +179,19 @@ async function getUser(request, h) {
     const { charts, ...data } = dataValues;
     return camelizeKeys({
         ...data,
-        chartCount: charts.length
+        chartCount: charts.length,
+        url: `${url.origin}${url.pathname}`
     });
 }
 
 async function editUser(request, h) {
-    const userId = request.params.id;
+    const { auth, params } = request;
+    const userId = params.id;
+
+    if (userId !== auth.artifacts.id) {
+        request.server.methods.isAdmin(request, { throwError: true });
+    }
+
     await User.update(request.payload, {
         where: { id: userId }
     });
@@ -174,6 +206,8 @@ async function editUser(request, h) {
 }
 
 async function createUser(request, h) {
+    request.server.methods.isAdmin(request, { throwError: true });
+
     const password = await bcrypt.hash(nanoid(), 14);
 
     const newUser = {
