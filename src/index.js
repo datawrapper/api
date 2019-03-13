@@ -51,18 +51,20 @@ const server = Hapi.server({
 });
 
 async function init() {
-    await server.register({
-        plugin: require('hapi-pino'),
-        options: {
-            prettyPrint: process.env.DEV,
-            logEvents: ['request', 'response', 'onPostStart', 'onPostStop'],
-            redact: !process.env.DEV && [
-                'req.headers.authorization',
-                'req.headers.cookie',
-                'res.headers["set-cookie"]'
-            ]
-        }
-    });
+    if (process.env.NODE_ENV !== 'test') {
+        await server.register({
+            plugin: require('hapi-pino'),
+            options: {
+                prettyPrint: process.env.DEV,
+                logEvents: ['request', 'response', 'onPostStart', 'onPostStop'],
+                redact: !process.env.DEV && [
+                    'req.headers.authorization',
+                    'req.headers.cookie',
+                    'res.headers["set-cookie"]'
+                ]
+            }
+        });
+    }
 
     if (process.env.DEV) {
         server.register([require('inert'), require('vision')]);
@@ -93,3 +95,5 @@ process.on('unhandledRejection', err => {
 });
 
 init();
+
+module.exports = server;
