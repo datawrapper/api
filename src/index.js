@@ -39,7 +39,7 @@ const OpenAPI = {
 
 const server = Hapi.server({
     port: config.api.port || 3000,
-    host: `${config.api.subdomain}.${config.api.domain}`,
+    host: config.api.subdomain ? `${config.api.subdomain}.${config.api.domain}` : config.api.domain,
     tls: config.api.https,
     router: { stripTrailingSlash: true },
     routes: {
