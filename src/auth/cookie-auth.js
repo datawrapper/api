@@ -4,7 +4,8 @@ const findUp = require('find-up');
 const { cookieTTL } = require('../utils');
 const internals = {};
 
-const { api } = findUp.sync('config.js');
+const configPath = findUp.sync('config.js');
+const { api } = require(configPath);
 
 internals.defaults = {
     cookie: api.sessionID
