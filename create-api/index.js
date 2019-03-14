@@ -33,7 +33,7 @@ async function main() {
         process.exit(1);
     }
 
-    const { plugins } = require(configPath);
+    const { plugins = {} } = require(configPath);
 
     const packages = Object.keys(plugins);
 
