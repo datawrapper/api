@@ -13,5 +13,11 @@ module.exports = {
                 prefix: '/auth'
             }
         });
+
+        server.register(require('./charts'), {
+            routes: {
+                prefix: '/charts'
+            }
+        });
     }
 };
