@@ -3,7 +3,7 @@ module.exports = {
         port: 3000,
         domain: '<domain>.<tld>',
         subdomain: '<subdomain>',
-        sid: 'DW-SESSION',
+        sessionID: 'DW-SESSION',
         https: false,
         /**
          * This key is deprecated and only used for legacy hash comparison.
@@ -20,12 +20,14 @@ module.exports = {
          */
         secretAuthSalt: '<MY_SECRET_AUTH_KEY>'
     },
-    db: {
-        dialect: 'mysql',
-        host: '<host>',
-        port: 3306,
-        user: '<user>',
-        password: '<password>',
-        database: '<database>'
+    orm: {
+        db: {
+            dialect: 'mysql',
+            host: '<host>',
+            port: 3306,
+            user: '<user>',
+            password: '<password>',
+            database: '<database>'
+        }
     }
 };
