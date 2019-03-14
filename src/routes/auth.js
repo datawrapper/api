@@ -112,19 +112,21 @@ async function login(request, h) {
 
     return h
         .response({
-            [config.api.sid]: session.id
+            [config.api.sessionID]: session.id
         })
-        .state(config.api.sid, session.id, {
+        .state(config.api.sessionID, session.id, {
             ttl: cookieTTL(keepSession ? 90 : 30)
         });
 }
 
 async function logout(request, h) {
-    const session = await Session.findByPk(request.state[config.api.sid], { attributes: ['id'] });
+    const session = await Session.findByPk(request.state[config.api.sessionID], {
+        attributes: ['id']
+    });
     await session.destroy();
     return h
         .response()
         .code(205)
-        .unstate(config.api.sid)
+        .unstate(config.api.sessionID)
         .header('Clear-Site-Data', '"cookies", "storage", "executionContexts"');
 }
