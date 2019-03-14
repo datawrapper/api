@@ -1,7 +1,7 @@
 module.exports = {
     api: {
         domain: 'localhost',
-        sid: 'DW-SESSION'
+        sessionID: 'DW-SESSION'
     },
     db: {
         dialect: 'mysql',

@@ -6,7 +6,7 @@ const internals = {};
 const { api } = require('../../config');
 
 internals.defaults = {
-    cookie: api.sid
+    cookie: api.sessionID
 };
 
 internals.schema = Joi.object().keys({
