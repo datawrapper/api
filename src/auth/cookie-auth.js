@@ -1,9 +1,10 @@
 const Boom = require('boom');
 const Joi = require('joi');
+const findUp = require('find-up');
 const { cookieTTL } = require('../utils');
 const internals = {};
 
-const { api } = require('../../config');
+const { api } = findUp.sync('config.js');
 
 internals.defaults = {
     cookie: api.sessionID
