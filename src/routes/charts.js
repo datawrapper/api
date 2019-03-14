@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const { Op } = require('sequelize');
 const { camelizeKeys } = require('humps');
+const nanoid = require('nanoid');
 const set = require('lodash/set');
 const { Chart } = require('@datawrapper/orm/models');
 
@@ -24,22 +25,67 @@ module.exports = {
             },
             handler: getAllCharts
         });
+
+        server.route({
+            method: 'GET',
+            path: '/{id}',
+            config: {
+                tags: ['api'],
+                validate: {
+                    query: Joi.object().keys({
+                        metadataFormat: Joi.string()
+                            .valid(['json', 'string'])
+                            .default('json')
+                    }),
+                    params: Joi.object().keys({
+                        id: Joi.string()
+                            .length(5)
+                            .required()
+                    })
+                }
+            },
+            handler: getChart
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/',
+            config: {
+                tags: ['api'],
+                validate: {
+                    payload: Joi.object().keys({
+                        title: Joi.string()
+                    })
+                }
+            },
+            handler: createChart
+        });
     }
 };
+
+function prepareChart(chart, { metadataFormat } = {}) {
+    chart = camelizeKeys(chart.dataValues);
+    if (metadataFormat === 'json' && typeof chart.metadata === 'string') {
+        chart.metadata = JSON.parse(chart.metadata);
+    }
+
+    if (metadataFormat === 'string' && typeof chart.metadata === 'object') {
+        chart.metadata = JSON.stringify(chart.metadata);
+    }
+
+    return chart;
+}
+
+async function findChartId() {
+    const id = nanoid(5);
+    return (await Chart.findByPk(id)) ? findChartId() : id;
+}
 
 async function getAllCharts(request, h) {
     const { query, url } = request;
 
     let options = {
-        attributes: [
-            'id',
-            'title',
-            'type',
-            'metadata',
-            'created_at',
-            'last_modified_at',
-            'author_id'
-        ]
+        attributes: ['id', 'title', 'type', 'created_at', 'last_modified_at']
     };
 
     if (query.userId === 'me') {
@@ -50,24 +96,44 @@ async function getAllCharts(request, h) {
 
     const { count, rows } = await Chart.findAndCountAll(options);
 
-    const charts = rows.map(chart => {
-        chart = camelizeKeys(chart.dataValues);
-        if (query.metadataFormat === 'json' && typeof chart.metadata === 'string') {
-            chart.metadata = JSON.parse(chart.metadata);
-        }
-
-        if (query.metadataFormat === 'string' && typeof chart.metadata === 'object') {
-            chart.metadata = JSON.stringify(chart.metadata);
-        }
-
-        return {
-            ...chart,
-            url: `${url.origin}${url.pathname}/${chart.id}`
-        };
-    });
+    const charts = rows.map(chart => ({
+        ...prepareChart(chart, { metadataFormat: query.metadataFormat }),
+        url: `${url.origin}${url.pathname}/${chart.id}`
+    }));
 
     return {
         list: charts,
         total: count
     };
+}
+
+async function getChart(request, h) {
+    const { query, url, params, auth } = request;
+    const chart = await Chart.findByPk(params.id);
+
+    if (chart.author_id !== auth.artifacts.id && !chart.published_at) {
+        request.server.methods.isAdmin(request, { throwError: true });
+    }
+
+    return {
+        ...prepareChart(chart, { metadataFormat: query.metadataFormat }),
+        url: `${url.origin}${url.pathname}`
+    };
+}
+
+async function createChart(request, h) {
+    const id = await findChartId();
+    let chart;
+
+    chart = await Chart.create({
+        theme: 'default',
+        type: 'd3-bars',
+        metadata: { data: {} },
+        language: request.auth.artifacts.language,
+        ...request.payload,
+        author_id: request.auth.artifacts.id,
+        id
+    });
+
+    return h.response(prepareChart(chart)).code(201);
 }
