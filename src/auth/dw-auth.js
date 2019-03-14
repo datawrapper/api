@@ -7,7 +7,7 @@ const { AuthToken, Session, User } = require('@datawrapper/orm/models');
 
 async function getUser(userId, credentials, strategy) {
     const user = await User.findByPk(userId, {
-        attributes: ['id', 'email', 'role']
+        attributes: ['id', 'email', 'role', 'language']
     });
 
     if (!user) {
