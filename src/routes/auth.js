@@ -3,10 +3,11 @@ const crypto = require('crypto');
 const nanoid = require('nanoid');
 const Joi = require('joi');
 const Boom = require('boom');
+const findUp = require('find-up');
 const { User, Session } = require('@datawrapper/orm/models');
 const { cookieTTL } = require('../utils');
 
-const config = require('../../config');
+const { api } = findUp.sync('config.js');
 
 const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
 
@@ -29,12 +30,12 @@ function oldSchoolLogin(password, passwordHash) {
         return hmac.digest('hex');
     }
 
-    let serverHash = oldschoolHash(password, config.api.secretAuthSalt);
+    let serverHash = oldschoolHash(password, api.secretAuthSalt);
 
     if (serverHash === passwordHash) return true;
 
-    const clientHash = oldschoolHash(password, config.api.authSalt || DEFAULT_SALT);
-    serverHash = oldschoolHash(clientHash, config.api.secretAuthSalt || '');
+    const clientHash = oldschoolHash(password, api.authSalt || DEFAULT_SALT);
+    serverHash = oldschoolHash(clientHash, api.secretAuthSalt || '');
 
     return serverHash === passwordHash;
 }
@@ -112,21 +113,21 @@ async function login(request, h) {
 
     return h
         .response({
-            [config.api.sessionID]: session.id
+            [api.sessionID]: session.id
         })
-        .state(config.api.sessionID, session.id, {
+        .state(api.sessionID, session.id, {
             ttl: cookieTTL(keepSession ? 90 : 30)
         });
 }
 
 async function logout(request, h) {
-    const session = await Session.findByPk(request.state[config.api.sessionID], {
+    const session = await Session.findByPk(request.state[api.sessionID], {
         attributes: ['id']
     });
     await session.destroy();
     return h
         .response()
         .code(205)
-        .unstate(config.api.sessionID)
+        .unstate(api.sessionID)
         .header('Clear-Site-Data', '"cookies", "storage", "executionContexts"');
 }
