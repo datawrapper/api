@@ -7,7 +7,8 @@ const findUp = require('find-up');
 const { User, Session } = require('@datawrapper/orm/models');
 const { cookieTTL } = require('../utils');
 
-const { api } = findUp.sync('config.js');
+const configPath = findUp.sync('config.js');
+const { api } = require(configPath);
 
 const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
 
