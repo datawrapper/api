@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const Boom = require('boom');
 const { Op } = require('sequelize');
 const { camelizeKeys } = require('humps');
 const nanoid = require('nanoid');
@@ -59,6 +60,35 @@ module.exports = {
                 }
             },
             handler: createChart
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/{id}/export/{format}',
+            config: {
+                tags: ['api'],
+                validate: {
+                    params: Joi.object().keys({
+                        id: Joi.string()
+                            .length(5)
+                            .required(),
+                        format: Joi.string().required()
+                    }),
+                    payload: Joi.object().keys({
+                        unit: Joi.string().default('px'),
+                        mode: Joi.string().default('rgb'),
+                        width: Joi.number().default(600),
+                        height: Joi.any(),
+                        plain: Joi.boolean().default(false),
+                        scale: Joi.number().default(1),
+                        border: Joi.object().keys({
+                            width: Joi.number(),
+                            color: Joi.string().default('#ffffff')
+                        })
+                    })
+                }
+            },
+            handler: exportChart
         });
     }
 };
@@ -136,4 +166,12 @@ async function createChart(request, h) {
     });
 
     return h.response(prepareChart(chart)).code(201);
+}
+
+async function exportChart(request, h) {
+    if (request.server.methods.chartExport) {
+        return request.server.methods.chartExport(request, h, Boom);
+    } else {
+        return Boom.badImplementation();
+    }
 }
