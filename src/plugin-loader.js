@@ -2,10 +2,7 @@
 /src/plugins/{name}/index.js (file)
 
 @datawrapper/plugin-* | dw-plugin-* (npm)
-  /api
-    - index.js -> HAPI plugin
-  /frontend
-  /whatever
+  /index.js
 */
 const path = require('path');
 const globby = require('globby');
