@@ -35,7 +35,9 @@ async function main() {
 
     const { plugins = {} } = require(configPath);
 
-    const packages = Object.keys(plugins);
+    const packages = Object.keys(plugins).map(name =>
+        plugins[name].version ? `${name}@${plugins[name].version}` : name
+    );
 
     fs.writeFileSync(path.join(CWD, 'package.json'), JSON.stringify(pkg, null, 4), {
         encoding: 'utf-8'
