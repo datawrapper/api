@@ -9,14 +9,20 @@ const CWD = process.env.INIT_CWD || process.cwd();
 let tag = process.argv.find(arg => arg.includes('--tag')) || '--tag=latest';
 tag = tag.split('=')[1];
 
-const pkg = {
-    name: 'dw-api',
-    version: '1.0.0',
-    scripts: {
-        api: 'dw-api',
-        sync: 'dw-sync'
-    }
-};
+const pkgPath = path.join(CWD, 'package.json');
+const pkg = fs.existsSync(pkgPath)
+    ? require(pkgPath)
+    : {
+          name: 'dw-api',
+          version: '1.0.0'
+      };
+
+if (!pkg.scripts) {
+    pkg.scripts = {};
+}
+
+pkg.scripts.api = 'dw-api';
+pkg.scripts.sync = 'dw-sync';
 
 async function main() {
     const configPath = await findUp('config.js');
