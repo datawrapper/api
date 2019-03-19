@@ -121,6 +121,11 @@ async function getAllUsers(request, h) {
                 attributes: ['id']
             }
         ],
+        where: {
+            email: {
+                [Op.not]: 'DELETED'
+            }
+        },
         limit: query.limit,
         offset: query.offset
     };
