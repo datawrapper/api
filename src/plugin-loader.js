@@ -20,6 +20,7 @@ async function loadPlugins(options) {
         const plugin = require(path.join(process.cwd(), p));
         return {
             plugin,
+            type: 'local',
             options: {
                 models: options.models,
                 config: get(config, ['plugins', plugin.name], {})
@@ -33,6 +34,7 @@ async function loadPlugins(options) {
             const plugin = require(p);
             return {
                 plugin,
+                type: 'npm',
                 options: {
                     models: options.models,
                     config: get(config, ['plugins', plugin.name], {})
@@ -54,7 +56,7 @@ module.exports = {
             server
                 .logger()
                 .info(
-                    plugins.map(({ plugin }) => `[local] ${plugin.name}@${plugin.version}`),
+                    plugins.map(({ plugin, type }) => `[${type}] ${plugin.name}@${plugin.version}`),
                     'Plugins registered'
                 );
         }
