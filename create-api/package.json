@@ -1,6 +1,6 @@
 {
     "name": "@datawrapper/create-api",
-    "version": "1.0.0-beta.2",
+    "version": "1.0.0-beta.3",
     "description": "Scaffolding tool to create a Datawrapper API",
     "main": "index.js",
     "bin": "index.js",
