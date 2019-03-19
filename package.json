@@ -29,7 +29,7 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/orm": "2.0.4",
+        "@datawrapper/orm": "3.0.0",
         "bcrypt": "3.0.4",
         "boom": "7.3.0",
         "find-up": "3.0.0",
