@@ -14,7 +14,8 @@ const pkg = fs.existsSync(pkgPath)
     ? require(pkgPath)
     : {
           name: 'dw-api',
-          version: '1.0.0'
+          version: '1.0.0',
+          private: true
       };
 
 if (!pkg.scripts) {
@@ -57,6 +58,10 @@ async function main() {
 
     npm.stdout.on('data', data => process.stdout.write(data));
     npm.stderr.on('data', data => process.stderr.write(data));
+
+    npm.on('close', () => {
+        console.log('\nrun `npm run api` to start the Datawrapper API');
+    });
 }
 
 main();
