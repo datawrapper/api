@@ -66,14 +66,7 @@ module.exports = {
                     payload: {
                         name: Joi.string(),
                         email: Joi.string().email(),
-                        role: Joi.string().valid([
-                            'admin',
-                            'editor',
-                            'pending',
-                            'guest',
-                            'sysadmin',
-                            'graphic-editor'
-                        ]),
+                        role: Joi.string().valid(['admin', 'editor']),
                         language: Joi.string()
                     }
                 }
