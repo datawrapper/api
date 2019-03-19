@@ -31,12 +31,12 @@ function oldSchoolLogin(password, passwordHash) {
         return hmac.digest('hex');
     }
 
-    let serverHash = oldschoolHash(password, api.secretAuthSalt);
+    let serverHash = api.secretAuthSalt ? oldschoolHash(password, api.secretAuthSalt) : password;
 
     if (serverHash === passwordHash) return true;
 
     const clientHash = oldschoolHash(password, api.authSalt || DEFAULT_SALT);
-    serverHash = oldschoolHash(clientHash, api.secretAuthSalt || '');
+    serverHash = api.secretAuthSalt ? oldschoolHash(clientHash, api.secretAuthSalt) : clientHash;
 
     return serverHash === passwordHash;
 }
