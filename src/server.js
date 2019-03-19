@@ -53,8 +53,9 @@ async function configure() {
     await server.register({
         plugin: require('hapi-pino'),
         options: {
-            prettyPrint: process.env.DEV,
-            logEvents: ['request', 'response', 'onPostStart', 'onPostStop'],
+            prettyPrint: true,
+            logEvents: ['request', 'onPostStart', 'onPostStop'],
+            base: { name: `${pkg.name}@${pkg.version}` },
             redact: !process.env.DEV && [
                 'req.headers.authorization',
                 'req.headers.cookie',
