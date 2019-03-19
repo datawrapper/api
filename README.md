@@ -17,7 +17,7 @@ This repository contains the new Node.js API that is the backbone of Datawrapper
 Then you can start the server using:
 
 ```sh
-npm start
+npm run api
 ```
 
 To make sure the database is in sync after ORM updates, run:
