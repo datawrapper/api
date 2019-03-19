@@ -53,12 +53,9 @@ module.exports = {
 
         if (plugins.length) {
             await server.register(plugins);
-            server
-                .logger()
-                .info(
-                    plugins.map(({ plugin, type }) => `[${type}] ${plugin.name}@${plugin.version}`),
-                    'Plugins registered'
-                );
+            plugins.forEach(({ plugin, type }) => {
+                server.logger().info({ version: plugin.version, type }, `[Plugin] ${plugin.name}`);
+            });
         }
     }
 };
