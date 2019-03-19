@@ -8,14 +8,6 @@ const pkg = require('../package.json');
 const configPath = findUp.sync('config.js');
 const config = require(configPath);
 
-ORM.init(config);
-
-const DWAuth = require('./auth/dw-auth');
-
-const LoadPlugins = require('./plugin-loader');
-
-const Routes = require('./routes');
-
 const OpenAPI = {
     plugin: HapiSwagger,
     options: {
@@ -64,17 +56,23 @@ async function configure() {
         }
     });
 
+    server.logger().info(config, 'config.js');
+
+    await ORM.init(config);
+
     if (process.env.DEV) {
         server.register([require('inert'), require('vision')]);
     }
 
-    await server.register(DWAuth);
+    await server.register(require('./auth/dw-auth'));
 
     server.auth.strategy('simple', 'dw-auth');
 
     server.auth.default('simple');
 
-    await server.register([OpenAPI, Routes, LoadPlugins], { routes: { prefix: '/v3' } });
+    await server.register([OpenAPI, require('./routes'), require('./plugin-loader')], {
+        routes: { prefix: '/v3' }
+    });
 
     server.ext('onRequest', (request, h) => {
         const { pathname } = request.url;
