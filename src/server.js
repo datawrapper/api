@@ -56,7 +56,7 @@ async function configure() {
         }
     });
 
-    server.logger().info(config, 'config.js');
+    server.logger().info(config, '[Initialize] config.js');
 
     await ORM.init(config);
 
