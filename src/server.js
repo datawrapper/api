@@ -8,6 +8,9 @@ const pkg = require('../package.json');
 const configPath = findUp.sync('config.js');
 const config = require(configPath);
 
+const { validate } = require('./config-schema');
+validate(config);
+
 const OpenAPI = {
     plugin: HapiSwagger,
     options: {
@@ -56,7 +59,7 @@ async function configure() {
         }
     });
 
-    server.logger().info(config, '[Initialize] config.js');
+    server.logger().info({ file: configPath, config }, '[Initialize] config.js');
 
     await ORM.init(config);
 
