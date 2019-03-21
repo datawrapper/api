@@ -2,7 +2,7 @@ const { AuthToken } = require('@datawrapper/orm/models');
 const asyncHandler = require('../asyncHandler');
 
 module.exports = asyncHandler(async (req, res, next) => {
-    const auth = req.get('Authentication');
+    const auth = req.get('Authorization');
     if (auth) {
         const [type, token] = auth.split(' ');
         if (type.toLowerCase() === 'bearer') {
