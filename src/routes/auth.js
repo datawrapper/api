@@ -24,19 +24,19 @@ const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
  * @param {string} passwordHash - Password hash to compare (from DB)
  * @returns {boolean}
  */
-function oldSchoolLogin(password, passwordHash) {
-    function oldschoolHash(pwhash, secret) {
+function legacyLogin(password, passwordHash) {
+    function legacyHash(pwhash, secret) {
         const hmac = crypto.createHmac('sha256', secret);
         hmac.update(pwhash);
         return hmac.digest('hex');
     }
 
-    let serverHash = api.secretAuthSalt ? oldschoolHash(password, api.secretAuthSalt) : password;
+    let serverHash = api.secretAuthSalt ? legacyHash(password, api.secretAuthSalt) : password;
 
     if (serverHash === passwordHash) return true;
 
-    const clientHash = oldschoolHash(password, api.authSalt || DEFAULT_SALT);
-    serverHash = api.secretAuthSalt ? oldschoolHash(clientHash, api.secretAuthSalt) : clientHash;
+    const clientHash = legacyHash(password, api.authSalt || DEFAULT_SALT);
+    serverHash = api.secretAuthSalt ? legacyHash(clientHash, api.secretAuthSalt) : clientHash;
 
     return serverHash === passwordHash;
 }
@@ -96,7 +96,7 @@ async function login(request, h) {
     if (user.pwd.startsWith('$2')) {
         isValid = await bcrypt.compare(password, user.pwd);
     } else {
-        isValid = oldSchoolLogin(password, user.pwd);
+        isValid = legacyLogin(password, user.pwd);
     }
 
     if (!isValid) {
