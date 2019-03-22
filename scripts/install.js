@@ -43,7 +43,7 @@ if (fs.existsSync(pkgJSON)) {
 
 const config = require(cfgPath);
 
-const packages = Object.keys(config.plugins).map(name => `@datawrapper/plugin-${name}`);
+const packages = Object.keys(config.plugins);
 
 const npm = spawn('npm', ['install', '--no-save', '--production'].concat(packages));
 
