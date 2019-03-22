@@ -1,9 +1,14 @@
 #! /usr/bin/env node
 /* eslint no-console: "off" */
 const fs = require('fs');
+const glob = require('glob');
 const path = require('path');
+const difference = require('lodash/difference');
 const { spawn } = require('child_process');
 const findUp = require('find-up');
+
+const localPluginPaths = glob.sync('plugins/*/index.js', { absolute: true });
+const localPlugins = localPluginPaths.map(p => require(p).name);
 
 const CWD = process.env.INIT_CWD || process.cwd();
 let tag = process.argv.find(arg => arg.includes('--tag')) || '--tag=latest';
@@ -42,7 +47,7 @@ async function main() {
 
     const { plugins = {} } = require(configPath);
 
-    const packages = Object.keys(plugins).map(name =>
+    const packages = difference(Object.keys(plugins), localPlugins).map(name =>
         plugins[name].version ? `${name}@${plugins[name].version}` : name
     );
 

@@ -42,7 +42,7 @@ module.exports = {
     name: 'plugin-loader',
     version: '1.0.0',
     register: async (server, options) => {
-        const plugins = Object.keys(config.plugins).map(findPlugin);
+        const plugins = Object.keys(config.plugins || []).map(findPlugin);
 
         if (plugins.length) {
             plugins.forEach(({ plugin, type, error }) => {
