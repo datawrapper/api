@@ -3,6 +3,9 @@ module.exports = {
         domain: 'localhost',
         sessionID: 'DW-SESSION'
     },
+    plugins: {
+        'hello-world': {}
+    },
     orm: {
         db: {
             dialect: 'mysql',
