@@ -11,20 +11,20 @@ const requirePlugin = require('../lib/requirePlugin');
 
 // load plugins
 for (let pid of Object.keys(config.plugins)) {
-    const pluginName = pid.split('@')[0];
+    const pluginName = pid.split('plugin-')[1];
     // load the plugin
     let plugin;
     try {
-        plugin = require(`${pluginName}`);
+        plugin = require(`${pid}`);
     } catch (e) {
-        logger.error(`could not load the plugin ${pluginName}. Try npm install...`);
+        logger.error(`could not load the plugin ${pid}. Try npm install...`);
     }
 
     if (plugin && plugin.api) {
         let pluginConfig = {};
         try {
             // load plugin default config
-            pluginConfig = require(`${pluginName}/config`);
+            pluginConfig = require(`${pid}/config`);
         } catch (e) {
             // console.log('no default config');
         }
@@ -45,9 +45,9 @@ for (let pid of Object.keys(config.plugins)) {
             }
         });
 
-        const { version } = require(`${pluginName}/package.json`);
+        const { version } = require(`${pid}/package.json`);
 
-        logger.info(`hooked in plugin ${pluginName} (on v${version || 'latest'})`);
+        logger.info(`hooked in plugin ${pid} (on v${version || 'latest'})`);
 
         if (pluginConfig.open_access) {
             router.use(`/${pluginName}`, pluginRouter);
