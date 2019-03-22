@@ -15,7 +15,7 @@ for (let pid of Object.keys(config.plugins)) {
     // load the plugin
     let plugin;
     try {
-        plugin = require(`@datawrapper/plugin-${pluginName}`);
+        plugin = require(`${pluginName}`);
     } catch (e) {
         logger.error(`could not load the plugin ${pluginName}. Try npm install...`);
     }
@@ -24,7 +24,7 @@ for (let pid of Object.keys(config.plugins)) {
         let pluginConfig = {};
         try {
             // load plugin default config
-            pluginConfig = require(`@datawrapper/plugin-${pluginName}/config`);
+            pluginConfig = require(`${pluginName}/config`);
         } catch (e) {
             // console.log('no default config');
         }
@@ -45,7 +45,7 @@ for (let pid of Object.keys(config.plugins)) {
             }
         });
 
-        const { version } = require(`@datawrapper/plugin-${pluginName}/package.json`);
+        const { version } = require(`${pluginName}/package.json`);
 
         logger.info(`hooked in plugin ${pluginName} (on v${version || 'latest'})`);
 
