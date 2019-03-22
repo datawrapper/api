@@ -49,8 +49,9 @@ async function configure() {
         plugin: require('hapi-pino'),
         options: {
             prettyPrint: true,
+            timestamp: () => `,"time":"${new Date().toISOString()}"`,
             logEvents: ['request', 'onPostStart', 'onPostStop'],
-            base: { name: `${pkg.name}@${pkg.version}` },
+            base: { name: pkg.version },
             redact: !process.env.DEV && [
                 'req.headers.authorization',
                 'req.headers.cookie',
