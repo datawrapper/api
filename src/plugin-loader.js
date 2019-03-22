@@ -26,7 +26,9 @@ function findPlugin(name) {
     if (plugin) {
         pluginObject.plugin = plugin;
         pluginObject.type = 'local';
-    } else {
+    }
+
+    if (!pluginObject.plugin) {
         return {
             error: name
         };
