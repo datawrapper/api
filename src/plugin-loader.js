@@ -5,7 +5,7 @@
   /index.js
 */
 const path = require('path');
-const globby = require('globby');
+const glob = require('glob');
 const models = require('@datawrapper/orm/models');
 const findUp = require('find-up');
 const get = require('lodash/get');
@@ -14,7 +14,7 @@ const pkg = require(findUp.sync('package.json'));
 const config = require(findUp.sync('config.js'));
 
 async function loadPlugins(options) {
-    const paths = await globby(['plugins/*/index.js']);
+    const paths = glob.sync('plugins/*/index.js');
 
     const localPlugins = paths.map(p => {
         const plugin = require(path.join(process.cwd(), p));
