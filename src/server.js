@@ -11,9 +11,14 @@ const config = require(configPath);
 const { validate } = require('./config-schema');
 validate(config);
 
+const host = config.api.subdomain
+    ? `${config.api.subdomain}.${config.api.domain}`
+    : config.api.domain;
+
 const OpenAPI = {
     plugin: HapiSwagger,
     options: {
+        host,
         info: {
             title: 'Datawrapper API v3 Documentation',
             version: pkg.version,
@@ -32,8 +37,9 @@ const OpenAPI = {
 };
 
 const server = Hapi.server({
+    address: 'localhost',
     port: config.api.port || 3000,
-    host: config.api.subdomain ? `${config.api.subdomain}.${config.api.domain}` : config.api.domain,
+    host,
     tls: config.api.https,
     router: { stripTrailingSlash: true },
     routes: {
