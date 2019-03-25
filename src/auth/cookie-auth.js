@@ -24,13 +24,29 @@ internals.implementation = (server, options) => {
         ttl: cookieTTL(90),
         strictHeader: true,
         domain: api.domain,
-        isSecure: api.tls,
+        isSameSite: 'Strict',
         path: '/'
     });
 
     const scheme = {
         authenticate: async (request, h) => {
-            const session = request.state[opts.cookie];
+            let session = request.state[opts.cookie];
+
+            /**
+             * Sometimes there are 2 session cookies, in the staging environment, with name
+             * DW-SESSION. The reason is that the same name is used on live (.datawrapper.de) and
+             * staging (.staging.datawrapper.de). The cookie parser therefore returns an array with
+             * both cookies and since the server doesn't send any information which cookie belongs
+             * to which domain, the code relies on the server sending the more specific cookie
+             * first. This is fine since it only happens on staging and the quick fix is to delete
+             * the wrong cookie in dev tools.
+             *
+             * More information and a similar issue can be found on Github:
+             * https://github.com/jshttp/cookie/issues/18#issuecomment-30344206
+             */
+            if (typeof session !== 'string') {
+                session = session[0];
+            }
 
             const {
                 isValid,
