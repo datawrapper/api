@@ -16,7 +16,7 @@ module.exports = {
         server.route({
             method: 'GET',
             path: '/',
-            config: {
+            options: {
                 tags: ['api'],
                 validate: {
                     query: {
@@ -43,7 +43,7 @@ module.exports = {
         server.route({
             method: 'GET',
             path: '/{id}',
-            config: {
+            options: {
                 tags: ['api'],
                 validate: {
                     params: {
@@ -57,7 +57,7 @@ module.exports = {
         server.route({
             method: 'PATCH',
             path: '/{id}',
-            config: {
+            options: {
                 tags: ['api'],
                 validate: {
                     params: {
@@ -77,7 +77,7 @@ module.exports = {
         server.route({
             method: 'POST',
             path: '/',
-            config: {
+            options: {
                 tags: ['api'],
                 validate: {
                     payload: {
