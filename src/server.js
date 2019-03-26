@@ -1,4 +1,5 @@
 const Hapi = require('hapi');
+const Boom = require('boom');
 const HapiSwagger = require('hapi-swagger');
 const findUp = require('find-up');
 const get = require('lodash/get');
@@ -52,15 +53,15 @@ const server = Hapi.server({
     }
 });
 
-async function configure() {
+async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     await server.register({
         plugin: require('hapi-pino'),
         options: {
             prettyPrint: true,
             timestamp: () => `,"time":"${new Date().toISOString()}"`,
-            logEvents: ['request', 'onPostStart', 'onPostStop'],
+            logEvents: ['request', 'log', 'onPostStart', 'onPostStop'],
             base: { name: pkg.version },
-            redact: !process.env.DEV && [
+            redact: process.env.NODE_ENV === 'development' && [
                 'req.headers.authorization',
                 'req.headers.cookie',
                 'res.headers["set-cookie"]'
@@ -79,19 +80,36 @@ async function configure() {
     await server.register(require('./auth/dw-auth'));
 
     server.auth.strategy('simple', 'dw-auth');
-
     server.auth.default('simple');
 
-    await server.register([OpenAPI, require('./routes'), require('./plugin-loader')], {
+    const routeOptions = {
         routes: { prefix: '/v3' }
-    });
+    };
 
-    server.ext('onRequest', (request, h) => {
-        const { pathname = '' } = get(request, 'url', {});
-        if (pathname.startsWith('/3')) {
-            request.setUrl(pathname.replace('/3', '/v3'));
+    if (options.useOpenAPI) {
+        await server.register(OpenAPI, routeOptions);
+    }
+
+    if (options.usePlugins) {
+        await server.register([require('./plugin-loader')], routeOptions);
+    }
+
+    await server.register([require('./routes')], routeOptions);
+
+    server.route({
+        method: '*',
+        path: '/{p*}',
+        options: {
+            auth: false
+        },
+        handler: (request, h) => {
+            const { pathname = '' } = get(request, 'url', {});
+            if (pathname.startsWith('/3')) {
+                return h.redirect(pathname.replace('/3', '/v3')).permanent();
+            }
+
+            return Boom.notFound();
         }
-        return h.continue;
     });
 }
 
@@ -100,8 +118,8 @@ process.on('unhandledRejection', err => {
     process.exit(1);
 });
 
-async function init() {
-    await configure();
+async function init(options) {
+    await configure(options);
     server.initialize();
 
     return server;
