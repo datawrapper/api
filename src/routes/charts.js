@@ -13,7 +13,7 @@ module.exports = {
         server.route({
             method: 'GET',
             path: '/',
-            config: {
+            options: {
                 tags: ['api'],
                 validate: {
                     query: Joi.object().keys({
@@ -30,7 +30,7 @@ module.exports = {
         server.route({
             method: 'GET',
             path: '/{id}',
-            config: {
+            options: {
                 tags: ['api'],
                 validate: {
                     query: Joi.object().keys({
@@ -51,7 +51,7 @@ module.exports = {
         server.route({
             method: 'POST',
             path: '/',
-            config: {
+            options: {
                 tags: ['api'],
                 validate: {
                     payload: Joi.object().keys({
@@ -65,7 +65,7 @@ module.exports = {
         server.route({
             method: 'POST',
             path: '/{id}/export/{format}',
-            config: {
+            options: {
                 tags: ['api'],
                 validate: {
                     params: Joi.object().keys({

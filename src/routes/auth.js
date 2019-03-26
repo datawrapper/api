@@ -48,7 +48,7 @@ module.exports = {
         server.route({
             method: 'POST',
             path: '/login',
-            config: {
+            options: {
                 tags: ['api'],
                 auth: false,
                 validate: {
@@ -67,7 +67,7 @@ module.exports = {
         server.route({
             method: 'POST',
             path: '/logout',
-            config: {
+            options: {
                 tags: ['api'],
                 auth: 'session'
             },
