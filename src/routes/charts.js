@@ -90,6 +90,33 @@ module.exports = {
             },
             handler: exportChart
         });
+
+        server.route({
+            method: 'GET',
+            path: '/{id}/export/{format}',
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: Joi.object().keys({
+                        id: Joi.string()
+                            .length(5)
+                            .required(),
+                        format: Joi.string().required()
+                    }),
+                    query: Joi.object().keys({
+                        unit: Joi.string().default('px'),
+                        mode: Joi.string().default('rgb'),
+                        width: Joi.number().default(600),
+                        height: Joi.any(),
+                        plain: Joi.boolean().default(false),
+                        scale: Joi.number().default(1)
+                    })
+                }
+            },
+            /* needs Purpose header */
+            handler: async (request, h) =>
+                exportChart({ ...request, payload: request.params }, h, Boom)
+        });
     }
 };
 
