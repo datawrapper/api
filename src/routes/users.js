@@ -78,6 +78,7 @@ module.exports = {
             method: 'POST',
             path: '/',
             options: {
+                auth: false,
                 tags: ['api'],
                 validate: {
                     payload: {
@@ -86,7 +87,8 @@ module.exports = {
                             .email()
                             .required(),
                         role: Joi.string().valid(['editor', 'admin']),
-                        language: Joi.string()
+                        language: Joi.string(),
+                        password: Joi.string()
                     }
                 }
             },
@@ -197,14 +199,13 @@ async function editUser(request, h) {
 }
 
 async function createUser(request, h) {
-    request.server.methods.isAdmin(request, { throwError: true });
-
-    const password = await bcrypt.hash(nanoid(), 14);
+    const { password = nanoid(), ...data } = request.payload;
+    const hash = await bcrypt.hash(password, 14);
 
     const newUser = {
         role: 'pending',
-        ...request.payload,
-        pwd: password
+        pwd: hash,
+        ...data
     };
 
     const userModel = await User.create(newUser);
