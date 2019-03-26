@@ -15,7 +15,7 @@
     ],
     "main": "src/index.js",
     "bin": {
-        "dw-api": "NODE_ENV=production src/index.js",
+        "dw-api": "src/index.js",
         "dw-sync": "scripts/sync-db.js"
     },
     "scripts": {
