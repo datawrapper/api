@@ -122,10 +122,14 @@ async function login(request, h) {
 }
 
 async function logout(request, h) {
-    const session = await Session.findByPk(request.state[api.sessionID], {
+    const session = await Session.findByPk(request.auth.credentials.session, {
         attributes: ['id']
     });
-    await session.destroy();
+
+    if (session) {
+        await session.destroy();
+    }
+
     return h
         .response()
         .code(205)
