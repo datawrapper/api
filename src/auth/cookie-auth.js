@@ -44,7 +44,7 @@ internals.implementation = (server, options) => {
              * More information and a similar issue can be found on Github:
              * https://github.com/jshttp/cookie/issues/18#issuecomment-30344206
              */
-            if (typeof session !== 'string') {
+            if (Array.isArray(session)) {
                 session = session[0];
             }
 
