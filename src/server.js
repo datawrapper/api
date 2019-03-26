@@ -62,6 +62,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             prettyPrint: true,
             timestamp: () => `,"time":"${new Date().toISOString()}"`,
             logEvents: ['request', 'log', 'onPostStart', 'onPostStop'],
+            level: process.env.NODE_ENV === 'test' ? 'error' : 'info',
             base: { name: pkg.version },
             redact: process.env.NODE_ENV === 'development' && [
                 'req.headers.authorization',
