@@ -1,6 +1,7 @@
 const Hapi = require('hapi');
 const HapiSwagger = require('hapi-swagger');
 const findUp = require('find-up');
+const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
 
 const pkg = require('../package.json');
@@ -85,7 +86,7 @@ async function configure() {
     });
 
     server.ext('onRequest', (request, h) => {
-        const { pathname } = request.url;
+        const { pathname = '' } = get(request, 'url', {});
         if (pathname.startsWith('/3')) {
             request.setUrl(pathname.replace('/3', '/v3'));
         }
