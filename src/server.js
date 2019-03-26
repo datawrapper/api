@@ -23,17 +23,18 @@ const OpenAPI = {
         info: {
             title: 'Datawrapper API v3 Documentation',
             version: pkg.version,
-            'x-info': process.env.DEV
-                ? {
-                      node: process.version,
-                      hapi: pkg.dependencies.hapi
-                  }
-                : undefined
+            'x-info':
+                process.env.NODE_ENV === 'development'
+                    ? {
+                          node: process.version,
+                          hapi: pkg.dependencies.hapi
+                      }
+                    : undefined
         },
         jsonPath: '/',
         basePath: '/v3/',
-        documentationPage: !!process.env.DEV,
-        swaggerUI: !!process.env.DEV
+        documentationPage: process.env.NODE_ENV === 'development',
+        swaggerUI: process.env.NODE_ENV === 'development'
     }
 };
 
@@ -71,7 +72,7 @@ async function configure() {
 
     await ORM.init(config);
 
-    if (process.env.DEV) {
+    if (process.env.NODE_ENV === 'development') {
         server.register([require('inert'), require('vision')]);
     }
 

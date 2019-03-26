@@ -15,14 +15,14 @@
     ],
     "main": "src/index.js",
     "bin": {
-        "dw-api": "src/index.js",
+        "dw-api": "NODE_ENV=production src/index.js",
         "dw-sync": "scripts/sync-db.js"
     },
     "scripts": {
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
         "test": "ava --verbose",
-        "dev": "DEV=true nodemon src/index.js"
+        "dev": "NODE_ENV=development nodemon src/index.js"
     },
     "repository": {
         "type": "git",
