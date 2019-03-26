@@ -66,7 +66,7 @@ module.exports = {
                     payload: {
                         name: Joi.string(),
                         email: Joi.string().email(),
-                        role: Joi.string().valid(['admin', 'editor']),
+                        role: Joi.string().valid(['editor', 'admin']),
                         language: Joi.string()
                     }
                 }
@@ -85,14 +85,7 @@ module.exports = {
                         email: Joi.string()
                             .email()
                             .required(),
-                        role: Joi.string().valid([
-                            'admin',
-                            'editor',
-                            'pending',
-                            'guest',
-                            'sysadmin',
-                            'graphic-editor'
-                        ]),
+                        role: Joi.string().valid(['editor', 'admin']),
                         language: Joi.string()
                     }
                 }
