@@ -155,7 +155,7 @@ async function getAllCharts(request, h) {
 
     const charts = rows.map(chart => ({
         ...prepareChart(chart, { metadataFormat: query.metadataFormat }),
-        url: `${url.origin}${url.pathname}/${chart.id}`
+        url: `${url.pathname}/${chart.id}`
     }));
 
     return {
@@ -178,7 +178,7 @@ async function getChart(request, h) {
 
     return {
         ...prepareChart(chart, { metadataFormat: query.metadataFormat }),
-        url: `${url.origin}${url.pathname}`
+        url: `${url.pathname}`
     };
 }
 
