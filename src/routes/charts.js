@@ -66,6 +66,12 @@ module.exports = {
             method: 'POST',
             path: '/{id}/export/{format}',
             options: {
+                description: 'It is recommended to use GET /charts/{id}/export/{format}',
+                plugins: {
+                    'hapi-swagger': {
+                        deprecated: true
+                    }
+                },
                 tags: ['api'],
                 validate: {
                     params: Joi.object().keys({
@@ -109,13 +115,13 @@ module.exports = {
                         width: Joi.number().default(600),
                         height: Joi.any(),
                         plain: Joi.boolean().default(false),
-                        scale: Joi.number().default(1)
+                        scale: Joi.number().default(1),
+                        borderWidth: Joi.number(),
+                        borderColor: Joi.string()
                     })
                 }
             },
-            /* needs Purpose header */
-            handler: async (request, h) =>
-                exportChart({ ...request, payload: request.params }, h, Boom)
+            handler: handleChartExport
         });
     }
 };
@@ -183,10 +189,10 @@ async function getChart(request, h) {
 }
 
 async function createChart(request, h) {
-    const id = await findChartId();
-    let chart;
+    const { url } = request;
 
-    chart = await Chart.create({
+    const id = await findChartId();
+    const chart = await Chart.create({
         title: '',
         theme: 'default',
         type: 'd3-bars',
@@ -197,7 +203,7 @@ async function createChart(request, h) {
         id
     });
 
-    return h.response(prepareChart(chart)).code(201);
+    return h.response({ ...prepareChart(chart), url: `${url.pathname}/${chart.id}` }).code(201);
 }
 
 async function exportChart(request, h) {
@@ -206,4 +212,28 @@ async function exportChart(request, h) {
     } else {
         return Boom.badImplementation();
     }
+}
+
+async function handleChartExport(request, h) {
+    const { borderWidth, borderColor, ...query } = request.query;
+
+    const border =
+        borderWidth || borderColor
+            ? {
+                  width: borderWidth,
+                  color: borderColor
+              }
+            : undefined;
+
+    return exportChart(
+        {
+            ...request,
+            payload: {
+                ...query,
+                border
+            }
+        },
+        h,
+        Boom
+    );
 }
