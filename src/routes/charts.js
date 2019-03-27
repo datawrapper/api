@@ -54,9 +54,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    payload: Joi.object().keys({
+                    payload: Joi.object({
                         title: Joi.string()
-                    })
+                    }).allow(null)
                 }
             },
             handler: createChart
@@ -187,6 +187,7 @@ async function createChart(request, h) {
     let chart;
 
     chart = await Chart.create({
+        title: '',
         theme: 'default',
         type: 'd3-bars',
         metadata: { data: {} },
