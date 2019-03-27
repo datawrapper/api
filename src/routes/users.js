@@ -137,7 +137,7 @@ async function getAllUsers(request, h) {
             return camelizeKeys({
                 ...data,
                 chartCount: charts.length,
-                url: `${url.origin}${url.pathname}/${data.id}`
+                url: `${url.pathname}/${data.id}`
             });
         }),
         total: count
@@ -150,7 +150,7 @@ async function getAllUsers(request, h) {
             limit: query.limit
         });
 
-        set(userList, 'next', `${url.origin}${url.pathname}?${nextParams.toString()}`);
+        set(userList, 'next', `${url.pathname}?${nextParams.toString()}`);
     }
 
     return userList;
@@ -173,7 +173,7 @@ async function getUser(request, h) {
     return camelizeKeys({
         ...data,
         chartCount: charts.length,
-        url: `${url.origin}${url.pathname}`
+        url: `${url.pathname}`
     });
 }
 
