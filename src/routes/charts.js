@@ -207,8 +207,17 @@ async function createChart(request, h) {
 }
 
 async function exportChart(request, h) {
-    if (request.server.methods.chartExport) {
-        return request.server.methods.chartExport(request, h, Boom);
+    const { chartExport } = request.server.methods;
+    if (chartExport) {
+        const { payload, params, auth, logger } = request;
+
+        Object.assign(payload, params);
+        try {
+            const { stream, type } = await chartExport(payload, auth.artifacts.id, logger, Boom);
+            return h.response(stream).header('Content-Type', type);
+        } catch (error) {
+            return Boom[error.message]();
+        }
     } else {
         return Boom.badImplementation();
     }
@@ -216,24 +225,16 @@ async function exportChart(request, h) {
 
 async function handleChartExport(request, h) {
     const { borderWidth, borderColor, ...query } = request.query;
+    let border;
 
-    const border =
-        borderWidth || borderColor
-            ? {
-                  width: borderWidth,
-                  color: borderColor
-              }
-            : undefined;
+    if (borderWidth || borderColor) {
+        border = {
+            width: borderWidth,
+            color: borderColor
+        };
+    }
 
-    return exportChart(
-        {
-            ...request,
-            payload: {
-                ...query,
-                border
-            }
-        },
-        h,
-        Boom
-    );
+    request.payload = Object.assign(query, border);
+
+    return exportChart(request, h);
 }
