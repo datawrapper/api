@@ -166,7 +166,11 @@ async function getAllCharts(request, h) {
 
 async function getChart(request, h) {
     const { query, url, params, auth } = request;
-    const chart = await Chart.findByPk(params.id);
+    const chart = await Chart.findByPk(params.id, {
+        attributes: {
+            exclude: ['guest_session']
+        }
+    });
 
     if (chart.author_id !== auth.artifacts.id && !chart.published_at) {
         request.server.methods.isAdmin(request, { throwError: true });
