@@ -1,15 +1,7 @@
 const Boom = require('boom');
 const Joi = require('joi');
-const findUp = require('find-up');
 const { cookieTTL } = require('../utils');
 const internals = {};
-
-const configPath = findUp.sync('config.js');
-const { api } = require(configPath);
-
-internals.defaults = {
-    cookie: api.sessionID
-};
 
 internals.schema = Joi.object().keys({
     cookie: Joi.string(),
@@ -17,7 +9,8 @@ internals.schema = Joi.object().keys({
 });
 
 internals.implementation = (server, options) => {
-    const opts = { ...internals.defaults, ...options };
+    const api = server.methods.config('api');
+    const opts = { cookie: api.sessionID, ...options };
     Joi.assert(opts, internals.schema);
 
     server.state(opts.cookie, {

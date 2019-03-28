@@ -76,6 +76,8 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     await ORM.init(config);
 
+    server.method('config', key => (key ? config[key] : config));
+
     if (process.env.NODE_ENV === 'development') {
         server.register([require('inert'), require('vision')]);
     }

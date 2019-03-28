@@ -3,12 +3,8 @@ const crypto = require('crypto');
 const nanoid = require('nanoid');
 const Joi = require('joi');
 const Boom = require('boom');
-const findUp = require('find-up');
 const { User, Session } = require('@datawrapper/orm/models');
 const { cookieTTL } = require('../utils');
-
-const configPath = findUp.sync('config.js');
-const { api } = require(configPath);
 
 const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
 
@@ -22,21 +18,23 @@ const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
  * @deprecated
  * @param {string} password - Password string sent from the client (Can be client side hashed or not)
  * @param {string} passwordHash - Password hash to compare (from DB)
+ * @param {string} authSalt - defined in config.js
+ * @param {string} secretAuthSalt - defined in config.js
  * @returns {boolean}
  */
-function legacyLogin(password, passwordHash) {
+function legacyLogin(password, passwordHash, authSalt, secretAuthSalt) {
     function legacyHash(pwhash, secret) {
         const hmac = crypto.createHmac('sha256', secret);
         hmac.update(pwhash);
         return hmac.digest('hex');
     }
 
-    let serverHash = api.secretAuthSalt ? legacyHash(password, api.secretAuthSalt) : password;
+    let serverHash = secretAuthSalt ? legacyHash(password, secretAuthSalt) : password;
 
     if (serverHash === passwordHash) return true;
 
-    const clientHash = legacyHash(password, api.authSalt || DEFAULT_SALT);
-    serverHash = api.secretAuthSalt ? legacyHash(clientHash, api.secretAuthSalt) : clientHash;
+    const clientHash = legacyHash(password, authSalt || DEFAULT_SALT);
+    serverHash = secretAuthSalt ? legacyHash(clientHash, secretAuthSalt) : clientHash;
 
     return serverHash === passwordHash;
 }
@@ -88,6 +86,7 @@ async function login(request, h) {
     }
 
     let isValid = false;
+    const api = request.server.methods.config('api');
 
     /**
      * Bcrypt uses a prefix for versioning. That way a bcrypt hash can be identified with "$2".
@@ -96,7 +95,7 @@ async function login(request, h) {
     if (user.pwd.startsWith('$2')) {
         isValid = await bcrypt.compare(password, user.pwd);
     } else {
-        isValid = legacyLogin(password, user.pwd);
+        isValid = legacyLogin(password, user.pwd, api.authSalt, api.secretAuthSalt);
     }
 
     if (!isValid) {
@@ -129,6 +128,8 @@ async function logout(request, h) {
     if (session) {
         await session.destroy();
     }
+
+    const api = request.server.methods.config('api');
 
     return h
         .response()
