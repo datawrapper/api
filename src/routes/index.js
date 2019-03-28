@@ -8,6 +8,12 @@ module.exports = {
             }
         });
 
+        server.register(require('./me'), {
+            routes: {
+                prefix: '/me'
+            }
+        });
+
         server.register(require('./auth'), {
             routes: {
                 prefix: '/auth'
