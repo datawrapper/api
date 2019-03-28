@@ -10,7 +10,7 @@ async function getUser(userId, credentials, strategy) {
         attributes: ['id', 'email', 'role', 'language']
     });
 
-    if (!user) {
+    if (!user || user.email === 'DELETED') {
         return { isValid: false, message: Boom.unauthorized('User not found', strategy) };
     }
 
