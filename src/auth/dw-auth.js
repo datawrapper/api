@@ -41,6 +41,8 @@ async function bearerValidation(request, token, h) {
         return { isValid: false, message: Boom.unauthorized('Token not found', 'Token') };
     }
 
+    await row.update({ last_used_at: new Date() });
+
     return getUser(row.user_id, { token }, 'Token');
 }
 
