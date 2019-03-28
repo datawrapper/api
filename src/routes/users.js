@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const Boom = require('boom');
 const sequelize = require('sequelize');
 const nanoid = require('nanoid');
 const bcrypt = require('bcrypt');
@@ -94,8 +95,39 @@ module.exports = {
             },
             handler: createUser
         });
+
+        server.route({
+            method: 'DELETE',
+            path: '/{id}',
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: {
+                        id: Joi.number().required()
+                    },
+                    payload: {
+                        email: Joi.string()
+                            .email()
+                            .required()
+                    }
+                }
+            },
+            handler: deleteUser
+        });
+
+        server.method('userIsDeleted', isDeleted);
     }
 };
+
+async function isDeleted(id) {
+    const user = await User.findByPk(id, {
+        attributes: ['email']
+    });
+
+    if (user.email === 'DELETED') {
+        throw Boom.notFound();
+    }
+}
 
 async function getAllUsers(request, h) {
     const { query, auth, url } = request;
@@ -160,6 +192,8 @@ async function getUser(request, h) {
     const { params, url, auth } = request;
     const userId = params.id;
 
+    await request.server.methods.userIsDeleted(userId);
+
     if (userId !== auth.artifacts.id) {
         request.server.methods.isAdmin(request, { throwError: true });
     }
@@ -180,6 +214,8 @@ async function getUser(request, h) {
 async function editUser(request, h) {
     const { auth, params } = request;
     const userId = params.id;
+
+    await request.server.methods.userIsDeleted(userId);
 
     if (userId !== auth.artifacts.id) {
         request.server.methods.isAdmin(request, { throwError: true });
@@ -211,4 +247,30 @@ async function createUser(request, h) {
     const userModel = await User.create(newUser);
     const { pwd, ...user } = userModel.dataValues;
     return h.response(user).code(201);
+}
+
+async function deleteUser(request, h) {
+    const { id } = request.params;
+
+    await request.server.methods.userIsDeleted(id);
+
+    if (!request.server.methods.isAdmin(request)) {
+        if (id !== request.auth.artifacts.id) {
+            return Boom.forbidden('You can only delete your account');
+        }
+
+        const { email } = request.payload;
+        const user = await User.findByPk(id, { attributes: ['email'] });
+
+        if (email !== user.email) {
+            return Boom.badRequest('Wrong email address');
+        }
+    }
+
+    await User.update(
+        { email: 'DELETED', name: 'DELETED', pwd: 'DELETED', website: 'DELETED' },
+        { where: { id } }
+    );
+
+    return h.response().code(204);
 }
