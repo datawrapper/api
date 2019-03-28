@@ -4,37 +4,38 @@ const findUp = require('find-up');
 const get = require('lodash/get');
 
 const pkg = require(findUp.sync('package.json'));
-const config = require(findUp.sync('config.js'));
 
 const localPluginPaths = glob.sync('plugins/*/index.js', { absolute: true });
 const localPlugins = localPluginPaths.map(require);
 
-function findPlugin(name) {
-    const pluginObject = {
-        options: {
-            models,
-            config: get(config, ['plugins', name], {})
-        }
-    };
-
-    if (pkg.dependencies[name]) {
-        pluginObject.plugin = require(name);
-        pluginObject.type = 'npm';
-    }
-
-    const plugin = localPlugins.find(plugin => plugin.name === name);
-    if (plugin) {
-        pluginObject.plugin = plugin;
-        pluginObject.type = 'local';
-    }
-
-    if (!pluginObject.plugin) {
-        return {
-            error: name
+function findPlugin(config) {
+    return name => {
+        const pluginObject = {
+            options: {
+                models,
+                config: get(config, ['plugins', name], {})
+            }
         };
-    }
 
-    return pluginObject;
+        if (pkg.dependencies[name]) {
+            pluginObject.plugin = require(name);
+            pluginObject.type = 'npm';
+        }
+
+        const plugin = localPlugins.find(plugin => plugin.name === name);
+        if (plugin) {
+            pluginObject.plugin = plugin;
+            pluginObject.type = 'local';
+        }
+
+        if (!pluginObject.plugin) {
+            return {
+                error: name
+            };
+        }
+
+        return pluginObject;
+    };
 }
 
 let loadingError = false;
@@ -42,7 +43,8 @@ module.exports = {
     name: 'plugin-loader',
     version: '1.0.0',
     register: async (server, options) => {
-        const plugins = Object.keys(config.plugins || []).map(findPlugin);
+        const config = server.methods.config();
+        const plugins = Object.keys(config.plugins || []).map(findPlugin(config));
 
         if (plugins.length) {
             plugins.forEach(({ plugin, type, error }) => {
