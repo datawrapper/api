@@ -1,9 +1,11 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const nanoid = require('nanoid');
+const { camelizeKeys } = require('humps');
 const Joi = require('joi');
 const Boom = require('boom');
-const { User, Session } = require('@datawrapper/orm/models');
+const { User, Session, AuthToken } = require('@datawrapper/orm/models');
+const set = require('lodash/set');
 const { cookieTTL } = require('../utils');
 
 const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
@@ -71,6 +73,53 @@ module.exports = {
             },
             handler: logout
         });
+
+        server.route({
+            method: 'GET',
+            path: '/tokens',
+            options: {
+                tags: ['api'],
+                validate: {
+                    query: {
+                        limit: Joi.number()
+                            .integer()
+                            .default(100),
+                        offset: Joi.number()
+                            .integer()
+                            .default(0)
+                    }
+                }
+            },
+            handler: getAllTokens
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/tokens',
+            options: {
+                tags: ['api'],
+                validate: {
+                    payload: Joi.object({
+                        comment: Joi.string().required()
+                    })
+                }
+            },
+            handler: createToken
+        });
+
+        server.route({
+            method: 'DELETE',
+            path: '/tokens/{id}',
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: {
+                        id: Joi.number().required()
+                    }
+                }
+            },
+            handler: deleteToken
+        });
     }
 };
 
@@ -136,4 +185,65 @@ async function logout(request, h) {
         .code(205)
         .unstate(api.sessionID)
         .header('Clear-Site-Data', '"cookies", "storage", "executionContexts"');
+}
+
+async function getAllTokens(request, h) {
+    const { query, auth, url } = request;
+
+    const options = {
+        attributes: ['id', 'token', 'last_used_at', 'comment'],
+        where: {
+            user_id: auth.artifacts.id
+        },
+        limit: query.limit,
+        offset: query.offset
+    };
+
+    const { count, rows } = await AuthToken.findAndCountAll(options);
+
+    const tokenList = {
+        list: rows.map(({ dataValues }) => {
+            const { token, ...data } = dataValues;
+            return camelizeKeys({
+                ...data,
+                lastTokenCharacters: token.slice(-4),
+                url: `${url.pathname}/${data.id}`
+            });
+        }),
+        total: count
+    };
+
+    if (query.limit + query.offset < count) {
+        const nextParams = new URLSearchParams({
+            ...query,
+            offset: query.limit + query.offset,
+            limit: query.limit
+        });
+
+        set(tokenList, 'next', `${url.pathname}?${nextParams.toString()}`);
+    }
+
+    return tokenList;
+}
+
+async function createToken(request, h) {
+    const token = await AuthToken.newToken({
+        user_id: request.auth.artifacts.id,
+        comment: request.payload.comment
+    });
+
+    return camelizeKeys(token.dataValues);
+}
+
+async function deleteToken(request, h) {
+    const token = await AuthToken.findByPk(request.params.id, {
+        where: { user_id: request.auth.artifacts.id }
+    });
+
+    if (!token) {
+        return Boom.notFound();
+    }
+
+    await token.destroy();
+    return h.response().code(204);
 }
