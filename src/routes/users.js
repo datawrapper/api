@@ -250,27 +250,33 @@ async function createUser(request, h) {
 }
 
 async function deleteUser(request, h) {
+    const { auth, server, payload } = request;
     const { id } = request.params;
 
-    await request.server.methods.userIsDeleted(id);
+    await server.methods.userIsDeleted(id);
 
-    if (!request.server.methods.isAdmin(request)) {
-        if (id !== request.auth.artifacts.id) {
-            return Boom.forbidden('You can only delete your account');
-        }
+    if (!server.methods.isAdmin(request) && id !== auth.artifacts.id) {
+        return Boom.forbidden('You can only delete your account');
+    }
 
-        const { email } = request.payload;
-        const user = await User.findByPk(id, { attributes: ['email'] });
+    const user = await User.findByPk(id, { attributes: ['email', 'role'] });
+    if (payload.email !== user.email) {
+        return Boom.badRequest('Wrong email address');
+    }
 
-        if (email !== user.email) {
-            return Boom.badRequest('Wrong email address');
-        }
+    if (user.role === 'admin') {
+        return Boom.forbidden('Can not delete admin account');
     }
 
     await User.update(
-        { email: 'DELETED', name: 'DELETED', pwd: 'DELETED', website: 'DELETED' },
+        { email: 'DELETED', name: 'DELETED', pwd: 'DELETED', website: 'DELETED', deleted: true },
         { where: { id } }
     );
 
-    return h.response().code(204);
+    const { sessionID } = server.methods.config('api');
+
+    return h
+        .response()
+        .unstate(sessionID)
+        .code(204);
 }

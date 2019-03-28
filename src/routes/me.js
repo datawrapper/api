@@ -29,6 +29,20 @@ module.exports = {
             },
             handler: updateMe
         });
+
+        server.route({
+            method: 'DELETE',
+            path: '/',
+            options: {
+                tags: ['api'],
+                validate: {
+                    payload: {
+                        email: Joi.string().email()
+                    }
+                }
+            },
+            handler: deleteMe
+        });
     }
 };
 
@@ -38,7 +52,7 @@ async function getMe(request, h) {
         url: `/v3/users/${request.auth.artifacts.id}`,
         auth: request.auth
     });
-    return res.result;
+    return h.response(res.result).code(res.statusCode);
 }
 
 async function updateMe(request, h) {
@@ -49,5 +63,21 @@ async function updateMe(request, h) {
         payload: request.payload
     });
 
-    return res.result;
+    return h.response(res.result).code(res.statusCode);
+}
+
+async function deleteMe(request, h) {
+    const res = await request.server.inject({
+        method: 'DELETE',
+        url: `/v3/users/${request.auth.artifacts.id}`,
+        auth: request.auth,
+        payload: request.payload
+    });
+
+    const { sessionID } = request.server.methods.config('api');
+
+    return h
+        .response(res.result)
+        .code(res.statusCode)
+        .unstate(sessionID);
 }
