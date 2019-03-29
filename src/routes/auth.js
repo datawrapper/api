@@ -10,6 +10,20 @@ const { cookieTTL } = require('../utils');
 const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
 
 /**
+ * Generate a sha256 hash from a string. This is used in the PHP API and is needed for backwards
+ * compatibility.
+ *
+ * @param {string} pwhash - value to hash with sha256
+ * @param {string} secret - salt to hash the value with
+ * @returns {string}
+ */
+function legacyHash(pwhash, secret) {
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(pwhash);
+    return hmac.digest('hex');
+}
+
+/**
  * The old PHP API used sha256 to hash passwords with constant salts.
  * The Node.js API uses bcrypt which is more secure.
  * It is still important to support the old way for migration purposes since PHP and Node API
@@ -24,20 +38,31 @@ const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
  * @returns {boolean}
  */
 function legacyLogin(password, passwordHash, authSalt, secretAuthSalt) {
-    function legacyHash(pwhash, secret) {
-        const hmac = crypto.createHmac('sha256', secret);
-        hmac.update(pwhash);
-        return hmac.digest('hex');
-    }
-
     let serverHash = secretAuthSalt ? legacyHash(password, secretAuthSalt) : password;
 
     if (serverHash === passwordHash) return true;
 
     const clientHash = legacyHash(password, authSalt || DEFAULT_SALT);
     serverHash = secretAuthSalt ? legacyHash(clientHash, secretAuthSalt) : clientHash;
-
     return serverHash === passwordHash;
+}
+
+/**
+ * Migrate the old sha256 password hash to a more modern and secure bcrypt hash.
+ *
+ * @param {number} userId - ID of the user to migrate
+ * @param {string} password - User password
+ * @param {number} hashRounds - Iteration amout for bcrypt
+ */
+async function migrateHashToBcrypt(userId, password, hashRounds) {
+    const hash = await bcrypt.hash(password, hashRounds);
+
+    await User.update(
+        {
+            pwd: hash
+        },
+        { where: { id: userId } }
+    );
 }
 
 module.exports = {
@@ -176,8 +201,30 @@ async function login(request, h) {
      */
     if (user.pwd.startsWith('$2')) {
         isValid = await bcrypt.compare(password, user.pwd);
+
+        /**
+         * Due to the migration from sha256 to bcrypt, the API must deal with sha256 passwords that
+         * got created by the PHP API and migrated from the `migrateHashToBcrypt` function.
+         * The node API get's passwords only in clear text and to compare those with a migrated
+         * password, it first has to generate the former client hashed password.
+         */
+        if (!isValid) {
+            isValid = await bcrypt.compare(legacyHash(password, api.authSalt), user.pwd);
+        }
     } else {
+        /**
+         * The user password hash was created by the PHP API and is not a bcrypt hash. That means
+         * the API needs to use the old comparison method with double sha256 hashes.
+         */
         isValid = legacyLogin(password, user.pwd, api.authSalt, api.secretAuthSalt);
+
+        /**
+         * When the old method works, the API migrates the old hash to a bcrypt hash for more
+         * security. This ensures a seemless migration for users.
+         */
+        if (isValid && api.enableMigration) {
+            await migrateHashToBcrypt(user.id, password, api.hashRounds);
+        }
     }
 
     if (!isValid) {
