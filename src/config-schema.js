@@ -16,6 +16,7 @@ const schema = Joi.object()
                     .required()
                     .default('DW-SESSION'),
                 https: Joi.boolean(),
+                hashRounds: Joi.number().integer(),
                 authSalt: Joi.string(),
                 secretAuthSalt: Joi.string()
             })
