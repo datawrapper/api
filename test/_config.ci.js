@@ -2,7 +2,10 @@ module.exports = {
     api: {
         domain: 'localhost',
         sessionID: 'DW-SESSION',
-        enableMigration: true
+        enableMigration: true,
+        hashRounds: 15,
+        authSalt: process.env.AUTH_SALT,
+        secretAuthSalt: process.env.SECRET_AUTH_SALT
     },
     plugins: {
         'hello-world': {}
