@@ -1,7 +1,6 @@
 const Joi = require('joi');
 const Boom = require('boom');
 const sequelize = require('sequelize');
-const nanoid = require('nanoid');
 const bcrypt = require('bcrypt');
 const { decamelize, camelizeKeys } = require('humps');
 const set = require('lodash/set');
@@ -245,7 +244,7 @@ async function editUser(request, h) {
 }
 
 async function createUser(request, h) {
-    const { password = nanoid(), ...data } = request.payload;
+    const { password = 'EMPTY', ...data } = request.payload;
 
     const existingUser = await User.findOne({ where: { email: data.email } });
 
