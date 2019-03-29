@@ -83,7 +83,7 @@ module.exports = {
                 auth: false,
                 tags: ['api'],
                 validate: {
-                    payload: {
+                    payload: Joi.object({
                         name: Joi.string(),
                         email: Joi.string()
                             .email()
@@ -91,7 +91,7 @@ module.exports = {
                         role: Joi.string().valid(['editor', 'admin']),
                         language: Joi.string(),
                         password: Joi.string()
-                    }
+                    }).unknown()
                 }
             },
             handler: createUser
@@ -246,6 +246,13 @@ async function editUser(request, h) {
 
 async function createUser(request, h) {
     const { password = nanoid(), ...data } = request.payload;
+
+    const existingUser = await User.findOne({ where: { email: data.email } });
+
+    if (existingUser) {
+        return Boom.conflict('User already exists');
+    }
+
     const hash = await bcrypt.hash(password, 14);
 
     const newUser = {
