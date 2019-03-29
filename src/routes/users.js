@@ -255,7 +255,9 @@ async function deleteUser(request, h) {
 
     await server.methods.userIsDeleted(id);
 
-    if (!server.methods.isAdmin(request) && id !== auth.artifacts.id) {
+    const isSameUser = id === auth.artifacts.id;
+
+    if (!server.methods.isAdmin(request) && !isSameUser) {
         return Boom.forbidden('You can only delete your account');
     }
 
@@ -273,10 +275,12 @@ async function deleteUser(request, h) {
         { where: { id } }
     );
 
-    const { sessionID } = server.methods.config('api');
+    const response = h.response().code(204);
 
-    return h
-        .response()
-        .unstate(sessionID)
-        .code(204);
+    if (isSameUser) {
+        const { sessionID } = server.methods.config('api');
+        response.unstate(sessionID);
+    }
+
+    return response;
 }
