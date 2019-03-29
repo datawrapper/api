@@ -74,6 +74,7 @@ test('It should be possible to create a user, login and logout', async t => {
 
     /* start - replace with DELETE endpoint in the future */
     await t.context.deleteUserFromDB(credentials.email);
+    t.log('Deleted', credentials.email);
     /* end */
 });
 
@@ -90,9 +91,12 @@ test('New user passwords should be saved as bcrypt hash', async t => {
         payload: { ...credentials, language: 'de-DE' }
     });
 
+    t.log('User created', result.email);
+
     const user = await t.context.User.findByPk(result.id, { attributes: ['pwd'] });
 
     t.is(user.pwd.slice(0, 2), '$2');
 
     await t.context.deleteUserFromDB(credentials.email);
+    t.log('Deleted', credentials.email);
 });

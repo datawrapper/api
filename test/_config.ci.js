@@ -1,7 +1,8 @@
 module.exports = {
     api: {
         domain: 'localhost',
-        sessionID: 'DW-SESSION'
+        sessionID: 'DW-SESSION',
+        enableMigration: true
     },
     plugins: {
         'hello-world': {}
