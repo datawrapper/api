@@ -1,6 +1,5 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const nanoid = require('nanoid');
 const { camelizeKeys } = require('humps');
 const Joi = require('joi');
 const Boom = require('boom');
@@ -168,7 +167,8 @@ async function login(request, h) {
     }
 
     let isValid = false;
-    const api = request.server.methods.config('api');
+    const { generateToken, config } = request.server.methods;
+    const api = config('api');
 
     /**
      * Bcrypt uses a prefix for versioning. That way a bcrypt hash can be identified with "$2".
@@ -184,7 +184,7 @@ async function login(request, h) {
         return Boom.unauthorized('Invalid credentials');
     }
 
-    const session = await createSession(nanoid(), user.id, keepSession);
+    const session = await createSession(generateToken(), user.id, keepSession);
 
     return h
         .response({
