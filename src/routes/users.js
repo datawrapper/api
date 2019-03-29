@@ -5,7 +5,7 @@ const nanoid = require('nanoid');
 const bcrypt = require('bcrypt');
 const { decamelize, camelizeKeys } = require('humps');
 const set = require('lodash/set');
-const { User, Chart } = require('@datawrapper/orm/models');
+const { User, Chart, Team } = require('@datawrapper/orm/models');
 
 const { Op } = sequelize;
 const attributes = ['id', 'email', 'name', 'role', 'language', 'created_at'];
@@ -21,6 +21,7 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     query: {
+                        teamId: Joi.string(),
                         search: Joi.string(),
                         order: Joi.string()
                             .uppercase()
@@ -130,7 +131,7 @@ async function isDeleted(id) {
 }
 
 async function getAllUsers(request, h) {
-    const { query, auth, url } = request;
+    const { query, auth, url, server } = request;
 
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
@@ -142,30 +143,39 @@ async function getAllUsers(request, h) {
             }
         ],
         where: {
-            email: {
-                [Op.not]: 'DELETED'
+            deleted: {
+                [Op.not]: true
             }
         },
         limit: query.limit,
-        offset: query.offset
+        offset: query.offset,
+        distinct: true
     };
 
     if (query.search) {
         set(options, ['where', 'email', Op.like], `%${query.search}%`);
     }
 
-    if (!request.server.methods.isAdmin(request)) {
+    if (server.methods.isAdmin(request)) {
+        set(options, ['include', 1], { model: Team, attributes: ['id', 'name'] });
+
+        if (query.teamId) {
+            set(options, ['include', 1, 'where', 'id'], query.teamId);
+        }
+    } else {
         set(options, ['where', 'id'], auth.artifacts.id);
     }
 
-    const [users, count] = await Promise.all([
-        User.findAll(options),
-        User.count({ where: options.where })
-    ]);
+    const { rows, count } = await User.findAndCountAll(options);
 
     const userList = {
-        list: users.map(({ dataValues }) => {
-            const { charts, ...data } = dataValues;
+        list: rows.map(({ dataValues }) => {
+            const { charts, teams, ...data } = dataValues;
+
+            if (teams) {
+                data.teams = teams.map(team => ({ id: team.id, name: team.name }));
+            }
+
             return camelizeKeys({
                 ...data,
                 chartCount: charts.length,
