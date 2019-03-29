@@ -252,7 +252,9 @@ async function createUser(request, h) {
         return Boom.conflict('User already exists');
     }
 
-    const hash = await bcrypt.hash(password, 14);
+    const { hashRounds = 15 } = request.server.methods.config('api');
+
+    const hash = await bcrypt.hash(password, hashRounds);
 
     const newUser = {
         role: 'pending',

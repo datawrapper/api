@@ -6,6 +6,13 @@ module.exports = {
         sessionID: 'DW-SESSION',
         https: false,
         /**
+         * Amount of iterations the hashing algorithm uses. Value should be based on the hardware
+         * the API server is running on.
+         *
+         * Recommendation: A request to /auth/login should take approximately 2s to complete.
+         */
+        hashRounds: 15,
+        /**
          * This key is deprecated and only used for legacy hash comparison.
          * https://github.com/datawrapper/datawrapper/blob/master/config.template.yaml#L20.
          *
