@@ -120,8 +120,41 @@ module.exports = {
             },
             handler: deleteToken
         });
+
+        server.route({
+            method: 'POST',
+            path: '/signup',
+            options: {
+                tags: ['api'],
+                auth: {
+                    mode: 'try',
+                    strategy: 'session'
+                },
+                validate: {
+                    payload: {
+                        email: Joi.string()
+                            .email()
+                            .required(),
+                        language: Joi.string().default('en_US'),
+                        password: Joi.string().required()
+                    }
+                }
+            },
+            handler: signup
+        });
     }
 };
+
+async function createSession(id, userId, keepSession = true) {
+    return Session.create({
+        id,
+        data: {
+            'dw-user-id': userId,
+            persistent: keepSession,
+            last_action_time: Math.floor(Date.now() / 1000)
+        }
+    });
+}
 
 async function login(request, h) {
     const { email, password, keepSession } = request.payload;
@@ -151,14 +184,7 @@ async function login(request, h) {
         return Boom.unauthorized('Invalid credentials');
     }
 
-    const session = await Session.create({
-        id: nanoid(),
-        data: {
-            'dw-user-id': user.id,
-            persistent: keepSession,
-            last_action_time: Math.floor(Date.now() / 1000)
-        }
-    });
+    const session = await createSession(nanoid(), user.id, keepSession);
 
     return h
         .response({
@@ -246,4 +272,38 @@ async function deleteToken(request, h) {
 
     await token.destroy();
     return h.response().code(204);
+}
+
+async function signup(request, h) {
+    let session;
+
+    if (request.auth.isAuthenticated) {
+        session = await Session.findByPk(request.auth.credentials.session);
+
+        if (session.data['dw-user-id']) {
+            return Boom.badRequest('Impossible to sign up with active user session');
+        }
+    }
+
+    const { generateToken, config } = request.server.methods;
+
+    request.payload.activate_token = generateToken();
+
+    const res = await request.server.inject({
+        method: 'POST',
+        url: '/v3/users',
+        payload: request.payload
+    });
+
+    if (res.statusCode !== 201) {
+        return h.response(res.result).code(res.statusCode);
+    }
+
+    session = await createSession(generateToken(), res.result.id);
+
+    const { activate_token, ...data } = res.result;
+
+    return h.response(camelizeKeys(data)).state(config('api').sessionID, session.id, {
+        ttl: cookieTTL(90)
+    });
 }

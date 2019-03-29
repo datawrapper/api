@@ -5,6 +5,8 @@ const findUp = require('find-up');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
 
+const { generateToken } = require('./utils');
+
 const pkg = require('../package.json');
 
 const configPath = findUp.sync('config.js');
@@ -77,6 +79,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     await ORM.init(config);
 
     server.method('config', key => (key ? config[key] : config));
+    server.method('generateToken', generateToken);
 
     if (process.env.NODE_ENV === 'development') {
         server.register([require('inert'), require('vision')]);
