@@ -20,7 +20,7 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: {
-                        name: Joi.string(),
+                        name: Joi.string().allow(null),
                         email: Joi.string().email(),
                         role: Joi.string().valid(['editor', 'admin']),
                         language: Joi.string()
