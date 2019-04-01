@@ -7,7 +7,7 @@ const set = require('lodash/set');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
 
 const { Op } = sequelize;
-const attributes = ['id', 'email', 'name', 'role', 'language', 'created_at'];
+const attributes = ['id', 'email', 'name', 'role', 'language'];
 
 module.exports = {
     name: 'users-routes',
@@ -65,7 +65,7 @@ module.exports = {
                         id: Joi.number().required()
                     },
                     payload: {
-                        name: Joi.string(),
+                        name: Joi.string().allow(null),
                         email: Joi.string().email(),
                         role: Joi.string().valid(['editor', 'admin']),
                         language: Joi.string()
@@ -83,7 +83,7 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: Joi.object({
-                        name: Joi.string(),
+                        name: Joi.string().allow(null),
                         email: Joi.string()
                             .email()
                             .required(),
@@ -158,6 +158,8 @@ async function getAllUsers(request, h) {
     if (server.methods.isAdmin(request)) {
         set(options, ['include', 1], { model: Team, attributes: ['id', 'name'] });
 
+        options.attributes.push('created_at');
+
         if (query.teamId) {
             set(options, ['include', 1, 'where', 'id'], query.teamId);
         }
@@ -168,7 +170,7 @@ async function getAllUsers(request, h) {
     const { rows, count } = await User.findAndCountAll(options);
 
     const userList = {
-        list: rows.map(({ dataValues }) => {
+        list: rows.map(({ role, dataValues }) => {
             const { charts, teams, ...data } = dataValues;
 
             if (teams) {
@@ -177,6 +179,7 @@ async function getAllUsers(request, h) {
 
             return camelizeKeys({
                 ...data,
+                role,
                 chartCount: charts.length,
                 url: `${url.pathname}/${data.id}`
             });
@@ -200,21 +203,23 @@ async function getAllUsers(request, h) {
 async function getUser(request, h) {
     const { params, url, auth } = request;
     const userId = params.id;
+    let isAdmin = request.server.methods.isAdmin(request);
 
     await request.server.methods.userIsDeleted(userId);
 
-    if (userId !== auth.artifacts.id) {
-        request.server.methods.isAdmin(request, { throwError: true });
+    if (userId !== auth.artifacts.id && !isAdmin) {
+        throw Boom.unauthorized();
     }
 
-    const { dataValues } = await User.findByPk(userId, {
-        attributes,
+    const { role, dataValues } = await User.findByPk(userId, {
+        attributes: attributes.concat(isAdmin ? ['created_at'] : []),
         include: [{ model: Chart, attributes: ['id'] }]
     });
 
     const { charts, ...data } = dataValues;
     return camelizeKeys({
         ...data,
+        role,
         chartCount: charts.length,
         url: `${url.pathname}`
     });
@@ -259,12 +264,24 @@ async function createUser(request, h) {
     const newUser = {
         role: 'pending',
         pwd: hash,
+        name: null,
         ...data
     };
 
-    const userModel = await User.create(newUser);
-    const { pwd, ...user } = userModel.dataValues;
-    return h.response(user).code(201);
+    const { role, dataValues } = await User.create(newUser);
+    const { pwd, ...user } = dataValues;
+
+    const { count } = await Chart.findAndCountAll({ where: { author_id: user.id } });
+
+    return h
+        .response({
+            ...user,
+            role,
+            url: `${request.url.pathname}/${user.id}`,
+            chartCount: count,
+            createdAt: request.server.methods.isAdmin(request) ? user.created_at : undefined
+        })
+        .code(201);
 }
 
 async function deleteUser(request, h) {
