@@ -18,11 +18,6 @@ test.before(async t => {
     };
 });
 
-test('GET v3/users exists', async t => {
-    const res = await t.context.server.inject('/v3/users');
-    t.is(res.statusCode, 401);
-});
-
 test('It should be possible to create a user, login and logout', async t => {
     const credentials = {
         email: `test-${nanoid(5)}@ava.js`,

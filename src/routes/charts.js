@@ -62,67 +62,69 @@ module.exports = {
             handler: createChart
         });
 
-        server.route({
-            method: 'POST',
-            path: '/{id}/export/{format}',
-            options: {
-                description: 'It is recommended to use GET /charts/{id}/export/{format}',
-                plugins: {
-                    'hapi-swagger': {
-                        deprecated: true
+        if (server.methods.chartExport) {
+            server.route({
+                method: 'POST',
+                path: '/{id}/export/{format}',
+                options: {
+                    description: 'It is recommended to use GET /charts/{id}/export/{format}',
+                    plugins: {
+                        'hapi-swagger': {
+                            deprecated: true
+                        }
+                    },
+                    tags: ['api'],
+                    validate: {
+                        params: Joi.object().keys({
+                            id: Joi.string()
+                                .length(5)
+                                .required(),
+                            format: Joi.string().required()
+                        }),
+                        payload: Joi.object().keys({
+                            unit: Joi.string().default('px'),
+                            mode: Joi.string().default('rgb'),
+                            width: Joi.number().default(600),
+                            height: Joi.any(),
+                            plain: Joi.boolean().default(false),
+                            scale: Joi.number().default(1),
+                            border: Joi.object().keys({
+                                width: Joi.number(),
+                                color: Joi.string().default('#ffffff')
+                            })
+                        })
                     }
                 },
-                tags: ['api'],
-                validate: {
-                    params: Joi.object().keys({
-                        id: Joi.string()
-                            .length(5)
-                            .required(),
-                        format: Joi.string().required()
-                    }),
-                    payload: Joi.object().keys({
-                        unit: Joi.string().default('px'),
-                        mode: Joi.string().default('rgb'),
-                        width: Joi.number().default(600),
-                        height: Joi.any(),
-                        plain: Joi.boolean().default(false),
-                        scale: Joi.number().default(1),
-                        border: Joi.object().keys({
-                            width: Joi.number(),
-                            color: Joi.string().default('#ffffff')
-                        })
-                    })
-                }
-            },
-            handler: exportChart
-        });
+                handler: exportChart
+            });
 
-        server.route({
-            method: 'GET',
-            path: '/{id}/export/{format}',
-            options: {
-                tags: ['api'],
-                validate: {
-                    params: Joi.object().keys({
-                        id: Joi.string()
-                            .length(5)
-                            .required(),
-                        format: Joi.string().required()
-                    }),
-                    query: Joi.object().keys({
-                        unit: Joi.string().default('px'),
-                        mode: Joi.string().default('rgb'),
-                        width: Joi.number().default(600),
-                        height: Joi.any(),
-                        plain: Joi.boolean().default(false),
-                        scale: Joi.number().default(1),
-                        borderWidth: Joi.number(),
-                        borderColor: Joi.string()
-                    })
-                }
-            },
-            handler: handleChartExport
-        });
+            server.route({
+                method: 'GET',
+                path: '/{id}/export/{format}',
+                options: {
+                    tags: ['api'],
+                    validate: {
+                        params: Joi.object().keys({
+                            id: Joi.string()
+                                .length(5)
+                                .required(),
+                            format: Joi.string().required()
+                        }),
+                        query: Joi.object().keys({
+                            unit: Joi.string().default('px'),
+                            mode: Joi.string().default('rgb'),
+                            width: Joi.number().default(600),
+                            height: Joi.any(),
+                            plain: Joi.boolean().default(false),
+                            scale: Joi.number().default(1),
+                            borderWidth: Joi.number(),
+                            borderColor: Joi.string()
+                        })
+                    }
+                },
+                handler: handleChartExport
+            });
+        }
     }
 };
 
@@ -208,18 +210,14 @@ async function createChart(request, h) {
 
 async function exportChart(request, h) {
     const { chartExport } = request.server.methods;
-    if (chartExport) {
-        const { payload, params, auth, logger } = request;
+    const { payload, params, auth, logger } = request;
 
-        Object.assign(payload, params);
-        try {
-            const { stream, type } = await chartExport(payload, auth.artifacts.id, logger, Boom);
-            return h.response(stream).header('Content-Type', type);
-        } catch (error) {
-            return Boom[error.message]();
-        }
-    } else {
-        return Boom.badImplementation();
+    Object.assign(payload, params);
+    try {
+        const { stream, type } = await chartExport(payload, auth.artifacts.id, logger, Boom);
+        return h.response(stream).header('Content-Type', type);
+    } catch (error) {
+        return Boom[error.message]();
     }
 }
 
