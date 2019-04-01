@@ -305,7 +305,9 @@ async function createToken(request, h) {
         comment: request.payload.comment
     });
 
-    return camelizeKeys(token.dataValues);
+    const { user_id, ...data } = token.dataValues;
+
+    return camelizeKeys(data);
 }
 
 async function deleteToken(request, h) {

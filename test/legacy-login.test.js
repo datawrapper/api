@@ -1,10 +1,8 @@
 import test from 'ava';
 import nanoid from 'nanoid';
-import sequelize from 'sequelize';
+import { Op } from 'sequelize';
 
 import { init } from '../src/server';
-
-const { Op } = sequelize;
 
 test.before(async t => {
     t.context.server = await init();
@@ -50,7 +48,7 @@ test.after.always(async t => {
     });
 
     t.log('Users cleaned up:', deletedUsers);
-    t.log('Sesssions cleaned up:', deletedSessions);
+    t.log('Sessions cleaned up:', deletedSessions);
 });
 
 test('Client hashed password', async t => {
