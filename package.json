@@ -96,5 +96,8 @@
         "hooks": {
             "pre-commit": "lint-staged"
         }
+    },
+    "ava": {
+        "snapshotDir": "test/__snapshots__"
     }
 }
