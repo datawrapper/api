@@ -158,7 +158,7 @@ async function getAllUsers(request, h) {
     if (server.methods.isAdmin(request)) {
         set(options, ['include', 1], { model: Team, attributes: ['id', 'name'] });
 
-        options.attributes.push('created_at');
+        options.attributes = options.attributes.concat(['created_at']);
 
         if (query.teamId) {
             set(options, ['include', 1, 'where', 'id'], query.teamId);
