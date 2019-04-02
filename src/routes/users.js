@@ -116,6 +116,9 @@ module.exports = {
         });
 
         server.method('userIsDeleted', isDeleted);
+
+        const { hashRounds = 15 } = server.methods.config('api');
+        server.method('hashPassword', hashPassword(hashRounds));
     }
 };
 
@@ -127,6 +130,12 @@ async function isDeleted(id) {
     if (user.email === 'DELETED') {
         throw Boom.notFound();
     }
+}
+
+function hashPassword(hashRounds) {
+    return async function(password) {
+        return bcrypt.hash(password, hashRounds);
+    };
 }
 
 async function getAllUsers(request, h) {
@@ -257,9 +266,7 @@ async function createUser(request, h) {
         return Boom.conflict('User already exists');
     }
 
-    const { hashRounds = 15 } = request.server.methods.config('api');
-
-    const hash = await bcrypt.hash(password, hashRounds);
+    const hash = await request.server.methods.hashPassword(password);
 
     const newUser = {
         role: 'pending',

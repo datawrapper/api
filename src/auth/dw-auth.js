@@ -1,20 +1,21 @@
 const Boom = require('boom');
+const get = require('lodash/get');
+const { camelizeKeys } = require('humps');
 const AuthBearer = require('hapi-auth-bearer-token');
 const AuthCookie = require('./cookie-auth');
-const get = require('lodash/get');
 
 const { AuthToken, Session, User } = require('@datawrapper/orm/models');
 
 async function getUser(userId, credentials, strategy) {
     const user = await User.findByPk(userId, {
-        attributes: ['id', 'email', 'role', 'language']
+        attributes: ['id', 'email', 'role', 'language', 'activate_token', 'reset_password_token']
     });
 
     if (!user || user.email === 'DELETED') {
         return { isValid: false, message: Boom.unauthorized('User not found', strategy) };
     }
 
-    return { isValid: true, credentials, artifacts: user.serialize() };
+    return { isValid: true, credentials, artifacts: camelizeKeys(user.dataValues) };
 }
 
 async function cookieValidation(request, session, h) {
