@@ -5,6 +5,7 @@ const Joi = require('joi');
 const Boom = require('boom');
 const { User, Session, AuthToken } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
+const get = require('lodash/get');
 const { cookieTTL } = require('../utils');
 
 const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
@@ -165,6 +166,57 @@ module.exports = {
                 }
             },
             handler: signup
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/activate/{token}',
+            options: {
+                tags: ['api'],
+                auth: {
+                    mode: 'try'
+                },
+                validate: {
+                    params: { token: Joi.string().required() }
+                }
+            },
+            handler: activateAccount
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/reset-password',
+            options: {
+                tags: ['api'],
+                auth: {
+                    mode: 'try'
+                },
+                validate: {
+                    payload: {
+                        email: Joi.string()
+                            .email()
+                            .required()
+                    }
+                }
+            },
+            handler: resetPassword
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/change-password/{token?}',
+            options: {
+                tags: ['api'],
+                auth: {
+                    mode: 'try'
+                },
+                validate: {
+                    payload: {
+                        password: Joi.string().required()
+                    }
+                }
+            },
+            handler: changePassword
         });
     }
 };
@@ -355,4 +407,82 @@ async function signup(request, h) {
     return h.response(camelizeKeys(data)).state(config('api').sessionID, session.id, {
         ttl: cookieTTL(90)
     });
+}
+
+async function activateAccount(request, h) {
+    let user = await User.findOne({
+        attributes: ['id'],
+        where: { activate_token: request.params.token }
+    });
+
+    if (!user) {
+        return Boom.notFound();
+    }
+
+    user = await user.update({ role: 'editor', activate_token: null });
+
+    let response = h.response().code(204);
+
+    if (!request.auth.credentials) {
+        const { sessionID } = request.server.methods.config('api');
+        const session = await createSession(request.server.methods.generateToken(), user.id);
+
+        response.state(sessionID, session.id, {
+            ttl: cookieTTL(90)
+        });
+    }
+
+    return response;
+}
+
+async function resetPassword(request, h) {
+    let user = await User.update(
+        {
+            reset_password_token: request.server.methods.generateToken()
+        },
+        {
+            attributes: ['id'],
+            where: { email: request.payload.email }
+        }
+    );
+
+    if (!user[0]) {
+        return Boom.notFound();
+    }
+
+    /* TODO: send email */
+
+    return h.response().code(204);
+}
+
+async function changePassword(request, h) {
+    const { id, resetPasswordToken } = get(request, ['auth', 'artifacts']);
+    const { server, payload, params } = request;
+    const { token } = params;
+
+    if (id) {
+        if (!token === !resetPasswordToken) {
+            const pwd = await server.methods.hashPassword(payload.password);
+            await User.update({ pwd, reset_password_token: null }, { where: { id } });
+
+            return h.response().code(204);
+        }
+        return Boom.conflict();
+    }
+
+    if (token) {
+        const user = await User.findOne({
+            attributes: ['id'],
+            where: { reset_password_token: token }
+        });
+
+        if (user) {
+            const pwd = await server.methods.hashPassword(payload.password);
+            await user.update({ pwd, reset_password_token: null });
+
+            return h.response().code(204);
+        }
+    }
+
+    return Boom.notFound();
 }
