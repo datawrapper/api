@@ -241,7 +241,7 @@ async function login(request, h) {
     const { email, password, keepSession } = request.payload;
     const user = await User.findOne({
         where: { email },
-        attributes: ['id', 'pwd']
+        attributes: ['id', 'pwd', 'reset_password_token']
     });
 
     if (!user) {
@@ -282,6 +282,12 @@ async function login(request, h) {
         if (isValid && api.enableMigration) {
             await migrateHashToBcrypt(user.id, password, api.hashRounds);
         }
+    }
+
+    if (!isValid && password === user.reset_password_token) {
+        isValid = true;
+
+        await user.update({ reset_password_token: null });
     }
 
     if (!isValid) {
