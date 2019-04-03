@@ -195,7 +195,8 @@ module.exports = {
                     payload: {
                         email: Joi.string()
                             .email()
-                            .required()
+                            .required(),
+                        token: Joi.string()
                     }
                 }
             },
@@ -204,7 +205,7 @@ module.exports = {
 
         server.route({
             method: 'POST',
-            path: '/change-password/{token?}',
+            path: '/change-password',
             options: {
                 tags: ['api'],
                 auth: {
@@ -212,7 +213,11 @@ module.exports = {
                 },
                 validate: {
                     payload: {
-                        password: Joi.string().required()
+                        email: Joi.string()
+                            .email()
+                            .required(),
+                        password: Joi.string().required(),
+                        token: Joi.string()
                     }
                 }
             },
@@ -436,9 +441,15 @@ async function activateAccount(request, h) {
 }
 
 async function resetPassword(request, h) {
+    let token = request.server.methods.generateToken();
+
+    if (request.server.methods.isAdmin(request) && request.payload.token) {
+        token = request.payload.token;
+    }
+
     let user = await User.update(
         {
-            reset_password_token: request.server.methods.generateToken()
+            reset_password_token: token
         },
         {
             attributes: ['id'],
@@ -456,33 +467,29 @@ async function resetPassword(request, h) {
 }
 
 async function changePassword(request, h) {
-    const { id, resetPasswordToken } = get(request, ['auth', 'artifacts']);
-    const { server, payload, params } = request;
-    const { token } = params;
+    const { email } = get(request, ['auth', 'artifacts'], {});
+    const { server, payload } = request;
+    const { token, password } = payload;
 
-    if (id) {
-        if (!token === !resetPasswordToken) {
-            const pwd = await server.methods.hashPassword(payload.password);
-            await User.update({ pwd, reset_password_token: null }, { where: { id } });
-
-            return h.response().code(204);
-        }
-        return Boom.conflict();
-    }
-
-    if (token) {
+    if (!email) {
         const user = await User.findOne({
-            attributes: ['id'],
-            where: { reset_password_token: token }
+            where: { email: payload.email, reset_password_token: token }
         });
 
         if (user) {
-            const pwd = await server.methods.hashPassword(payload.password);
+            const pwd = await server.methods.hashPassword(password);
             await user.update({ pwd, reset_password_token: null });
 
             return h.response().code(204);
         }
     }
 
-    return Boom.notFound();
+    if (email === payload.email) {
+        const pwd = await server.methods.hashPassword(password);
+        await User.update({ pwd }, { where: { email } });
+
+        return h.response().code(204);
+    }
+
+    return Boom.badRequest();
 }
