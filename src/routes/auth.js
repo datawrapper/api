@@ -447,9 +447,10 @@ async function activateAccount(request, h) {
 }
 
 async function resetPassword(request, h) {
-    let token = request.server.methods.generateToken();
+    const { generateToken, isAdmin, sendMail, config } = request.server.methods;
+    let token = generateToken();
 
-    if (request.server.methods.isAdmin(request) && request.payload.token) {
+    if (isAdmin(request) && request.payload.token) {
         token = request.payload.token;
     }
 
@@ -465,6 +466,13 @@ async function resetPassword(request, h) {
 
     if (!user[0]) {
         return Boom.notFound();
+    }
+
+    if (typeof sendMail === 'function') {
+        const info = await sendMail('reset-password', {
+            reset_password_link: `${config('api').domain}/account/reset-password/${token}`
+        });
+        request.server.logger().info(info);
     }
 
     /* TODO: send email */
