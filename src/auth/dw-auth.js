@@ -15,7 +15,11 @@ async function getUser(userId, credentials, strategy) {
         return { isValid: false, message: Boom.unauthorized('User not found', strategy) };
     }
 
-    return { isValid: true, credentials, artifacts: camelizeKeys(user.dataValues) };
+    const data = {
+        ...user.dataValues,
+        role: user.role
+    };
+    return { isValid: true, credentials, artifacts: camelizeKeys(data) };
 }
 
 async function cookieValidation(request, session, h) {
