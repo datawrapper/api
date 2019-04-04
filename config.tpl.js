@@ -1,4 +1,8 @@
 module.exports = {
+    frontend: {
+        domain: '<domain>.<tld>',
+        https: false
+    },
     api: {
         port: 3000,
         domain: '<domain>.<tld>',
