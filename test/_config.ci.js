@@ -1,4 +1,8 @@
 module.exports = {
+    frontend: {
+        domain: 'localhost',
+        https: false
+    },
     api: {
         domain: 'localhost',
         sessionID: 'DW-SESSION',
