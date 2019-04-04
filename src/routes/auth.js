@@ -549,7 +549,7 @@ async function resendActivation(request, h) {
         attributes: ['email', 'language', 'activate_token']
     });
 
-    if (!user) {
+    if (!user || !user.activate_token) {
         return Boom.resourceGone('User is already activated');
     }
 
