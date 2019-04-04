@@ -3,6 +3,14 @@ const chalk = require('chalk');
 
 const schema = Joi.object()
     .keys({
+        frontend: Joi.object()
+            .keys({
+                domain: Joi.string()
+                    .hostname()
+                    .required(),
+                https: Joi.boolean()
+            })
+            .required(),
         api: Joi.object()
             .keys({
                 port: Joi.number()
