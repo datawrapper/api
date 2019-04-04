@@ -10,6 +10,7 @@ const schema = Joi.object()
                     .required(),
                 https: Joi.boolean()
             })
+            .unknown()
             .required(),
         api: Joi.object()
             .keys({
