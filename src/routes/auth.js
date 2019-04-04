@@ -432,11 +432,14 @@ async function signup(request, h) {
 
     const { activate_token, ...data } = res.result;
 
+    const { https, domain } = config('frontend');
     await sendMail('activation', {
         to: data.email,
         language: data.language,
         data: {
-            activation_link: `http://${config('api').domain}/account/activate/${activate_token}`
+            activation_link: `${
+                https ? 'https' : 'http'
+            }://${domain}/account/activate/${activate_token}`
         }
     });
 
@@ -490,11 +493,14 @@ async function resetPassword(request, h) {
 
     await user.update({ reset_password_token: token });
 
+    const { https, domain } = config('frontend');
     await sendMail('reset-password', {
         to: user.email,
         language: user.language,
         data: {
-            reset_password_link: `http://${config('api').domain}/account/reset-password/${token}`
+            reset_password_link: `${
+                https ? 'https' : 'http'
+            }://${domain}/account/reset-password/${token}`
         }
     });
 
@@ -532,7 +538,7 @@ async function changePassword(request, h) {
 async function resendActivation(request, h) {
     const { email } = get(request, ['auth', 'artifacts'], {});
     const isAdmin = request.server.methods.isAdmin(request);
-    const { domain } = request.server.methods.config('api');
+    const { domain, https } = request.server.methods.config('frontend');
 
     if (!isAdmin && request.payload.email !== email) {
         return Boom.forbidden();
@@ -551,7 +557,9 @@ async function resendActivation(request, h) {
         to: user.email,
         language: user.language,
         data: {
-            activation_link: `http://${domain}/account/activate/${user.activate_token}`
+            activation_link: `${https ? 'https' : 'http'}://${domain}/account/activate/${
+                user.activate_token
+            }`
         }
     });
 
