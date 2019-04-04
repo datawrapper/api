@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const { Op } = require('sequelize');
 const { camelizeKeys } = require('humps');
 const Joi = require('joi');
 const Boom = require('boom');
@@ -181,6 +182,22 @@ module.exports = {
                 }
             },
             handler: activateAccount
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/resend-activation',
+            options: {
+                tags: ['api'],
+                validate: {
+                    payload: {
+                        email: Joi.string()
+                            .email()
+                            .required()
+                    }
+                }
+            },
+            handler: resendActivation
         });
 
         server.route({
@@ -397,7 +414,7 @@ async function signup(request, h) {
         }
     }
 
-    const { generateToken, config } = request.server.methods;
+    const { generateToken, config, sendMail } = request.server.methods;
 
     request.payload.activate_token = generateToken();
 
@@ -414,6 +431,14 @@ async function signup(request, h) {
     session = await createSession(generateToken(), res.result.id);
 
     const { activate_token, ...data } = res.result;
+
+    await sendMail('activation', {
+        to: data.email,
+        language: data.language,
+        data: {
+            activation_link: `http://${config('api').domain}/account/activate/${activate_token}`
+        }
+    });
 
     return h.response(camelizeKeys(data)).state(config('api').sessionID, session.id, {
         ttl: cookieTTL(90)
@@ -454,28 +479,24 @@ async function resetPassword(request, h) {
         token = request.payload.token;
     }
 
-    let user = await User.update(
-        {
-            reset_password_token: token
-        },
-        {
-            attributes: ['id'],
-            where: { email: request.payload.email }
-        }
-    );
+    let user = await User.findOne({
+        attributes: ['id', 'language', 'email'],
+        where: { email: request.payload.email }
+    });
 
-    if (!user[0]) {
+    if (!user) {
         return Boom.notFound();
     }
 
-    if (typeof sendMail === 'function') {
-        const info = await sendMail('reset-password', {
-            reset_password_link: `${config('api').domain}/account/reset-password/${token}`
-        });
-        request.server.logger().info(info);
-    }
+    await user.update({ reset_password_token: token });
 
-    /* TODO: send email */
+    await sendMail('reset-password', {
+        to: user.email,
+        language: user.language,
+        data: {
+            reset_password_link: `http://${config('api').domain}/account/reset-password/${token}`
+        }
+    });
 
     return h.response().code(204);
 }
@@ -506,4 +527,33 @@ async function changePassword(request, h) {
     }
 
     return Boom.badRequest();
+}
+
+async function resendActivation(request, h) {
+    const { email } = get(request, ['auth', 'artifacts'], {});
+    const isAdmin = request.server.methods.isAdmin(request);
+    const { domain } = request.server.methods.config('api');
+
+    if (!isAdmin && request.payload.email !== email) {
+        return Boom.forbidden();
+    }
+
+    const user = await User.findOne({
+        where: { email: request.payload.email, activate_token: { [Op.not]: null } },
+        attributes: ['email', 'language', 'activate_token']
+    });
+
+    if (!user) {
+        return Boom.resourceGone('User is already activated');
+    }
+
+    await request.server.methods.sendMail('activation', {
+        to: user.email,
+        language: user.language,
+        data: {
+            activation_link: `http://${domain}/account/activate/${user.activate_token}`
+        }
+    });
+
+    return request.payload;
 }
