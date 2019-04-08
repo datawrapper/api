@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 
 module.exports = {
-    name: 'local-email',
+    name: 'email-local',
     version: '1.0.0',
     register: async (server, options) => {
         const account = await nodemailer.createTestAccount();
