@@ -57,6 +57,17 @@ const server = Hapi.server({
     }
 });
 
+function getLogLevel() {
+    switch (process.env.NODE_ENV) {
+        case 'development':
+            return 'debug';
+        case 'test':
+            return 'error';
+        default:
+            return 'info';
+    }
+}
+
 async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     await server.register({
         plugin: require('hapi-pino'),
@@ -64,7 +75,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             prettyPrint: true,
             timestamp: () => `,"time":"${new Date().toISOString()}"`,
             logEvents: ['request', 'log', 'onPostStart', 'onPostStop', 'request-error'],
-            level: process.env.NODE_ENV === 'test' ? 'error' : 'info',
+            level: getLogLevel(),
             base: { name: pkg.version },
             redact: process.env.NODE_ENV === 'development' && [
                 'req.headers.authorization',
