@@ -67,6 +67,7 @@ async function main() {
 
     npm.on('close', () => {
         console.log('\nrun `npm run api` to start the Datawrapper API');
+        process.exit();
     });
 }
 
