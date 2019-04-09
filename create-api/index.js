@@ -58,7 +58,8 @@ async function main() {
     console.log('[npm] Start package installation.');
     const npm = spawn(
         'npm',
-        ['install', '-SE', '--production', `@datawrapper/api@${tag}`].concat(packages)
+        ['install', '-SE', '--production', `@datawrapper/api@${tag}`].concat(packages),
+        { cwd: CWD, env: process.env }
     );
 
     npm.stdout.on('data', data => process.stdout.write(data));

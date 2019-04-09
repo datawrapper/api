@@ -6,6 +6,10 @@ defaults: &defaults
 cache: &cache
     key: v3-dependency-cache-{{ checksum "package-lock.json" }}
 
+registry: &registry
+    name: Authenticate with registry
+    command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
+
 version: 2
 jobs:
     install:
@@ -16,8 +20,7 @@ jobs:
                   key: v1-install-cache-{{ checksum "package-lock.json" }}
 
             - run:
-                  name: Authenticate with registry
-                  command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
+                  <<: *registry
 
             - run: npm ci
 
@@ -37,6 +40,9 @@ jobs:
             - checkout
             - restore_cache:
                   <<: *cache
+
+            - run:
+                  <<: *registry
 
             - run:
                   command: |
