@@ -4,7 +4,7 @@ const fs = require('fs');
 const glob = require('glob');
 const path = require('path');
 const difference = require('lodash/difference');
-const { spawn } = require('child_process');
+const { spawnSync } = require('child_process');
 const findUp = require('find-up');
 
 const localPluginPaths = glob.sync('plugins/*/index.js', { absolute: true });
@@ -56,19 +56,16 @@ async function main() {
     });
 
     console.log('[npm] Start package installation.');
-    const npm = spawn(
+    const npm = spawnSync(
         'npm',
         ['install', '-SE', '--production', `@datawrapper/api@${tag}`].concat(packages),
         { cwd: CWD, env: process.env }
     );
 
-    npm.stdout.on('data', data => process.stdout.write(data));
-    npm.stderr.on('data', data => process.stderr.write(data));
+    console.log(npm.stdout);
+    console.log(npm.stderr);
 
-    npm.on('close', () => {
-        console.log('\nrun `npm run api` to start the Datawrapper API');
-        process.exit();
-    });
+    console.log('\nrun `npm run api` to start the Datawrapper API');
 }
 
 main();
