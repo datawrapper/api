@@ -33,6 +33,9 @@ test('should run create-api script', t => {
     const pkg = require(path.join(testDir, 'package.json'));
     const dwPackages = ls(path.join(testDir, 'node_modules/@datawrapper'));
 
+    t.log(pkg);
+    t.log(ls(ls(path.join(testDir, 'node_modules'))).stdout);
+
     t.truthy(pkg.scripts['api']);
     t.truthy(pkg.scripts['sync']);
     t.truthy(pkg.dependencies['@datawrapper/api']);
