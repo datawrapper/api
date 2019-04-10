@@ -1,12 +1,13 @@
 import test from 'ava';
 import nanoid from 'nanoid';
 
-import { init } from '../server';
+import { setup } from '../../test/helpers/setup';
 
 test.before(async t => {
-    t.context.server = await init({ usePlugins: false });
+    const { server, models } = await setup({ usePlugins: false });
+    t.context.server = server;
 
-    const { User } = require('@datawrapper/orm/models');
+    const { User } = models;
     t.context.User = User;
     t.context.deleteUserFromDB = async email => {
         const user = await User.findOne({

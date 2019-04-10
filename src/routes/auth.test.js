@@ -1,7 +1,6 @@
 import test from 'ava';
-import { Op } from 'sequelize';
 
-import { init } from '../server';
+import { setup } from '../../test/helpers/setup';
 
 function parseSetCookie(string) {
     const cookie = {};
@@ -15,30 +14,17 @@ function parseSetCookie(string) {
 }
 
 test.before(async t => {
-    t.context.server = await init({ usePlugins: false });
+    const { server, getUser } = await setup({ usePlugins: false });
 
-    const { User, Session } = require('@datawrapper/orm/models');
-    t.context.SessionModel = Session;
-    t.context.user = await User.create({
-        email: 'tony@starkindustries.com',
-        pwd: '$2b$15$4JVS.411j1fajKA9tspDaO0.orKzh8KbCWPPUkM92S2spXv01zPOa',
-        role: 'editor'
-    });
+    t.context.server = server;
+
+    const { user, cleanup } = await getUser();
+    t.context.user = user;
+    t.context.cleanup = cleanup;
 });
 
 test.after.always(async t => {
-    const { id } = t.context.user;
-    await t.context.user.destroy();
-
-    const deletedSessions = await t.context.SessionModel.destroy({
-        where: {
-            data: {
-                [Op.like]: `dw-user-id|i:${id}%`
-            }
-        }
-    });
-
-    t.log('Sessions cleaned up:', deletedSessions);
+    await t.context.cleanup();
 });
 
 test('Login and logout work with correct credentials', async t => {
@@ -47,7 +33,7 @@ test('Login and logout work with correct credentials', async t => {
         url: '/v3/auth/login',
         payload: {
             email: t.context.user.email,
-            password: 'f.r.i.d.a.y'
+            password: 'test-password'
         }
     });
 
@@ -88,7 +74,7 @@ test("Login set's correct cookie", async t => {
         url: '/v3/auth/login',
         payload: {
             email: t.context.user.email,
-            password: 'f.r.i.d.a.y'
+            password: 'test-password'
         }
     });
 
@@ -104,7 +90,7 @@ test("Login set's correct cookie", async t => {
         url: '/v3/auth/login',
         payload: {
             email: t.context.user.email,
-            password: 'f.r.i.d.a.y',
+            password: 'test-password',
             keepSession: false
         }
     });
