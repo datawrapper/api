@@ -288,7 +288,7 @@ async function createUser(request, h) {
 
     return h
         .response({
-            ...user,
+            ...camelizeKeys(user),
             role,
             url: `${request.url.pathname}/${user.id}`,
             chartCount: count,
