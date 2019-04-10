@@ -2,14 +2,15 @@ import test from 'ava';
 import nanoid from 'nanoid';
 import { Op } from 'sequelize';
 
-import { init } from '../src/server';
+import { setup } from './helpers/setup';
 
 test.before(async t => {
-    t.context.server = await init();
+    const { server, models } = await setup({ usePlugins: false });
+    t.context.server = server;
     t.context.users = [];
     t.context.userIds = [];
 
-    const { User, Session } = require('@datawrapper/orm/models');
+    const { User, Session } = models;
     t.context.UserModel = User;
     t.context.SessionModel = Session;
 });
