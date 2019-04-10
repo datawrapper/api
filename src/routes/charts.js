@@ -49,6 +49,38 @@ module.exports = {
         });
 
         server.route({
+            method: 'DELETE',
+            path: '/{id}',
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: Joi.object().keys({
+                        id: Joi.string()
+                            .length(5)
+                            .required()
+                    })
+                }
+            },
+            handler: deleteChart
+        });
+
+        server.route({
+            method: 'GET',
+            path: '/{id}/data',
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: Joi.object().keys({
+                        id: Joi.string()
+                            .length(5)
+                            .required()
+                    })
+                }
+            },
+            handler: () => Boom.notImplemented()
+        });
+
+        server.route({
             method: 'POST',
             path: '/',
             options: {
@@ -150,6 +182,7 @@ async function getAllCharts(request, h) {
     const { query, url } = request;
 
     let options = {
+        where: { deleted: { [Op.not]: true } },
         attributes: ['id', 'title', 'type', 'created_at', 'last_modified_at']
     };
 
@@ -174,11 +207,19 @@ async function getAllCharts(request, h) {
 
 async function getChart(request, h) {
     const { query, url, params, auth } = request;
-    const chart = await Chart.findByPk(params.id, {
+    const chart = await Chart.findOne({
+        where: {
+            id: params.id,
+            deleted: { [Op.not]: true }
+        },
         attributes: {
             exclude: ['guest_session']
         }
     });
+
+    if (!chart) {
+        return Boom.notFound();
+    }
 
     if (chart.author_id !== auth.artifacts.id && !chart.published_at) {
         request.server.methods.isAdmin(request, { throwError: true });
@@ -235,4 +276,30 @@ async function handleChartExport(request, h) {
     request.payload = Object.assign(query, border);
 
     return exportChart(request, h);
+}
+
+async function deleteChart(request, h) {
+    const options = {
+        where: {
+            id: request.params.id,
+            deleted: {
+                [Op.not]: true
+            }
+        }
+    };
+
+    if (!request.server.methods.isAdmin(request)) {
+        set(options, ['where', 'author_id'], request.auth.artifacts.id);
+    }
+
+    const chart = await Chart.findOne(options);
+
+    if (!chart) return Boom.forbidden();
+
+    await chart.update({
+        deleted: true,
+        deleted_at: new Date()
+    });
+
+    return h.response().code(204);
 }
