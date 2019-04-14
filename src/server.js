@@ -51,7 +51,7 @@ const server = Hapi.server({
     router: { stripTrailingSlash: true },
     routes: {
         cors: {
-            origin: config.api.cors,
+            origin: [ config.api.cors ],
             credentials: true
         }
     }
