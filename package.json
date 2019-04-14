@@ -22,7 +22,8 @@
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
         "test": "ava --verbose",
-        "dev": "NODE_ENV=development nodemon src/index.js"
+        "dev": "NODE_ENV=development nodemon src/index.js",
+        "api": "node index.js"
     },
     "repository": {
         "type": "git",
