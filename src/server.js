@@ -12,8 +12,8 @@ const pkg = require('../package.json');
 const configPath = findUp.sync('config.js');
 const config = require(configPath);
 
-const { validate } = require('./config-schema');
-validate(config);
+// const { validate } = require('./config-schema');
+// validate(config);
 
 const host = config.api.subdomain
     ? `${config.api.subdomain}.${config.api.domain}`
