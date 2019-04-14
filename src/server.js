@@ -44,14 +44,14 @@ const OpenAPI = {
 };
 
 const server = Hapi.server({
-    address: 'localhost',
+    host: 'localhost',
+    address: '0.0.0.0',
     port,
-    host,
     tls: config.api.https,
     router: { stripTrailingSlash: true },
     routes: {
         cors: {
-            origin: ['*'],
+            origin: config.api.cors,
             credentials: true
         }
     }
