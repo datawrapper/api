@@ -12,6 +12,7 @@ This repository contains the new Node.js API that is the backbone of Datawrapper
     1. [Local plugins](#local-plugins)
         1. [`hello-world`](#hello-world)
         1. [`email-local`](#email-local)
+        1. [`chart-data-local`](#chart-data-local)
 1. [`create-api` script](./create-api/Readme.md)
 1. [REST API with JSON](#rest-api-with-json)
 
@@ -233,6 +234,20 @@ With this plugin, sending a password reset request will log some data and a URL 
 ```
 
 > Ethereal is a fake SMTP service, it never delivers emails and deletes messages after 7 days.
+
+#### `chart-data-local`
+
+Plugin that adds `{GET | PUT} /charts/:id/data` endpoints that use the local file system to store csv data. This is useful for local development, where it isn't necessary to write data to S3 or other storage providers.
+
+```js
+// Configuration
+
+plugins: {
+    'chart-data-local': {
+        path: '<path-to-local-datawrapper>/charts/data'
+    }
+}
+```
 
 ## REST API with JSON
 
