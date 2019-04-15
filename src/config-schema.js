@@ -25,6 +25,7 @@ const schema = Joi.object()
                     .required()
                     .default('DW-SESSION'),
                 https: Joi.boolean(),
+                cors: Joi.array().required(),
                 hashRounds: Joi.number().integer(),
                 enableMigration: Joi.boolean(),
                 authSalt: Joi.string(),
