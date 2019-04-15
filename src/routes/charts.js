@@ -65,22 +65,6 @@ module.exports = {
         });
 
         server.route({
-            method: 'GET',
-            path: '/{id}/data',
-            options: {
-                tags: ['api'],
-                validate: {
-                    params: Joi.object().keys({
-                        id: Joi.string()
-                            .length(5)
-                            .required()
-                    })
-                }
-            },
-            handler: () => Boom.notImplemented()
-        });
-
-        server.route({
             method: 'POST',
             path: '/',
             options: {
