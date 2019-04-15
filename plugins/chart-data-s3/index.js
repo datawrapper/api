@@ -1,15 +1,12 @@
 const path = require('path');
-const fs = require('fs');
-const { promisify } = require('util');
 const Boom = require('boom');
 const Joi = require('joi');
-const readFile = promisify(fs.readFile);
-const writeFile = promisify(fs.writeFile);
-const mkdir = promisify(fs.mkdir);
-const stat = promisify(fs.stat);
+const S3 = require('aws-sdk/clients/s3');
+
+const s3 = new S3({ apiVersion: '2006-03-01' });
 
 module.exports = {
-    name: 'chart-data-local',
+    name: 'chart-data-s3',
     version: '1.0.0',
     register: (server, options) => {
         server.route({
@@ -45,19 +42,17 @@ module.exports = {
                 return Boom.unauthorized();
             }
 
-            const dataPath = path.join(options.config.path, getDataPath(id, chart.created_at));
+            const data = await s3
+                .getObject({
+                    Bucket: options.config.bucket,
+                    Key: path.join(options.config.path, getDataPath(id, chart.created_at))
+                })
+                .promise();
 
-            try {
-                const data = await readFile(dataPath, { encoding: 'utf-8' });
-
-                return h
-                    .response(data)
-                    .header('Content-Type', 'text/csv')
-                    .header('Content-Disposition', `attachment; filename=${id}.csv`);
-            } catch (error) {
-                request.logger.error(error.message);
-                return Boom.notFound();
-            }
+            return h
+                .response(data.Body)
+                .header('Content-Type', 'text/csv')
+                .header('Content-Disposition', `attachment; filename=${id}.csv`);
         }
 
         server.route({
@@ -93,23 +88,33 @@ module.exports = {
                 return Boom.unauthorized();
             }
 
-            const dataPath = path.join(options.config.path, getDataPath(id, chart.created_at));
-
             let fileExists = false;
+
             try {
-                const fileStats = await stat(dataPath);
-                fileExists = fileStats.isFile(dataPath);
+                await s3
+                    .headObject({
+                        Bucket: options.config.bucket,
+                        Key: path.join(options.config.path, getDataPath(id, chart.created_at))
+                    })
+                    .promise();
+                fileExists = true;
             } catch (error) {
-                await mkdir(dataPath, { recursive: true });
+                fileExists = false;
             }
 
             try {
-                await writeFile(dataPath, request.payload, {
-                    encoding: 'utf-8'
-                });
+                await s3
+                    .putObject({
+                        ACL: 'public-read',
+                        Body: request.payload,
+                        Bucket: options.config.bucket,
+                        Key: path.join(options.config.path, getDataPath(id, chart.created_at)),
+                        ContentType: 'text/csv'
+                    })
+                    .promise();
             } catch (error) {
                 request.logger.error(error.message);
-                return Boom.internal();
+                return Boom.badGateway();
             }
 
             return h.response().code(fileExists ? 204 : 201);
