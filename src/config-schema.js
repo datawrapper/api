@@ -35,6 +35,7 @@ const schema = Joi.object()
         plugins: Joi.object(),
         orm: Joi.object()
             .keys({
+                retry: Joi.boolean().optional(),
                 db: Joi.object()
                     .keys({
                         dialect: Joi.string()
