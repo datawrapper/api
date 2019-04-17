@@ -1,6 +1,5 @@
 const Boom = require('boom');
 const get = require('lodash/get');
-const { camelizeKeys } = require('humps');
 const AuthBearer = require('hapi-auth-bearer-token');
 const AuthCookie = require('./cookie-auth');
 
@@ -15,11 +14,7 @@ async function getUser(userId, credentials, strategy) {
         return { isValid: false, message: Boom.unauthorized('User not found', strategy) };
     }
 
-    const data = {
-        ...user.dataValues,
-        role: user.role
-    };
-    return { isValid: true, credentials, artifacts: camelizeKeys(data) };
+    return { isValid: true, credentials, artifacts: user };
 }
 
 async function cookieValidation(request, session, h) {
