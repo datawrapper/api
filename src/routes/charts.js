@@ -140,6 +140,40 @@ module.exports = {
                 },
                 handler: handleChartExport
             });
+
+            server.route({
+                method: 'GET',
+                path: '/{id}/data',
+                options: {
+                    tags: ['api'],
+                    validate: {
+                        params: Joi.object().keys({
+                            id: Joi.string()
+                                .length(5)
+                                .required()
+                        })
+                    }
+                },
+
+                handler: getChartData
+            });
+
+            server.route({
+                method: 'PUT',
+                path: '/{id}/data',
+                options: {
+                    tags: ['api'],
+                    validate: {
+                        params: Joi.object().keys({
+                            id: Joi.string()
+                                .length(5)
+                                .required()
+                        }),
+                        payload: Joi.string()
+                    }
+                },
+                handler: writeChartData
+            });
         }
     }
 };
@@ -286,4 +320,59 @@ async function deleteChart(request, h) {
     });
 
     return h.response().code(204);
+}
+
+async function loadChart(request) {
+    const { id } = request.params;
+
+    const chart = await Chart.findByPk(id, {
+        attributes: ['id', 'author_id', 'created_at']
+    });
+
+    if (!chart) {
+        throw Boom.notFound();
+    }
+
+    if (chart.author_id !== request.auth.artifacts.id) {
+        throw Boom.unauthorized();
+    }
+
+    return chart;
+}
+
+async function getChartData(request, h) {
+    const { apiEvents } = request.server.app;
+    const chart = await loadChart(request);
+
+    try {
+        const eventResults = await apiEvents.emit('GET_CHART_DATA', chart);
+        const data = eventResults.find(e => e.status === 'success').data;
+
+        return h
+            .response(data)
+            .header('Content-Type', 'text/csv')
+            .header('Content-Disposition', `attachment; filename=${chart.id}.csv`);
+    } catch (error) {
+        request.logger.error(error.message);
+        return Boom.notFound();
+    }
+}
+
+async function writeChartData(request, h) {
+    const { apiEvents } = request.server.app;
+    const chart = await loadChart(request);
+
+    try {
+        const eventResults = await apiEvents.emit('PUT_CHART_DATA', {
+            chart,
+            data: request.payload
+        });
+
+        const { code } = eventResults.find(e => e.status === 'success').data;
+
+        return h.response().code(code);
+    } catch (error) {
+        request.logger.error(error.message);
+        return Boom.notFound();
+    }
 }
