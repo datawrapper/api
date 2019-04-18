@@ -6,7 +6,7 @@ const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
 
 const { generateToken } = require('./utils');
-const apiEvents = require('./utils/events');
+const { events, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
 
@@ -90,7 +90,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     await ORM.init(config);
 
-    server.app.apiEvents = apiEvents;
+    server.app.event = eventList;
+    server.app.events = events;
+
     server.method('config', key => (key ? config[key] : config));
     server.method('generateToken', generateToken);
 

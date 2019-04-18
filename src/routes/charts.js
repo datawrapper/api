@@ -341,11 +341,11 @@ async function loadChart(request) {
 }
 
 async function getChartData(request, h) {
-    const { apiEvents } = request.server.app;
+    const { events, event } = request.server.app;
     const chart = await loadChart(request);
 
     try {
-        const eventResults = await apiEvents.emit('GET_CHART_DATA', chart);
+        const eventResults = await events.emit(event.GET_CHART_DATA, chart);
         const data = eventResults.find(e => e.status === 'success').data;
 
         return h
@@ -359,11 +359,11 @@ async function getChartData(request, h) {
 }
 
 async function writeChartData(request, h) {
-    const { apiEvents } = request.server.app;
+    const { events, event } = request.server.app;
     const chart = await loadChart(request);
 
     try {
-        const eventResults = await apiEvents.emit('PUT_CHART_DATA', {
+        const eventResults = await events.emit(event.PUT_CHART_DATA, {
             chart,
             data: request.payload
         });

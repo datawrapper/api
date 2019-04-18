@@ -16,6 +16,10 @@ class ApiEventEmitter extends EventEmitter {
      * @memberof ApiEventEmitter
      */
     async emit(event, data) {
+        if (!eventList[event]) {
+            throw new TypeError(`Invalid event name (${event})`);
+        }
+
         const listeners = this.listeners(event);
 
         const result = listeners.map(async func => {
@@ -31,6 +35,11 @@ class ApiEventEmitter extends EventEmitter {
     }
 }
 
-const apiEvents = new ApiEventEmitter();
+const events = new ApiEventEmitter();
 
-module.exports = apiEvents;
+const eventList = {
+    GET_CHART_DATA: 'GET_CHART_DATA',
+    PUT_CHART_DATA: 'PUT_CHART_DATA'
+};
+
+module.exports = { events, eventList };

@@ -10,7 +10,9 @@ module.exports = {
     name: 'chart-data-local',
     version: '1.0.0',
     register: (server, options) => {
-        server.app.apiEvents.on('GET_CHART_DATA', async chart => {
+        const { events, event } = server.app;
+
+        events.on(event.GET_CHART_DATA, async chart => {
             const filePath = path.join(
                 options.config.path,
                 getDataPath(chart.created_at),
@@ -21,7 +23,7 @@ module.exports = {
             return data;
         });
 
-        server.app.apiEvents.on('PUT_CHART_DATA', async ({ chart, data }) => {
+        events.on(event.PUT_CHART_DATA, async ({ chart, data }) => {
             const dataPath = path.join(options.config.path, getDataPath(chart.created_at));
             const filePath = path.join(dataPath, `${chart.id}.csv`);
 
