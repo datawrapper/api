@@ -6,6 +6,7 @@ const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
 
 const { generateToken } = require('./utils');
+const { events, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
 
@@ -77,7 +78,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             logEvents: ['request', 'log', 'onPostStart', 'onPostStop', 'request-error'],
             level: getLogLevel(),
             base: { name: pkg.version },
-            redact: process.env.NODE_ENV === 'development' && [
+            redact: process.env.NODE_ENV !== 'development' && [
                 'req.headers.authorization',
                 'req.headers.cookie',
                 'res.headers["set-cookie"]'
@@ -88,6 +89,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.logger().info({ file: configPath, config }, '[Initialize] config.js');
 
     await ORM.init(config);
+
+    server.app.event = eventList;
+    server.app.events = events;
 
     server.method('config', key => (key ? config[key] : config));
     server.method('generateToken', generateToken);
