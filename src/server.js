@@ -4,6 +4,7 @@ const HapiSwagger = require('hapi-swagger');
 const findUp = require('find-up');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
+const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/shared/configSchema');
 
 const { generateToken } = require('./utils');
 const { ApiEventEmitter, eventList } = require('./utils/events');
@@ -13,8 +14,9 @@ const pkg = require('../package.json');
 const configPath = findUp.sync('config.js');
 const config = require(configPath);
 
-const { validate } = require('./config-schema');
-validate(config);
+validateAPI(config.api);
+validateORM(config.orm);
+validateFrontend(config.frontend);
 
 const host = config.api.subdomain
     ? `${config.api.subdomain}.${config.api.domain}`
