@@ -108,6 +108,7 @@ Key | Example Value | Description
 `api.port` | `3000` | Network port the node process will be running on.
 `api.domain` | `"datawrapper.de"` | Domain where the API will be available at and used for the session cookies `Domain` value.
 `api.subdomain` | `"api"` | Subdomain where the API will be available. Value will be combined with `api.domain`. If the session cookie is supposed to be available only under the subdomain, it can be included in `api.domain` and this key can be removed.
+`api.localPluginRoot` | `"./datawrapper/plugins"` | Path where to find locally installed Datawrapper plugins
 `api.cors` | `['*']` | Array of fully qualified origins.
 `api.sessionID` | `"DW-SESSION"` | Name for session cookie.
 `api.https` | `true` | Flag if the API is served over `https`. This will most likely be `false` in development.
