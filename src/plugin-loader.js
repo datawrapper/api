@@ -33,7 +33,9 @@ module.exports = {
                 pluginObject.type = 'npm';
             }
 
-            const plugin = localPlugins.find(plugin => plugin.name === name);
+            const plugin = localPlugins.find(
+                plugin => get(plugin, ['pkg', 'name'], plugin.name) === name
+            );
             if (plugin) {
                 pluginObject.plugin = plugin;
                 pluginObject.type = 'local';
@@ -58,7 +60,10 @@ module.exports = {
                 } else {
                     server
                         .logger()
-                        .info({ version: plugin.version, type }, `[Plugin] ${plugin.name}`);
+                        .info(
+                            { version: plugin.version, type },
+                            `[Plugin] ${get(plugin, ['pkg', 'name'], plugin.name)}`
+                        );
                 }
             });
             if (loadingError) process.exit(1);
