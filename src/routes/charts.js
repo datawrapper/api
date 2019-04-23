@@ -78,103 +78,101 @@ module.exports = {
             handler: createChart
         });
 
-        if (server.methods.chartExport) {
-            server.route({
-                method: 'POST',
-                path: '/{id}/export/{format}',
-                options: {
-                    description: 'It is recommended to use GET /charts/{id}/export/{format}',
-                    plugins: {
-                        'hapi-swagger': {
-                            deprecated: true
-                        }
-                    },
-                    tags: ['api'],
-                    validate: {
-                        params: Joi.object().keys({
-                            id: Joi.string()
-                                .length(5)
-                                .required(),
-                            format: Joi.string().required()
-                        }),
-                        payload: Joi.object().keys({
-                            unit: Joi.string().default('px'),
-                            mode: Joi.string().default('rgb'),
-                            width: Joi.number().default(600),
-                            height: Joi.any(),
-                            plain: Joi.boolean().default(false),
-                            scale: Joi.number().default(1),
-                            border: Joi.object().keys({
-                                width: Joi.number(),
-                                color: Joi.string().default('#ffffff')
-                            })
+        server.route({
+            method: 'POST',
+            path: '/{id}/export/{format}',
+            options: {
+                description: 'It is recommended to use GET /charts/{id}/export/{format}',
+                plugins: {
+                    'hapi-swagger': {
+                        deprecated: true
+                    }
+                },
+                tags: ['api'],
+                validate: {
+                    params: Joi.object().keys({
+                        id: Joi.string()
+                            .length(5)
+                            .required(),
+                        format: Joi.string().required()
+                    }),
+                    payload: Joi.object().keys({
+                        unit: Joi.string().default('px'),
+                        mode: Joi.string().default('rgb'),
+                        width: Joi.number().default(600),
+                        height: Joi.any(),
+                        plain: Joi.boolean().default(false),
+                        scale: Joi.number().default(1),
+                        border: Joi.object().keys({
+                            width: Joi.number(),
+                            color: Joi.string().default('#ffffff')
                         })
-                    }
-                },
-                handler: exportChart
-            });
+                    })
+                }
+            },
+            handler: exportChart
+        });
 
-            server.route({
-                method: 'GET',
-                path: '/{id}/export/{format}',
-                options: {
-                    tags: ['api'],
-                    validate: {
-                        params: Joi.object().keys({
-                            id: Joi.string()
-                                .length(5)
-                                .required(),
-                            format: Joi.string().required()
-                        }),
-                        query: Joi.object().keys({
-                            unit: Joi.string().default('px'),
-                            mode: Joi.string().default('rgb'),
-                            width: Joi.number().default(600),
-                            height: Joi.any(),
-                            plain: Joi.boolean().default(false),
-                            scale: Joi.number().default(1),
-                            borderWidth: Joi.number(),
-                            borderColor: Joi.string()
-                        })
-                    }
-                },
-                handler: handleChartExport
-            });
+        server.route({
+            method: 'GET',
+            path: '/{id}/export/{format}',
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: Joi.object().keys({
+                        id: Joi.string()
+                            .length(5)
+                            .required(),
+                        format: Joi.string().required()
+                    }),
+                    query: Joi.object().keys({
+                        unit: Joi.string().default('px'),
+                        mode: Joi.string().default('rgb'),
+                        width: Joi.number().default(600),
+                        height: Joi.any(),
+                        plain: Joi.boolean().default(false),
+                        scale: Joi.number().default(1),
+                        borderWidth: Joi.number(),
+                        borderColor: Joi.string()
+                    })
+                }
+            },
+            handler: handleChartExport
+        });
 
-            server.route({
-                method: 'GET',
-                path: '/{id}/data',
-                options: {
-                    tags: ['api'],
-                    validate: {
-                        params: Joi.object().keys({
-                            id: Joi.string()
-                                .length(5)
-                                .required()
-                        })
-                    }
-                },
+        server.route({
+            method: 'GET',
+            path: '/{id}/data',
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: Joi.object().keys({
+                        id: Joi.string()
+                            .length(5)
+                            .required()
+                    })
+                }
+            },
 
-                handler: getChartData
-            });
+            handler: getChartData
+        });
 
-            server.route({
-                method: 'PUT',
-                path: '/{id}/data',
-                options: {
-                    tags: ['api'],
-                    validate: {
-                        params: Joi.object().keys({
-                            id: Joi.string()
-                                .length(5)
-                                .required()
-                        }),
-                        payload: Joi.string()
-                    }
-                },
-                handler: writeChartData
-            });
-        }
+        server.route({
+            method: 'PUT',
+            path: '/{id}/data',
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: Joi.object().keys({
+                        id: Joi.string()
+                            .length(5)
+                            .required()
+                    }),
+                    payload: Joi.string()
+                }
+            },
+            handler: writeChartData
+        });
     }
 };
 
@@ -268,12 +266,27 @@ async function createChart(request, h) {
 }
 
 async function exportChart(request, h) {
-    const { chartExport } = request.server.methods;
-    const { payload, params, auth, logger } = request;
+    const { payload, params, auth, logger, server } = request;
+    const { events, event } = server.app;
 
     Object.assign(payload, params);
     try {
-        const { stream, type } = await chartExport(payload, auth.artifacts.id, logger, Boom);
+        const results = await events.emit(event.CHART_EXPORT, {
+            data: payload,
+            userId: auth.artifacts.id,
+            logger
+        });
+
+        const successfulResult = results.find(res => res.status === 'success');
+
+        if (!successfulResult) {
+            const { error } = results.find(res => res.status === 'error') || {
+                error: new Error('notImplemented')
+            };
+            throw error;
+        }
+
+        const { stream, type } = successfulResult.data;
         return h.response(stream).header('Content-Type', type);
     } catch (error) {
         return Boom[error.message]();
@@ -292,7 +305,6 @@ async function handleChartExport(request, h) {
     }
 
     request.payload = Object.assign(query, border);
-
     return exportChart(request, h);
 }
 

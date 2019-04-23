@@ -42,6 +42,7 @@ class ApiEventEmitter extends EventEmitter {
 }
 
 const eventList = {
+    CHART_EXPORT: 'CHART_EXPORT',
     GET_CHART_DATA: 'GET_CHART_DATA',
     PUT_CHART_DATA: 'PUT_CHART_DATA',
     SEND_EMAIL: 'SEND_EMAIL'
