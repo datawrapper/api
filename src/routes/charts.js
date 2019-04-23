@@ -344,14 +344,16 @@ async function getChartData(request, h) {
     const { events, event } = request.server.app;
     const chart = await loadChart(request);
 
+    const filename = `${chart.id}.csv`;
+
     try {
-        const eventResults = await events.emit(event.GET_CHART_DATA, chart);
+        const eventResults = await events.emit(event.GET_CHART_DATA, { chart, filename });
         const data = eventResults.find(e => e.status === 'success').data;
 
         return h
             .response(data)
             .header('Content-Type', 'text/csv')
-            .header('Content-Disposition', `attachment; filename=${chart.id}.csv`);
+            .header('Content-Disposition', `attachment; filename=${filename}`);
     } catch (error) {
         request.logger.error(error.message);
         return Boom.notFound();
@@ -362,10 +364,13 @@ async function writeChartData(request, h) {
     const { events, event } = request.server.app;
     const chart = await loadChart(request);
 
+    const filename = `${chart.id}.csv`;
+
     try {
         const eventResults = await events.emit(event.PUT_CHART_DATA, {
             chart,
-            data: request.payload
+            data: request.payload,
+            filename
         });
 
         const { code } = eventResults.find(e => e.status === 'success').data;

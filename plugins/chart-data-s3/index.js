@@ -12,25 +12,26 @@ module.exports = {
         events.on(event.GET_CHART_DATA, getChartData);
         events.on(event.PUT_CHART_DATA, writeChartData);
 
-        async function getChartData(chart) {
+        async function getChartData({ chart, filename }) {
             const data = await s3
                 .getObject({
                     Bucket: options.config.bucket,
-                    Key: path.join(options.config.path, getDataPath(chart.id, chart.created_at))
+                    Key: path.join(options.config.path, getDataPath(chart.created_at), filename)
                 })
                 .promise();
 
             return data.Body;
         }
 
-        async function writeChartData({ chart, data }) {
+        async function writeChartData({ chart, data, filename }) {
             let fileExists = false;
+            const Key = path.join(options.config.path, getDataPath(chart.created_at), filename);
 
             try {
                 await s3
                     .headObject({
                         Bucket: options.config.bucket,
-                        Key: path.join(options.config.path, getDataPath(chart.id, chart.created_at))
+                        Key
                     })
                     .promise();
                 fileExists = true;
@@ -43,7 +44,7 @@ module.exports = {
                     ACL: 'public-read',
                     Body: data,
                     Bucket: options.config.bucket,
-                    Key: path.join(options.config.path, getDataPath(chart.id, chart.created_at)),
+                    Key,
                     ContentType: 'text/csv'
                 })
                 .promise();
@@ -53,8 +54,8 @@ module.exports = {
     }
 };
 
-function getDataPath(id, date) {
+function getDataPath(date) {
     const year = date.getUTCFullYear();
     const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-    return path.join(`${year}${month}`, `${id}.csv`);
+    return `${year}${month}`;
 }

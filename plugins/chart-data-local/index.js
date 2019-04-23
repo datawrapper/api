@@ -12,20 +12,20 @@ module.exports = {
     register: (server, options) => {
         const { events, event } = server.app;
 
-        events.on(event.GET_CHART_DATA, async chart => {
+        events.on(event.GET_CHART_DATA, async ({ chart, filename }) => {
             const filePath = path.join(
                 options.config.path,
                 getDataPath(chart.created_at),
-                `${chart.id}.csv`
+                filename
             );
 
             const data = await readFile(filePath, { encoding: 'utf-8' });
             return data;
         });
 
-        events.on(event.PUT_CHART_DATA, async ({ chart, data }) => {
+        events.on(event.PUT_CHART_DATA, async ({ chart, data, filename }) => {
             const dataPath = path.join(options.config.path, getDataPath(chart.created_at));
-            const filePath = path.join(dataPath, `${chart.id}.csv`);
+            const filePath = path.join(dataPath, filename);
 
             let fileExists = false;
             try {
