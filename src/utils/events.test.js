@@ -1,6 +1,13 @@
 import test from 'ava';
 import EventEmitter from 'events';
-import { events, eventList } from './events';
+import { ApiEventEmitter, eventList } from './events';
+import { noop } from './index';
+
+function mockLogger() {
+    return { error: noop };
+}
+
+const events = new ApiEventEmitter({ logger: mockLogger });
 
 function uniq(arr) {
     return Array.from(new Set(arr));

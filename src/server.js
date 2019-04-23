@@ -6,7 +6,7 @@ const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
 
 const { generateToken } = require('./utils');
-const { events, eventList } = require('./utils/events');
+const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
 
@@ -91,25 +91,10 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     await ORM.init(config);
 
     server.app.event = eventList;
-    server.app.events = events;
+    server.app.events = new ApiEventEmitter({ logger: server.logger });
 
     server.method('config', key => (key ? config[key] : config));
     server.method('generateToken', generateToken);
-
-    let mailFunction = () => {};
-    server.method('registerMail', func => {
-        mailFunction = func;
-    });
-
-    server.method('sendMail', async (type, data) => {
-        try {
-            const res = await mailFunction(type, data);
-            return res;
-        } catch (error) {
-            server.logger().error(error, '[Mail]');
-            throw Boom.badGateway();
-        }
-    });
 
     if (process.env.NODE_ENV === 'development') {
         server.register([require('inert'), require('vision')]);

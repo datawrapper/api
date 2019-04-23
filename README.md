@@ -219,7 +219,7 @@ module.exports = {
 
 #### `email-local`
 
-Example plugin that uses [`nodemailer`](https://nodemailer.com/about/) and [Ethereal](https://ethereal.email) to generate fake emails. This makes testing of email sending through the API very easy and gives the `sendMail` server method actual functionality.
+Example plugin that uses [`nodemailer`](https://nodemailer.com/about/) and [Ethereal](https://ethereal.email) to generate fake emails. This makes testing of email sending through the API very easy and listens to all `SEND_EMAIL` events.
 
 With this plugin, sending a password reset request will log some data and a URL where to find the fake email.
 

@@ -414,7 +414,7 @@ async function signup(request, h) {
         }
     }
 
-    const { generateToken, config, sendMail } = request.server.methods;
+    const { generateToken, config } = request.server.methods;
 
     request.payload.activate_token = generateToken();
 
@@ -433,7 +433,9 @@ async function signup(request, h) {
     const { activate_token, ...data } = res.result;
 
     const { https, domain } = config('frontend');
-    await sendMail('activation', {
+
+    await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
+        type: 'activation',
         to: data.email,
         language: data.language,
         data: {
@@ -475,7 +477,7 @@ async function activateAccount(request, h) {
 }
 
 async function resetPassword(request, h) {
-    const { generateToken, isAdmin, sendMail, config } = request.server.methods;
+    const { generateToken, isAdmin, config } = request.server.methods;
     let token = generateToken();
 
     if (isAdmin(request) && request.payload.token) {
@@ -494,7 +496,9 @@ async function resetPassword(request, h) {
     await user.update({ reset_password_token: token });
 
     const { https, domain } = config('frontend');
-    await sendMail('reset-password', {
+
+    await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
+        type: 'reset-password',
         to: user.email,
         language: user.language,
         data: {
@@ -553,7 +557,8 @@ async function resendActivation(request, h) {
         return Boom.resourceGone('User is already activated');
     }
 
-    await request.server.methods.sendMail('activation', {
+    await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
+        type: 'activation',
         to: user.email,
         language: user.language,
         data: {
