@@ -1,42 +1,6 @@
-const glob = require('glob');
+const path = require('path');
 const models = require('@datawrapper/orm/models');
-const findUp = require('find-up');
 const get = require('lodash/get');
-
-const pkg = require(findUp.sync('package.json'));
-
-const localPluginPaths = glob.sync('plugins/*/index.js', { absolute: true });
-const localPlugins = localPluginPaths.map(require);
-
-function findPlugin(config) {
-    return name => {
-        const pluginObject = {
-            options: {
-                models,
-                config: get(config, ['plugins', name], {})
-            }
-        };
-
-        if (pkg.dependencies[name]) {
-            pluginObject.plugin = require(name);
-            pluginObject.type = 'npm';
-        }
-
-        const plugin = localPlugins.find(plugin => plugin.name === name);
-        if (plugin) {
-            pluginObject.plugin = plugin;
-            pluginObject.type = 'local';
-        }
-
-        if (!pluginObject.plugin) {
-            return {
-                error: name
-            };
-        }
-
-        return pluginObject;
-    };
-}
 
 let loadingError = false;
 module.exports = {
@@ -44,7 +8,24 @@ module.exports = {
     version: '1.0.0',
     register: async (server, options) => {
         const config = server.methods.config();
-        const plugins = Object.keys(config.plugins || []).map(findPlugin(config));
+        const root = config.api.localPluginRoot || path.join(process.cwd(), 'plugins');
+
+        const plugins = Object.keys(config.plugins || []).map(registerPlugin);
+
+        function registerPlugin(name) {
+            const plugin = require(root + '/' + name);
+
+            const pluginObject = {
+                plugin,
+                type: 'local',
+                options: {
+                    models,
+                    config: get(config, ['plugins', name], {})
+                }
+            };
+
+            return pluginObject;
+        }
 
         if (plugins.length) {
             plugins.forEach(({ plugin, type, error }) => {
@@ -54,7 +35,10 @@ module.exports = {
                 } else {
                     server
                         .logger()
-                        .info({ version: plugin.version, type }, `[Plugin] ${plugin.name}`);
+                        .info(
+                            { version: plugin.version, type },
+                            `[Plugin] ${get(plugin, ['pkg', 'name'], plugin.name)}`
+                        );
                 }
             });
             if (loadingError) process.exit(1);
