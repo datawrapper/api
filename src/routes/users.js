@@ -1,7 +1,7 @@
 const Joi = require('joi');
 const Boom = require('boom');
 const sequelize = require('sequelize');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { decamelize, camelizeKeys } = require('humps');
 const set = require('lodash/set');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
