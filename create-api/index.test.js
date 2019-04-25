@@ -9,9 +9,7 @@ const testDir = path.resolve(dir, 'api-test');
 const configJS = `
 module.exports = {
   plugins: {
-      '@datawrapper/plugin-random-data': {
-        version: 'next'
-      }
+      'hello-world': {}
   }
 };
 `;
@@ -36,7 +34,5 @@ test('should run create-api script', t => {
     t.truthy(pkg.scripts['api']);
     t.truthy(pkg.scripts['sync']);
     t.truthy(pkg.dependencies['@datawrapper/api']);
-    t.truthy(pkg.dependencies['@datawrapper/plugin-random-data']);
     t.true(dwPackages.includes('api'));
-    t.true(dwPackages.includes('plugin-random-data'));
 });

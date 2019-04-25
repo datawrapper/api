@@ -8,11 +8,9 @@ This repository contains the new Node.js API that is the backbone of Datawrapper
 1. [Local development](#local-development)
 1. [Configuration](#configuration)
 1. [Plugins](#plugins)
-    1. [`npm` plugins](#npm-plugins)
-    1. [Local plugins](#local-plugins)
-        1. [`hello-world`](#hello-world)
-        1. [`email-local`](#email-local)
-        1. [`chart-data-local`](#chart-data-local)
+    1. [`hello-world`](#hello-world)
+    1. [`email-local`](#email-local)
+    1. [`chart-data-local`](#chart-data-local)
 1. [`create-api` script](./create-api/Readme.md)
 1. [REST API with JSON](#rest-api-with-json)
 
@@ -140,14 +138,13 @@ Key | Example Value | Description
 Key | Example key | Example Value |  Description
 ---------|----------| --------- | ---------
 `plugin.<plugin-name>` | `plugin[my-plugin]` | `{}` | Configuration options for plugin
-|| `plugin[my-plugin].version` | `1.0.0` | Plugin version to install from `npm`
 || `plugin[my-plugin].apiKey` | `agamotto` | Configuration key passed to the plugins register function when server starts.
 
 ## Plugins
 
 The API is extensible to match customers and Datawrappers needs. By default the API has endpoints for basic functionality like user and chart management. This functionality can be extended with the use of plugins. Since the API is built on top of the [Hapi](https://hapijs.com) server framework, it uses [Hapis plugin system](https://hapijs.com/api#plugins). Everything a Hapi plugin can do, an API plugin can, too.
 
-For production use, it is recommended to install plugins with `npm`. The `create-api` script will try to automatically install all plugins that are configured in `config.js`. When starting the API server, it will check which plugins are configured in `config.js` and pass the configuration objects to the plugins `register` function with `options.config`. Plugins will have access to ORM models through `options.models`.
+When starting the API server, it will check which plugins are configured in `config.js` and pass the configuration objects to the plugins `register` function with `options.config`. Plugins will have access to ORM models through `options.models`.
 
 In its simplest form, an API plugin is a node module that exports an object with `name`, `version` and `register` keys.
 
@@ -170,16 +167,6 @@ module.exports = {
     }
 }
 ```
-
-### `npm` plugins
-
-Plugins can be installed from `npm`. Even though they can have any name, it is recommended to follow a naming guideline. Plugins developed by Datawrapper will follow the naming convention `@datawrapper/plugin-{name}`. Community or customer developed plugins should be named `dw-plugin-{name}` to make them easy to find on `npm`.
-
-#### Datawrapper plugins
-
-* [@datawrapper/plugin-export-pdf](https://www.npmjs.com/package/@datawrapper/plugin-export-pdf) - Adds file export methods
-* [@datawrapper/plugin-random-data](https://www.npmjs.com/package/@datawrapper/plugin-random-data) - Adds endpoint to generate random CSV data
-* [@datawrapper/plugin-email-postmark](https://www.npmjs.com/package/@datawrapper/plugin-email-postmark) - Adds email functionality with [Postmark](https://postmarkapp.com) API
 
 ### Local plugins
 
