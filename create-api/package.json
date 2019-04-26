@@ -30,7 +30,6 @@
     "homepage": "https://github.com/datawrapper/datawrapper-api#readme",
     "dependencies": {
         "find-up": "3.0.0",
-        "glob": "7.1.3",
         "lodash": "4.17.11"
     }
 }

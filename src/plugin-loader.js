@@ -2,7 +2,6 @@ const path = require('path');
 const models = require('@datawrapper/orm/models');
 const get = require('lodash/get');
 
-let loadingError = false;
 module.exports = {
     name: 'plugin-loader',
     version: '1.0.0',
@@ -13,50 +12,50 @@ module.exports = {
         const plugins = Object.keys(config.plugins || []).map(registerPlugin);
 
         function registerPlugin(name) {
-            const plugin = require(root + '/' + name);
-
-            const pluginObject = {
-                plugin,
-                type: 'local',
-                options: {
-                    models,
-                    config: get(config, ['plugins', name], {})
-                }
-            };
-
-            return pluginObject;
+            try {
+                return {
+                    plugin: require(path.join(root, name)),
+                    options: {
+                        models,
+                        config: get(config, ['plugins', name], {})
+                    }
+                };
+            } catch (error) {
+                return { name, error };
+            }
         }
 
         if (plugins.length) {
-            plugins.forEach(({ plugin, type, error }) => {
+            plugins.forEach(({ plugin, options, error, name }) => {
                 if (error) {
-                    loadingError = true;
-                    server.logger().error(`[Plugin] ${error}`, logError(error));
+                    server.logger().error(`[Plugin] ${error}`, logError(root, name));
+                    process.exit(1);
                 } else {
-                    server
-                        .logger()
-                        .info(
-                            { version: plugin.version, type },
-                            `[Plugin] ${get(plugin, ['pkg', 'name'], plugin.name)}`
-                        );
+                    server.logger().info(
+                        {
+                            version: get(plugin, ['pkg', 'version'], plugin.version),
+                            config: options.config
+                        },
+                        `[Plugin] ${get(plugin, ['pkg', 'name'], plugin.name)}`
+                    );
                 }
             });
-            if (loadingError) process.exit(1);
 
             await server.register(plugins);
         }
     }
 };
 
-function logError(name) {
+function logError(root, name) {
     return `
 
 Loading plugin [${name}] failed! Maybe it is not properly installed.
 
-Is it specified in "package.json" under "dependencies"?
-    If it is, try running "npm install"
-
 Is it available in "plugins/"?
-    Tip: run "grep -r "${name}" plugins/*/index.js"
+    Tip: run "ls ${root} | grep "${name}"
+Possible mistakes:
+    * Plugin config key doesn't match the plugin folder.
+    * Plugin is missing from ${root}.
+    * Plugin has no \`index.js\` or package.json with "main" key.
 `;
 }
