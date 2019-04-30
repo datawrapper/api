@@ -25,5 +25,11 @@ module.exports = {
                 prefix: '/charts'
             }
         });
+
+        server.register(require('./teams'), {
+            routes: {
+                prefix: '/teams'
+            }
+        });
     }
 };

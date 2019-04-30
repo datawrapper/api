@@ -43,5 +43,32 @@ export async function setup(options) {
         return { user, session, cleanup };
     }
 
-    return { server, models, getUser };
+    async function getTeamWithUser() {
+        const teamPromise = models.Team.findOrCreate({
+            where: { id: 'test' },
+            defaults: {
+                id: 'test',
+                name: 'Test Team'
+            }
+        });
+
+        const [[team], userData] = await Promise.all([teamPromise, getUser()]);
+        const { user, session, cleanup: userCleanup } = userData;
+
+        let userTeam = await models.UserTeam.create({
+            user_id: user.id,
+            organization_id: team.id,
+            team_role: 'member'
+        });
+
+        async function cleanup() {
+            await userTeam.destroy();
+            await team.destroy();
+            await userCleanup();
+        }
+
+        return { team, user: user, session: session, cleanup };
+    }
+
+    return { server, models, getUser, getTeamWithUser };
 }
