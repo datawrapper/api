@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 const { camelizeKeys } = require('humps');
 const nanoid = require('nanoid');
 const set = require('lodash/set');
-const { Chart } = require('@datawrapper/orm/models');
+const { Chart, ChartPublic } = require('@datawrapper/orm/models');
 
 module.exports = {
     name: 'chart-routes',
@@ -223,7 +223,8 @@ async function getAllCharts(request, h) {
 
 async function getChart(request, h) {
     const { query, url, params, auth } = request;
-    const chart = await Chart.findOne({
+
+    let chart = await Chart.findOne({
         where: {
             id: params.id,
             deleted: { [Op.not]: true }
@@ -237,8 +238,17 @@ async function getChart(request, h) {
         return Boom.notFound();
     }
 
-    if (chart.author_id !== auth.artifacts.id && !chart.published_at) {
-        request.server.methods.isAdmin(request, { throwError: true });
+    const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
+    if (!isEditable) {
+        if (chart.published_at) {
+            chart = await ChartPublic.findOne({
+                where: {
+                    id: params.id
+                }
+            });
+        } else {
+            return Boom.unauthorized();
+        }
     }
 
     return {
@@ -345,10 +355,6 @@ async function loadChart(request) {
         throw Boom.notFound();
     }
 
-    if (chart.author_id !== request.auth.artifacts.id) {
-        throw Boom.unauthorized();
-    }
-
     return chart;
 }
 
@@ -375,6 +381,12 @@ async function getChartData(request, h) {
 async function writeChartData(request, h) {
     const { events, event } = request.server.app;
     const chart = await loadChart(request);
+
+    const isEditable = await chart.isEditableBy(request.auth.artifacts);
+
+    if (!isEditable) {
+        return Boom.forbidden();
+    }
 
     const filename = `${chart.id}.csv`;
 

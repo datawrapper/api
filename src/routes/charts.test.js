@@ -10,7 +10,7 @@ test.before(async t => {
     t.context.auth = {
         strategy: 'session',
         credentials: data.session,
-        artifacts: data.user.dataValues
+        artifacts: data.user
     };
 });
 
