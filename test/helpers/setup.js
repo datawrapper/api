@@ -58,7 +58,7 @@ export async function setup(options) {
         let userTeam = await models.UserTeam.create({
             user_id: user.id,
             organization_id: team.id,
-            team_role: 'member'
+            team_role: 'owner'
         });
 
         async function cleanup() {

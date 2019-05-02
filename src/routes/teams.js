@@ -3,7 +3,7 @@ const Boom = require('boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const { decamelize, camelizeKeys } = require('humps');
-const { Team, User } = require('@datawrapper/orm/models');
+const { Team, User, UserTeam } = require('@datawrapper/orm/models');
 
 module.exports = {
     name: 'teams-routes',
@@ -153,6 +153,19 @@ async function getAllTeams(request, h) {
 
 async function getTeam(request, h) {
     const { url, server, auth, params } = request;
+
+    const isAdmin = server.methods.isAdmin(request);
+    const hasTeam = !!(await UserTeam.findOne({
+        where: {
+            user_id: auth.artifacts.id,
+            organization_id: params.id
+        }
+    }));
+
+    if (!hasTeam && !isAdmin) {
+        return Boom.unauthorized();
+    }
+
     const options = {
         attributes: {
             exclude: ['deleted']
@@ -171,7 +184,7 @@ async function getTeam(request, h) {
         }
     };
 
-    if (!server.methods.isAdmin(request)) {
+    if (!isAdmin) {
         set(options, ['include', 0, 'where', 'id'], auth.artifacts.id);
     }
 
@@ -191,7 +204,19 @@ async function getTeam(request, h) {
 }
 
 async function getTeamMembers(request, h) {
-    const { query, params } = request;
+    const { query, params, auth, server } = request;
+
+    const hasTeam = !!(await UserTeam.findOne({
+        where: {
+            user_id: auth.artifacts.id,
+            organization_id: params.id
+        }
+    }));
+
+    if (!hasTeam && !server.methods.isAdmin(request)) {
+        return Boom.unauthorized();
+    }
+
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
         attributes: ['id', 'name', 'email'],

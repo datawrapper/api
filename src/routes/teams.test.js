@@ -58,6 +58,13 @@ test('anonymous user can not fetch teams', async t => {
     });
 
     t.is(teams.statusCode, 401);
+
+    teams = await t.context.server.inject({
+        method: 'GET',
+        url: '/v3/teams/test/members'
+    });
+
+    t.is(teams.statusCode, 401);
 });
 
 test('user can not fetch teams they are not a part of', async t => {
@@ -72,6 +79,35 @@ test('user can not fetch teams they are not a part of', async t => {
         }
     });
 
-    t.is(teams.statusCode, 404);
+    t.is(teams.statusCode, 401);
+    await data.cleanup();
+});
+
+test('user can fetch their team members', async t => {
+    let teams = await t.context.server.inject({
+        method: 'GET',
+        url: '/v3/teams/test/members',
+        auth: t.context.auth
+    });
+
+    t.is(teams.statusCode, 200);
+    t.true(Array.isArray(teams.result.list));
+    t.is(teams.result.list[0].id, t.context.auth.artifacts.id);
+    t.is(teams.result.total, 1);
+});
+
+test('user can not fetch team members of team they are not a part of', async t => {
+    const data = await t.context.getUser();
+    let teams = await t.context.server.inject({
+        method: 'GET',
+        url: '/v3/teams/test/members',
+        auth: {
+            strategy: 'session',
+            credentials: data.session,
+            artifacts: data.user
+        }
+    });
+
+    t.is(teams.statusCode, 401);
     await data.cleanup();
 });
