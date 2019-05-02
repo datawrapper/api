@@ -5,6 +5,8 @@ const set = require('lodash/set');
 const { decamelize, camelizeKeys } = require('humps');
 const { Team, User, UserTeam } = require('@datawrapper/orm/models');
 
+const ROLES = ['owner', 'admin', 'member'];
+
 module.exports = {
     name: 'teams-routes',
     version: '1.0.0',
@@ -79,8 +81,37 @@ module.exports = {
             },
             handler: getTeamMembers
         });
+
+        server.route({
+            method: 'DELETE',
+            path: `/{id}`,
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: {
+                        id: Joi.string().required()
+                    }
+                }
+            },
+            handler: deleteTeam
+        });
     }
 };
+
+async function getMemberRole(userId, teamId) {
+    const team = await UserTeam.findOne({
+        where: {
+            user_id: userId,
+            organization_id: teamId
+        }
+    });
+
+    if (!team) {
+        throw Boom.unauthorized();
+    }
+
+    return ROLES[team.dataValues.team_role];
+}
 
 async function getAllTeams(request, h) {
     const { query, auth, url, server } = request;
@@ -256,4 +287,37 @@ async function getTeamMembers(request, h) {
         })),
         total: count
     };
+}
+
+async function deleteTeam(request, h) {
+    const { auth, params, server } = request;
+
+    if (!server.methods.isAdmin(request)) {
+        const memberRole = await getMemberRole(auth.artifacts.id, params.id);
+
+        if (memberRole !== ROLES[0]) {
+            return Boom.unauthorized();
+        }
+    }
+
+    const updates = await Team.update(
+        {
+            deleted: true
+        },
+        {
+            where: {
+                id: params.id,
+                deleted: {
+                    [Op.not]: true
+                }
+            }
+        }
+    );
+
+    /* no rows got updated, which means the team is already deleted or doesn't exist */
+    if (!updates[0]) {
+        return Boom.notFound();
+    }
+
+    return h.response().code(204);
 }
