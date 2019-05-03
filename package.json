@@ -30,7 +30,7 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/orm": "3.1.0",
+        "@datawrapper/orm": "3.1.1",
         "@datawrapper/shared": "0.5.0",
         "aws-sdk": "2.437.0",
         "bcryptjs": "2.4.3",
