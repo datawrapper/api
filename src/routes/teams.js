@@ -84,7 +84,22 @@ module.exports = {
 
         server.route({
             method: 'DELETE',
-            path: `/{id}`,
+            path: `/{id}/members/{userId}`,
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: {
+                        id: Joi.string().required(),
+                        userId: Joi.number().required()
+                    }
+                }
+            },
+            handler: deleteTeamMember
+        });
+
+        server.route({
+            method: 'DELETE',
+            path: `/{id}/members`,
             options: {
                 tags: ['api'],
                 validate: {
@@ -318,6 +333,37 @@ async function deleteTeam(request, h) {
     if (!updates[0]) {
         return Boom.notFound();
     }
+
+    return h.response().code(204);
+}
+
+async function deleteTeamMember(request, h) {
+    const { auth, params, server } = request;
+
+    const isAdmin = server.methods.isAdmin(request);
+
+    if (!isAdmin) {
+        const memberRole = await getMemberRole(auth.artifacts.id, params.id);
+
+        if (memberRole === ROLES[2]) {
+            return Boom.unauthorized();
+        }
+    }
+
+    const row = await UserTeam.findOne({
+        where: {
+            user_id: params.userId,
+            organization_id: params.id
+        }
+    });
+
+    if (!row) return Boom.notFound();
+
+    if (ROLES[row.dataValues.team_role] === 'owner' && !isAdmin) {
+        return Boom.unauthorized('Can not delete team owner.');
+    }
+
+    await row.destroy();
 
     return h.response().code(204);
 }

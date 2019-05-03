@@ -3,10 +3,13 @@ import { Op } from 'sequelize';
 import { init } from '../../src/server';
 
 const passwordHash = '$2b$15$UdsGvrTLEk5DPRmRoHE4O..tzDpkWkAdKjBoKUjERXKoYHqTIRis6';
-const credentials = {
-    email: `test-${nanoid(5)}@ava.js`,
-    password: 'test-password'
-};
+
+function getCredentials() {
+    return {
+        email: `test-${nanoid(5)}@ava.js`,
+        password: 'test-password'
+    };
+}
 
 export async function setup(options) {
     const server = await init(options);
@@ -14,7 +17,7 @@ export async function setup(options) {
 
     async function getUser() {
         let user = await models.User.create({
-            email: credentials.email,
+            email: getCredentials().email,
             pwd: passwordHash,
             role: 'editor'
         });
@@ -43,31 +46,42 @@ export async function setup(options) {
         return { user, session, cleanup };
     }
 
-    async function getTeamWithUser() {
-        const teamPromise = models.Team.findOrCreate({
-            where: { id: 'test' },
-            defaults: {
-                id: 'test',
-                name: 'Test Team'
-            }
+    async function getTeamWithUser(role = 'owner') {
+        const teamPromise = models.Team.create({
+            id: `test-${nanoid(5)}`,
+            name: 'Test Team'
         });
 
-        const [[team], userData] = await Promise.all([teamPromise, getUser()]);
+        const [team, userData] = await Promise.all([teamPromise, getUser()]);
         const { user, session, cleanup: userCleanup } = userData;
 
-        let userTeam = await models.UserTeam.create({
+        await models.UserTeam.create({
             user_id: user.id,
             organization_id: team.id,
-            team_role: 'owner'
+            team_role: role
         });
 
-        async function cleanup() {
-            await userTeam.destroy();
-            await team.destroy();
-            await userCleanup();
+        let usersToCleanup = [];
+        async function addUser(role = 'owner') {
+            const user = await getUser();
+
+            await models.UserTeam.create({
+                user_id: user.user.id,
+                organization_id: team.id,
+                team_role: role
+            });
+            usersToCleanup.push(user.cleanup);
+            return user;
         }
 
-        return { team, user: user, session: session, cleanup };
+        async function cleanup() {
+            await models.UserTeam.destroy({ where: { organization_id: team.id } });
+            await team.destroy();
+            await userCleanup();
+            await Promise.all(usersToCleanup.map(f => f()));
+        }
+
+        return { team, user, session, cleanup, userCleanup, addUser };
     }
 
     return { server, models, getUser, getTeamWithUser };
