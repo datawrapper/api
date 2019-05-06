@@ -2,7 +2,7 @@ const Joi = require('joi');
 const Boom = require('boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
-const { decamelize, camelizeKeys } = require('humps');
+const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
 const { Team, User, UserTeam } = require('@datawrapper/orm/models');
 
 const ROLES = ['owner', 'admin', 'member'];
@@ -126,6 +126,22 @@ module.exports = {
                 }
             },
             handler: createTeam
+        });
+
+        server.route({
+            method: 'PATCH',
+            path: `/{id}`,
+            options: {
+                tags: ['api'],
+                validate: {
+                    payload: {
+                        name: Joi.string(),
+                        settings: Joi.object(),
+                        defaultTheme: Joi.string()
+                    }
+                }
+            },
+            handler: editTeam
         });
     }
 };
@@ -319,6 +335,37 @@ async function getTeamMembers(request, h) {
         })),
         total: count
     };
+}
+
+async function editTeam(request, h) {
+    const { auth, payload, params, server } = request;
+
+    if (!server.methods.isAdmin(request)) {
+        const memberRole = await getMemberRole(auth.artifacts.id, params.id);
+
+        if (memberRole === ROLES[2]) {
+            return Boom.unauthorized();
+        }
+    }
+
+    let data = payload;
+
+    if (data.settings) {
+        data.settings = JSON.stringify(data.settings);
+    }
+
+    let team = await Team.findByPk(params.id, { attributes: { exclude: ['deleted'] } });
+
+    team = await team.update(decamelizeKeys(data));
+
+    data = team.dataValues;
+
+    if (typeof data.settings === 'string') {
+        data.settings = JSON.parse(data.settings);
+    }
+
+    data.updatedAt = new Date().toISOString();
+    return camelizeKeys(data);
 }
 
 async function deleteTeam(request, h) {

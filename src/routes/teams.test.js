@@ -201,3 +201,50 @@ test('users can not create teams', async t => {
 
     t.is(team.statusCode, 401);
 });
+
+test('owners can edit teams', async t => {
+    const team = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/teams/${t.context.data.team.id}`,
+        auth: t.context.auth,
+        payload: {
+            name: 'Testy'
+        }
+    });
+
+    t.is(team.statusCode, 200);
+    t.is(team.result.name, 'Testy');
+    t.truthy(team.result.updatedAt);
+});
+
+test('admin can edit team', async t => {
+    const { user } = await t.context.data.addUser('admin');
+
+    const team = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/teams/${t.context.data.team.id}`,
+        auth: { strategy: 'simple', credentials: { session: '' }, artifacts: user },
+        payload: {
+            name: 'Testy'
+        }
+    });
+
+    t.is(team.statusCode, 200);
+    t.is(team.result.name, 'Testy');
+    t.truthy(team.result.updatedAt);
+});
+
+test('member can not edit team', async t => {
+    const { user } = await t.context.data.addUser('member');
+
+    const team = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/teams/${t.context.data.team.id}`,
+        auth: { strategy: 'simple', credentials: { session: '' }, artifacts: user },
+        payload: {
+            name: 'Testy'
+        }
+    });
+
+    t.is(team.statusCode, 401);
+});
