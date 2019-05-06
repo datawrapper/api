@@ -143,6 +143,22 @@ module.exports = {
             },
             handler: editTeam
         });
+
+        server.route({
+            method: 'POST',
+            path: `/{id}/members`,
+            options: {
+                tags: ['api'],
+                validate: {
+                    payload: {
+                        email: Joi.string()
+                            .email()
+                            .required()
+                    }
+                }
+            },
+            handler: addTeamMember
+        });
     }
 };
 
@@ -354,7 +370,12 @@ async function editTeam(request, h) {
         data.settings = JSON.stringify(data.settings);
     }
 
-    let team = await Team.findByPk(params.id, { attributes: { exclude: ['deleted'] } });
+    let team = await Team.findOne({
+        where: { id: params.id, deleted: { [Op.not]: true } },
+        attributes: { exclude: ['deleted'] }
+    });
+
+    if (!team) return Boom.notFound();
 
     team = await team.update(decamelizeKeys(data));
 
@@ -459,4 +480,85 @@ async function createTeam(request, h) {
         request.logger.error(error);
         return Boom.conflict();
     }
+}
+
+async function addTeamMember(request, h) {
+    const { auth, params, payload, server } = request;
+
+    const isAdmin = server.methods.isAdmin(request);
+
+    if (!isAdmin) {
+        const memberRole = await getMemberRole(auth.artifacts.id, params.id);
+
+        if (memberRole === ROLES[2]) {
+            return Boom.unauthorized();
+        }
+    }
+
+    let teamCount = await Team.count({
+        where: { id: params.id, deleted: { [Op.not]: true } }
+    });
+
+    if (!teamCount) return Boom.notFound();
+
+    let user = await User.findOne({
+        where: { email: payload.email },
+        attributes: ['id', 'email', 'language']
+    });
+
+    const token = server.methods.generateToken();
+    if (!user && !isAdmin) {
+        const passwordToken = server.methods.generateToken();
+        const hash = await request.server.methods.hashPassword(passwordToken);
+        user = await User.create({
+            email: payload.email,
+            activate_token: token,
+            role: 'pending',
+            pwd: hash,
+            name: null
+        });
+    }
+
+    if (!user && isAdmin) {
+        return Boom.conflict('User does not exist.');
+    }
+
+    const isMember = !!(await UserTeam.findOne({
+        where: {
+            user_id: user.id,
+            organization_id: params.id
+        }
+    }));
+
+    if (isMember) {
+        return Boom.badRequest('User is already member of team.');
+    }
+
+    const data = {
+        user_id: user.id,
+        organization_id: params.id,
+        team_role: ROLES[2]
+    };
+
+    if (!isAdmin) {
+        data.token = token;
+    }
+
+    await UserTeam.create(data);
+
+    if (!isAdmin) {
+        const { https, domain } = server.methods.config('frontend');
+        await server.app.events.emit(server.app.event.SEND_EMAIL, {
+            type: 'team-invite',
+            to: user.email,
+            language: user.language,
+            data: {
+                activation_link: `${
+                    https ? 'https' : 'http'
+                }://${domain}/datawrapper-invite/${data.token || 'lol'}`
+            }
+        });
+    }
+
+    return h.response().code(201);
 }

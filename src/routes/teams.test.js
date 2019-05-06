@@ -202,7 +202,7 @@ test('users can not create teams', async t => {
     t.is(team.statusCode, 401);
 });
 
-test('owners can edit teams', async t => {
+test('owners can edit team', async t => {
     const team = await t.context.server.inject({
         method: 'PATCH',
         url: `/v3/teams/${t.context.data.team.id}`,
@@ -247,4 +247,47 @@ test('member can not edit team', async t => {
     });
 
     t.is(team.statusCode, 401);
+});
+
+test('owners can invite new members to a team', async t => {
+    const data = await t.context.getUser();
+    const team = await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/teams/${t.context.data.team.id}/members`,
+        auth: t.context.auth,
+        payload: {
+            email: data.user.email
+        }
+    });
+
+    await data.cleanup();
+
+    t.is(team.statusCode, 201);
+});
+
+test('owners can invite new users to a team', async t => {
+    const team = await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/teams/${t.context.data.team.id}/members`,
+        auth: t.context.auth,
+        payload: {
+            email: 'test-member@ava.js'
+        }
+    });
+
+    const user = await t.context.models.User.findOne({
+        where: {
+            email: 'test-member@ava.js'
+        }
+    });
+
+    /* clean up the user that got created with the POST request */
+    await t.context.models.UserTeam.destroy({ where: { user_id: user.id } });
+    t.log('Removed user from team', user.email);
+    await user.destroy();
+    t.log('Removed user', user.email);
+
+    t.is(user.email, 'test-member@ava.js');
+    t.truthy(user.activate_token);
+    t.is(team.statusCode, 201);
 });

@@ -33,6 +33,7 @@ export async function setup(options) {
 
         async function cleanup() {
             await models.Chart.destroy({ where: { author_id: user.id } });
+            await models.UserTeam.destroy({ where: { user_id: user.id } });
             await models.Session.destroy({
                 where: {
                     data: {
