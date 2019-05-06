@@ -291,3 +291,24 @@ test('owners can invite new users to a team', async t => {
     t.truthy(user.activate_token);
     t.is(team.statusCode, 201);
 });
+
+test('owners can change a members status', async t => {
+    const { user } = await t.context.data.addUser('member');
+    const team = await t.context.server.inject({
+        method: 'PUT',
+        url: `/v3/teams/${t.context.data.team.id}/members/${user.id}/status`,
+        auth: t.context.auth,
+        payload: {
+            status: 'admin'
+        }
+    });
+
+    t.is(team.statusCode, 204);
+
+    /* clean up the user that got created with the POST request */
+    const userTeam = await t.context.models.UserTeam.findOne({
+        where: { user_id: user.id }
+    });
+
+    t.is(userTeam.dataValues.team_role, 1);
+});

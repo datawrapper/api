@@ -159,6 +159,28 @@ module.exports = {
             },
             handler: addTeamMember
         });
+
+        server.route({
+            method: 'PUT',
+            path: `/{id}/members/{userId}/status`,
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: {
+                        id: Joi.string().required(),
+                        userId: Joi.number()
+                            .integer()
+                            .required()
+                    },
+                    payload: {
+                        status: Joi.string()
+                            .valid(ROLES)
+                            .required()
+                    }
+                }
+            },
+            handler: changeMemberStatus
+        });
     }
 };
 
@@ -561,4 +583,31 @@ async function addTeamMember(request, h) {
     }
 
     return h.response().code(201);
+}
+
+async function changeMemberStatus(request, h) {
+    const { auth, params, payload, server } = request;
+
+    const isAdmin = server.methods.isAdmin(request);
+
+    if (!isAdmin) {
+        const memberRole = await getMemberRole(auth.artifacts.id, params.id);
+
+        if (memberRole === ROLES[2]) {
+            return Boom.unauthorized();
+        }
+    }
+
+    const userTeam = await UserTeam.findOne({
+        where: {
+            user_id: params.userId,
+            organization_id: params.id
+        }
+    });
+
+    await userTeam.update({
+        team_role: payload.status
+    });
+
+    return h.response().code(204);
 }
