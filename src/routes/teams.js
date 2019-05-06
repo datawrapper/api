@@ -110,6 +110,23 @@ module.exports = {
             },
             handler: deleteTeam
         });
+
+        server.route({
+            method: 'POST',
+            path: `/`,
+            options: {
+                tags: ['api'],
+                validate: {
+                    payload: {
+                        id: Joi.string().required(),
+                        name: Joi.string().required(),
+                        settings: Joi.object(),
+                        defaultTheme: Joi.string()
+                    }
+                }
+            },
+            handler: createTeam
+        });
     }
 };
 
@@ -366,4 +383,33 @@ async function deleteTeamMember(request, h) {
     await row.destroy();
 
     return h.response().code(204);
+}
+
+async function createTeam(request, h) {
+    const { payload, server } = request;
+
+    server.methods.isAdmin(request, { throwError: true });
+
+    try {
+        const team = await Team.create({
+            id: payload.id,
+            name: payload.name,
+            settings: JSON.stringify(payload.settings),
+            default_theme: payload.defaultTheme
+        });
+
+        const data = team.dataValues;
+
+        if (typeof data.settings === 'string') {
+            data.settings = JSON.parse(data.settings);
+        }
+
+        return h.response(camelizeKeys(data)).code(201);
+    } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return Boom.conflict(`Organization with ID [${payload.id}] already exists.`);
+        }
+        request.logger.error(error);
+        return Boom.conflict();
+    }
 }

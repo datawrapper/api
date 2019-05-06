@@ -2,9 +2,10 @@ import test from 'ava';
 import { setup } from '../../test/helpers/setup';
 
 test.before(async t => {
-    const { server, getTeamWithUser, getUser } = await setup({ usePlugins: false });
+    const { server, getTeamWithUser, getUser, models } = await setup({ usePlugins: false });
     const data = await getTeamWithUser();
 
+    t.context.models = models;
     t.context.getUser = getUser;
     t.context.server = server;
     t.context.data = data;
@@ -163,4 +164,40 @@ test('owners can not get removed', async t => {
 
     t.is(teams.statusCode, 401);
     t.log(teams.result.message);
+});
+
+test('admins can create teams', async t => {
+    const admin = await t.context.models.User.findByPk(1);
+    const auth = { strategy: 'simple', credentials: { session: '' }, artifacts: admin };
+
+    const team = await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/teams`,
+        auth,
+        payload: {
+            id: 'test-team',
+            name: 'Test'
+        }
+    });
+
+    await t.context.models.Team.destroy({ where: { id: 'test-team' } });
+
+    t.is(team.statusCode, 201);
+    t.is(team.result.id, 'test-team');
+    t.is(team.result.name, 'Test');
+    t.truthy(team.result.createdAt);
+});
+
+test('users can not create teams', async t => {
+    const team = await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/teams`,
+        auth: t.context.auth,
+        payload: {
+            id: 'test-team',
+            name: 'Test'
+        }
+    });
+
+    t.is(team.statusCode, 401);
 });
