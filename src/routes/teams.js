@@ -134,6 +134,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
+                    params: {
+                        id: Joi.string().required()
+                    },
                     payload: {
                         name: Joi.string(),
                         settings: Joi.object(),
