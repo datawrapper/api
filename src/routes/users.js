@@ -187,7 +187,11 @@ async function getAllUsers(request, h) {
             const { charts, teams, ...data } = dataValues;
 
             if (teams) {
-                data.teams = teams.map(team => ({ id: team.id, name: team.name }));
+                data.teams = teams.map(team => ({
+                    id: team.id,
+                    name: team.name,
+                    url: `/v3/teams/${team.id}`
+                }));
             }
 
             return camelizeKeys({
@@ -236,7 +240,7 @@ async function getUser(request, h) {
         ...data,
         role,
         chartCount: charts.length,
-        url: `${url.pathname}`
+        url: url.pathname
     });
 }
 
