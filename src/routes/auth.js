@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 const { camelizeKeys } = require('humps');
 const Joi = require('joi');
 const Boom = require('boom');
-const { User, Session, AuthToken } = require('@datawrapper/orm/models');
+const { User, Session, AuthToken, Chart } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const get = require('lodash/get');
 const { cookieTTL } = require('../utils');
@@ -76,7 +76,10 @@ module.exports = {
             path: '/login',
             options: {
                 tags: ['api'],
-                auth: false,
+                auth: {
+                    mode: 'try',
+                    strategy: 'session'
+                },
                 validate: {
                     payload: {
                         email: Joi.string()
@@ -266,6 +269,20 @@ async function createSession(id, userId, keepSession = true) {
     });
 }
 
+async function associateChartsWithUser(sessionId, userId) {
+    return Chart.update(
+        {
+            author_id: userId,
+            guest_session: null
+        },
+        {
+            where: {
+                guest_session: sessionId
+            }
+        }
+    );
+}
+
 async function handleSession(request, h) {
     const { auth, server } = request;
 
@@ -343,7 +360,24 @@ async function login(request, h) {
         return Boom.unauthorized('Invalid credentials');
     }
 
-    const session = await createSession(generateToken(), user.id, keepSession);
+    let session;
+
+    if (request.auth.artifacts && request.auth.artifacts.role === 'anonymous') {
+        session = request.auth.credentials.data;
+        /* associate guest session with newly created user */
+        await Promise.all([
+            session.update({
+                data: {
+                    ...session.data,
+                    'dw-user-id': user.id,
+                    last_action_time: Math.floor(Date.now() / 1000)
+                }
+            }),
+            associateChartsWithUser(session.id, user.id)
+        ]);
+    } else {
+        session = await createSession(generateToken(), user.id, keepSession);
+    }
 
     return h
         .response({
@@ -460,7 +494,21 @@ async function signup(request, h) {
         return h.response(res.result).code(res.statusCode);
     }
 
-    session = await createSession(generateToken(), res.result.id);
+    if (session) {
+        /* associate guest session with newly created user */
+        await Promise.all([
+            session.update({
+                data: {
+                    ...session.data,
+                    'dw-user-id': res.result.id,
+                    last_action_time: Math.floor(Date.now() / 1000)
+                }
+            }),
+            associateChartsWithUser(session.id, res.result.id)
+        ]);
+    } else {
+        session = await createSession(generateToken(), res.result.id);
+    }
 
     const { activate_token, ...data } = res.result;
 
