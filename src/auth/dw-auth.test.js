@@ -50,7 +50,8 @@ test('Should accept valid session cookie', async t => {
     const { auth } = res.request;
 
     t.true(auth.isAuthenticated);
-    t.deepEqual(auth.credentials, { session: 'Danvers' });
+    t.is(auth.credentials.session, 'Danvers');
+    t.truthy(auth.credentials.data);
     t.is(auth.artifacts.id, 1);
 });
 

@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const get = require('lodash/get');
 
 module.exports = {
     name: 'me-routes',
@@ -47,6 +48,17 @@ module.exports = {
 };
 
 async function getMe(request, h) {
+    if (request.auth.artifacts.role === 'anonymous') {
+        return {
+            role: request.auth.artifacts.role,
+            language: get(
+                request,
+                ['auth', 'credentials', 'data', 'data', 'dw-lang'],
+                'en-US'
+            ).replace('-', '_')
+        };
+    }
+
     const res = await request.server.inject({
         method: 'GET',
         url: `/v3/users/${request.auth.artifacts.id}`,

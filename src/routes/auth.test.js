@@ -162,3 +162,33 @@ test('Tokens can be created, fetched and deleted', async t => {
 
     t.is(res.statusCode, 204);
 });
+
+test('Can create guest sessions', async t => {
+    let res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/session'
+    });
+
+    const sessionToken = res.result['DW-SESSION'];
+
+    t.truthy(res.result['DW-SESSION']);
+    t.true(res.headers['set-cookie'][0].includes(`DW-SESSION=${sessionToken}`));
+
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/session',
+        headers: {
+            cookie: `DW-SESSION=${sessionToken}`
+        }
+    });
+
+    t.is(sessionToken, res.result['DW-SESSION']);
+
+    await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/logout',
+        headers: {
+            cookie: `DW-SESSION=${sessionToken}`
+        }
+    });
+});
