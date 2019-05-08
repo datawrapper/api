@@ -6,12 +6,16 @@ const AuthCookie = require('./cookie-auth');
 const { AuthToken, Session, User } = require('@datawrapper/orm/models');
 
 async function getUser(userId, credentials, strategy) {
-    const user = await User.findByPk(userId, {
+    let user = await User.findByPk(userId, {
         attributes: ['id', 'email', 'role', 'language', 'activate_token', 'reset_password_token']
     });
 
-    if (!user || user.email === 'DELETED') {
+    if (user && user.email === 'DELETED') {
         return { isValid: false, message: Boom.unauthorized('User not found', strategy) };
+    }
+
+    if (!user && credentials.session) {
+        user = { role: 'anonymous' };
     }
 
     return { isValid: true, credentials, artifacts: user };
@@ -31,7 +35,7 @@ async function cookieValidation(request, session, h) {
         }
     });
 
-    return getUser(row.data['dw-user-id'], { session }, 'Session');
+    return getUser(row.data['dw-user-id'], { session, data: row }, 'Session');
 }
 
 async function bearerValidation(request, token, h) {

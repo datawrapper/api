@@ -186,6 +186,8 @@ function prepareChart(chart, { metadataFormat } = {}) {
         chart.metadata = JSON.stringify(chart.metadata);
     }
 
+    chart.guestSession = undefined;
+
     return chart;
 }
 
@@ -195,20 +197,27 @@ async function findChartId() {
 }
 
 async function getAllCharts(request, h) {
-    const { query, url } = request;
-
+    const { query, url, auth } = request;
     let options = {
         where: { deleted: { [Op.not]: true } },
         attributes: ['id', 'title', 'type', 'created_at', 'last_modified_at']
     };
 
+    let model = Chart;
+
     if (query.userId === 'me') {
-        set(options, ['where', 'author_id'], request.auth.artifacts.id);
+        if (auth.artifacts.role === 'anonymous') {
+            set(options, ['where', 'guest_session'], auth.credentials.session);
+        } else {
+            set(options, ['where', 'author_id'], auth.artifacts.id);
+        }
     } else {
-        set(options, ['where', 'published_at', Op.ne], null);
+        model = ChartPublic;
+        set(options, ['where'], undefined);
+        set(options, ['attributes'], ['id', 'title', 'type']);
     }
 
-    const { count, rows } = await Chart.findAndCountAll(options);
+    const { count, rows } = await model.findAndCountAll(options);
 
     const charts = rows.map(chart => ({
         ...prepareChart(chart, { metadataFormat: query.metadataFormat }),
@@ -228,9 +237,6 @@ async function getChart(request, h) {
         where: {
             id: params.id,
             deleted: { [Op.not]: true }
-        },
-        attributes: {
-            exclude: ['guest_session']
         }
     });
 
@@ -238,7 +244,11 @@ async function getChart(request, h) {
         return Boom.notFound();
     }
 
-    const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
+    const isGuestChart = chart.guest_session === auth.credentials.session;
+
+    const isEditable =
+        isGuestChart || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
+
     if (!isEditable) {
         if (chart.published_at) {
             chart = await ChartPublic.findOne({
@@ -258,7 +268,7 @@ async function getChart(request, h) {
 }
 
 async function createChart(request, h) {
-    const { url } = request;
+    const { url, auth } = request;
 
     const id = await findChartId();
     const chart = await Chart.create({
@@ -266,9 +276,10 @@ async function createChart(request, h) {
         theme: 'default',
         type: 'd3-bars',
         metadata: { data: {} },
-        language: request.auth.artifacts.language,
+        language: auth.artifacts.language,
         ...request.payload,
-        author_id: request.auth.artifacts.id,
+        author_id: auth.artifacts.id,
+        guest_session: auth.artifacts.role === 'anonymous' ? auth.credentials.session : undefined,
         id
     });
 
@@ -278,6 +289,8 @@ async function createChart(request, h) {
 async function exportChart(request, h) {
     const { payload, params, auth, logger, server } = request;
     const { events, event } = server.app;
+
+    if (auth.artifacts.role === 'anonymous') return Boom.forbidden();
 
     Object.assign(payload, params);
     try {
@@ -319,17 +332,22 @@ async function handleChartExport(request, h) {
 }
 
 async function deleteChart(request, h) {
+    const { auth, server, params } = request;
     const options = {
         where: {
-            id: request.params.id,
+            id: params.id,
             deleted: {
                 [Op.not]: true
             }
         }
     };
 
-    if (!request.server.methods.isAdmin(request)) {
-        set(options, ['where', 'author_id'], request.auth.artifacts.id);
+    if (!server.methods.isAdmin(request)) {
+        if (auth.artifacts.role === 'anonymous') {
+            set(options, ['where', 'guest_session'], auth.credentials.session);
+        } else {
+            set(options, ['where', 'author_id'], auth.artifacts.id);
+        }
     }
 
     const chart = await Chart.findOne(options);
@@ -348,7 +366,7 @@ async function loadChart(request) {
     const { id } = request.params;
 
     const chart = await Chart.findByPk(id, {
-        attributes: ['id', 'author_id', 'created_at']
+        attributes: ['id', 'author_id', 'created_at', 'guest_session']
     });
 
     if (!chart) {
@@ -382,7 +400,8 @@ async function writeChartData(request, h) {
     const { events, event } = request.server.app;
     const chart = await loadChart(request);
 
-    const isEditable = await chart.isEditableBy(request.auth.artifacts);
+    const isGuestChart = chart.guest_session === request.auth.credentials.session;
+    const isEditable = isGuestChart || (await chart.isEditableBy(request.auth.artifacts));
 
     if (!isEditable) {
         return Boom.forbidden();

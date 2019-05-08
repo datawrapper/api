@@ -240,6 +240,18 @@ module.exports = {
             },
             handler: changePassword
         });
+
+        server.route({
+            method: 'POST',
+            path: '/session',
+            options: {
+                tags: ['api'],
+                auth: {
+                    mode: 'try'
+                }
+            },
+            handler: handleSession
+        });
     }
 };
 
@@ -252,6 +264,25 @@ async function createSession(id, userId, keepSession = true) {
             last_action_time: Math.floor(Date.now() / 1000)
         }
     });
+}
+
+async function handleSession(request, h) {
+    const { auth, server } = request;
+
+    const api = server.methods.config('api');
+
+    if (auth.credentials && auth.credentials.session)
+        return { [api.sessionID]: auth.credentials.session };
+
+    const session = await createSession(server.methods.generateToken(), undefined, false);
+
+    return h
+        .response({
+            [api.sessionID]: session.id
+        })
+        .state(api.sessionID, session.id, {
+            ttl: cookieTTL(30)
+        });
 }
 
 async function login(request, h) {
