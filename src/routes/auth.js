@@ -271,8 +271,9 @@ async function handleSession(request, h) {
 
     const api = server.methods.config('api');
 
-    if (auth.credentials && auth.credentials.session)
+    if (auth.credentials && auth.credentials.session) {
         return { [api.sessionID]: auth.credentials.session };
+    }
 
     const session = await createSession(server.methods.generateToken(), undefined, false);
 
