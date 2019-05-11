@@ -11,9 +11,12 @@ const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
 
-const configPath = ['../config.js', '/etc/datawrapper/config.js'].reduce((path, test) => {
-    if (!path && fs.existsSync(test)) path = test;
-});
+const configPath = [process.cwd() + 'config.js', '/etc/datawrapper/config.js'].reduce(
+    (path, test) => {
+        return path || fs.existsSync(test) ? test : false;
+    }
+);
+
 const config = require(configPath);
 
 validateAPI(config.api);
