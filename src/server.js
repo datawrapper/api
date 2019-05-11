@@ -1,9 +1,9 @@
 const Hapi = require('hapi');
 const Boom = require('boom');
 const HapiSwagger = require('hapi-swagger');
-const findUp = require('find-up');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
+const fs = require('fs');
 const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/shared/configSchema');
 
 const { generateToken } = require('./utils');
@@ -11,7 +11,9 @@ const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
 
-const configPath = findUp.sync('config.js');
+const configPath = ['../config.js', '/etc/datawrapper/config.js'].reduce((path, test) => {
+    if (!path && fs.existsSync(test)) path = test;
+});
 const config = require(configPath);
 
 validateAPI(config.api);
