@@ -4,6 +4,7 @@ const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
 const fs = require('fs');
+const path = require('path');
 const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/shared/configSchema');
 
 const { generateToken } = require('./utils');
@@ -11,11 +12,26 @@ const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
 
-const configPath = [process.cwd() + 'config.js', '/etc/datawrapper/config.js'].reduce(
-    (path, test) => {
-        return path || fs.existsSync(test) ? test : false;
-    }
+const configPath = [path.join(process.cwd(), 'config.js'), '/etc/datawrapper/config.js'].reduce(
+    (path, test) => path || (fs.existsSync(test) ? test : undefined),
+    ''
 );
+
+if (!configPath) {
+    process.stderr.write(`
+❌ No config.js found!
+
+Not starting the API server.
+Please check if there is a \`config.js\` file in either
+
+\`/etc/datawrapper\` or \`${path.join(process.cwd(), 'confasig.js')}\`
+
+https://github.com/datawrapper/api#configuration
+
+`);
+
+    process.exit(1);
+}
 
 const config = require(configPath);
 
