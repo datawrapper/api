@@ -15,7 +15,7 @@ async function getUser(userId, credentials, strategy) {
     }
 
     if (!user && credentials.session) {
-        user = { role: 'anonymous' };
+        user = { role: 'guest', mayEditChart: () => false };
     }
 
     return { isValid: true, credentials, artifacts: user };

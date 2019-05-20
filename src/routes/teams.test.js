@@ -45,7 +45,7 @@ test('user can fetch individual team', async t => {
     t.is(teams.result.name, 'Test Team');
 });
 
-test('anonymous user can not fetch teams', async t => {
+test('guest user can not fetch teams', async t => {
     let teams = await t.context.server.inject({
         method: 'GET',
         url: '/v3/teams'

@@ -362,7 +362,7 @@ async function login(request, h) {
 
     let session;
 
-    if (request.auth.artifacts && request.auth.artifacts.role === 'anonymous') {
+    if (request.auth.artifacts && request.auth.artifacts.role === 'guest') {
         session = request.auth.credentials.data;
         /* associate guest session with newly created user */
         await Promise.all([

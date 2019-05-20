@@ -48,7 +48,7 @@ module.exports = {
 };
 
 async function getMe(request, h) {
-    if (request.auth.artifacts.role === 'anonymous') {
+    if (request.auth.artifacts.role === 'guest') {
         return {
             role: request.auth.artifacts.role,
             language: get(

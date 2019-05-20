@@ -206,7 +206,7 @@ async function getAllCharts(request, h) {
     let model = Chart;
 
     if (query.userId === 'me') {
-        if (auth.artifacts.role === 'anonymous') {
+        if (auth.artifacts.role === 'guest') {
             set(options, ['where', 'guest_session'], auth.credentials.session);
         } else {
             set(options, ['where', 'author_id'], auth.artifacts.id);
@@ -279,7 +279,7 @@ async function createChart(request, h) {
         language: auth.artifacts.language,
         ...request.payload,
         author_id: auth.artifacts.id,
-        guest_session: auth.artifacts.role === 'anonymous' ? auth.credentials.session : undefined,
+        guest_session: auth.artifacts.role === 'guest' ? auth.credentials.session : undefined,
         id
     });
 
@@ -290,7 +290,7 @@ async function exportChart(request, h) {
     const { payload, params, auth, logger, server } = request;
     const { events, event } = server.app;
 
-    if (auth.artifacts.role === 'anonymous') return Boom.forbidden();
+    if (auth.artifacts.role === 'guest') return Boom.forbidden();
 
     Object.assign(payload, params);
     try {
@@ -343,7 +343,7 @@ async function deleteChart(request, h) {
     };
 
     if (!server.methods.isAdmin(request)) {
-        if (auth.artifacts.role === 'anonymous') {
+        if (auth.artifacts.role === 'guest') {
             set(options, ['where', 'guest_session'], auth.credentials.session);
         } else {
             set(options, ['where', 'author_id'], auth.artifacts.id);
