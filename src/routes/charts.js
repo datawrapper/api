@@ -19,8 +19,9 @@ module.exports = {
                     query: Joi.object().keys({
                         metadataFormat: Joi.string()
                             .valid(['json', 'string'])
-                            .default('json'),
-                        userId: Joi.any()
+                            .default('json')
+                            .description('Deprecated'),
+                        userId: Joi.any().description('ID of the user to fetch charts for.')
                     })
                 }
             },
@@ -37,11 +38,13 @@ module.exports = {
                         metadataFormat: Joi.string()
                             .valid(['json', 'string'])
                             .default('json')
+                            .description('Deprecated')
                     }),
                     params: Joi.object().keys({
                         id: Joi.string()
                             .length(5)
                             .required()
+                            .description('5 character long chart ID.')
                     })
                 }
             },
@@ -58,6 +61,7 @@ module.exports = {
                         id: Joi.string()
                             .length(5)
                             .required()
+                            .description('5 character long chart ID.')
                     })
                 }
             },
@@ -71,7 +75,10 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: Joi.object({
-                        title: Joi.string()
+                        title: Joi.string(),
+                        theme: Joi.string(),
+                        type: Joi.string(),
+                        metadata: Joi.object()
                     }).allow(null)
                 }
             },
@@ -93,8 +100,11 @@ module.exports = {
                     params: Joi.object().keys({
                         id: Joi.string()
                             .length(5)
-                            .required(),
-                        format: Joi.string().required()
+                            .required()
+                            .description('5 character long chart ID.'),
+                        format: Joi.string()
+                            .required()
+                            .description('Export format (PDF, PNG, SVG)')
                     }),
                     payload: Joi.object().keys({
                         unit: Joi.string().default('px'),
@@ -122,8 +132,11 @@ module.exports = {
                     params: Joi.object().keys({
                         id: Joi.string()
                             .length(5)
-                            .required(),
-                        format: Joi.string().required()
+                            .required()
+                            .description('5 character long chart ID.'),
+                        format: Joi.string()
+                            .required()
+                            .description('Export format (pdf, png, svg)')
                     }),
                     query: Joi.object().keys({
                         unit: Joi.string().default('px'),

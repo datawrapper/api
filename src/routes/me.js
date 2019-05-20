@@ -21,10 +21,14 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: {
-                        name: Joi.string().allow(null),
-                        email: Joi.string().email(),
+                        name: Joi.string()
+                            .allow(null)
+                            .example('Ronin'),
+                        email: Joi.string()
+                            .email()
+                            .example('ronin@avengers.com'),
                         role: Joi.string().valid(['editor', 'admin']),
-                        language: Joi.string()
+                        language: Joi.string().example('en_US')
                     }
                 }
             },
@@ -38,7 +42,9 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: {
-                        email: Joi.string().email()
+                        email: Joi.string()
+                            .email()
+                            .example('zola@hydra.com')
                     }
                 }
             },

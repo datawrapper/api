@@ -20,21 +20,25 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     query: {
-                        teamId: Joi.string(),
-                        search: Joi.string(),
+                        teamId: Joi.string().description('Filter users by team.'),
+                        search: Joi.string().description('Search for a user.'),
                         order: Joi.string()
                             .uppercase()
                             .valid(['ASC', 'DESC'])
-                            .default('ASC'),
+                            .default('ASC')
+                            .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
                             .valid(['id', 'email', 'name', 'createdAt'])
-                            .default('id'),
+                            .default('id')
+                            .description('Attribute to order by'),
                         limit: Joi.number()
                             .integer()
-                            .default(100),
+                            .default(100)
+                            .description('Maximum items to fetch. Useful for pagination.'),
                         offset: Joi.number()
                             .integer()
                             .default(0)
+                            .description('Number of items to skip. Useful for pagination.')
                     }
                 }
             },
@@ -48,7 +52,9 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.number().required()
+                        id: Joi.number()
+                            .required()
+                            .description('User ID')
                     }
                 }
             },
@@ -62,13 +68,19 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.number().required()
+                        id: Joi.number()
+                            .required()
+                            .description('User ID')
                     },
                     payload: {
-                        name: Joi.string().allow(null),
-                        email: Joi.string().email(),
+                        name: Joi.string()
+                            .allow(null)
+                            .example('Rocket Raccoon'),
+                        email: Joi.string()
+                            .email()
+                            .example('89P13@half.world'),
                         role: Joi.string().valid(['editor', 'admin']),
-                        language: Joi.string()
+                        language: Joi.string().example('en_US')
                     }
                 }
             },
@@ -83,13 +95,16 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: Joi.object({
-                        name: Joi.string().allow(null),
+                        name: Joi.string()
+                            .allow(null)
+                            .example('Carol Danvers'),
                         email: Joi.string()
                             .email()
-                            .required(),
+                            .required()
+                            .example('cpt-marvel@shield.com'),
                         role: Joi.string().valid(['editor', 'admin']),
-                        language: Joi.string(),
-                        password: Joi.string()
+                        language: Joi.string().example('en_US'),
+                        password: Joi.string().example('13-binary-1968')
                     }).unknown()
                 }
             },
@@ -103,12 +118,15 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.number().required()
+                        id: Joi.number()
+                            .required()
+                            .description('User ID')
                     },
                     payload: {
                         email: Joi.string()
                             .email()
                             .required()
+                            .example('james.barnes@shield.com')
                     }
                 }
             },

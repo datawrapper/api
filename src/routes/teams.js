@@ -18,20 +18,26 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     query: {
-                        search: Joi.string(),
+                        search: Joi.string().description(
+                            'Search for a team name or id including this term.'
+                        ),
                         order: Joi.string()
                             .uppercase()
                             .valid(['ASC', 'DESC'])
-                            .default('ASC'),
+                            .default('ASC')
+                            .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
                             .valid(['name', 'createdAt'])
-                            .default('name'),
+                            .default('name')
+                            .description('Attribute to order by'),
                         limit: Joi.number()
                             .integer()
-                            .default(100),
+                            .default(100)
+                            .description('Maximum items to fetch. Useful for pagination.'),
                         offset: Joi.number()
                             .integer()
                             .default(0)
+                            .description('Number of items to skip. Useful for pagination.')
                     }
                 }
             },
@@ -45,7 +51,9 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.string().required()
+                        id: Joi.string()
+                            .required()
+                            .description('ID of the team to fetch.')
                     }
                 }
             },
@@ -59,23 +67,31 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.string().required()
+                        id: Joi.string()
+                            .required()
+                            .description('ID of the team to fetch members for.')
                     },
                     query: {
-                        search: Joi.string(),
+                        search: Joi.string().description(
+                            'Search for a team name or id including this term.'
+                        ),
                         order: Joi.string()
                             .uppercase()
                             .valid(['ASC', 'DESC'])
-                            .default('ASC'),
+                            .default('ASC')
+                            .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
                             .valid(['name', 'createdAt'])
-                            .default('name'),
+                            .default('name')
+                            .description('Attribute to order by'),
                         limit: Joi.number()
                             .integer()
-                            .default(100),
+                            .default(100)
+                            .description('Maximum items to fetch. Useful for pagination.'),
                         offset: Joi.number()
                             .integer()
                             .default(0)
+                            .description('Number of items to skip. Useful for pagination.')
                     }
                 }
             },
@@ -89,8 +105,12 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.string().required(),
-                        userId: Joi.number().required()
+                        id: Joi.string()
+                            .required()
+                            .description('ID of the team'),
+                        userId: Joi.number()
+                            .required()
+                            .description('ID of the team member to remove from team.')
                     }
                 }
             },
@@ -104,7 +124,9 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.string().required()
+                        id: Joi.string()
+                            .required()
+                            .description('ID of the team to delete.')
                     }
                 }
             },
@@ -118,10 +140,14 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: {
-                        id: Joi.string().required(),
-                        name: Joi.string().required(),
+                        id: Joi.string()
+                            .required()
+                            .example('revengers'),
+                        name: Joi.string()
+                            .required()
+                            .example('Revengers'),
                         settings: Joi.object(),
-                        defaultTheme: Joi.string()
+                        defaultTheme: Joi.string().example('space')
                     }
                 }
             },
@@ -135,12 +161,14 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.string().required()
+                        id: Joi.string()
+                            .required()
+                            .description('Team ID')
                     },
                     payload: {
-                        name: Joi.string(),
+                        name: Joi.string().example('New Revengers'),
                         settings: Joi.object(),
-                        defaultTheme: Joi.string()
+                        defaultTheme: Joi.string().example('light')
                     }
                 }
             },
@@ -154,12 +182,15 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.string().required()
+                        id: Joi.string()
+                            .required()
+                            .description('Team ID (eg. guardians-of-the-galaxy)')
                     },
                     payload: {
                         email: Joi.string()
                             .email()
                             .required()
+                            .example('thor@asga.rd')
                     }
                 }
             },
@@ -173,10 +204,13 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.string().required(),
+                        id: Joi.string()
+                            .required()
+                            .description('Team ID'),
                         userId: Joi.number()
                             .integer()
                             .required()
+                            .description('ID of the team member you want to change the status of.')
                     },
                     payload: {
                         status: Joi.string()
