@@ -137,6 +137,9 @@ module.exports = {
                         comment: Joi.string()
                             .required()
                             .example('Token for fun project')
+                            .description(
+                                'The comment can be everything. Tip: Use something to remember where this specific token is used.'
+                            )
                     })
                 }
             },
@@ -174,11 +177,17 @@ module.exports = {
                         email: Joi.string()
                             .email()
                             .required()
-                            .example('tony@stark-industries.com'),
+                            .example('tony@stark-industries.com')
+                            .description('Email address of the user signing up.'),
                         password: Joi.string()
                             .required()
-                            .example('morgan-3000'),
-                        language: Joi.string().default('en_US')
+                            .example('morgan-3000')
+                            .description(
+                                'A strong user password. Ideally this is generated and saved in a password manager.'
+                            ),
+                        language: Joi.string()
+                            .default('en_US')
+                            .description('Preferred language for the user interface.')
                     }
                 }
             },
@@ -215,6 +224,7 @@ module.exports = {
                             .email()
                             .required()
                             .example('strange@kamar-taj.com.np')
+                            .description('Email address of the user.')
                     }
                 }
             },
@@ -234,8 +244,13 @@ module.exports = {
                         email: Joi.string()
                             .email()
                             .required()
-                            .example('strange@kamar-taj.com.np'),
-                        token: Joi.string().example('shamballa')
+                            .example('strange@kamar-taj.com.np')
+                            .description('Email address of the user.'),
+                        token: Joi.string()
+                            .example('shamballa')
+                            .description(
+                                'Admin users can specify this token otherwise a random token is generated.'
+                            )
                     }
                 }
             },
@@ -255,11 +270,17 @@ module.exports = {
                         email: Joi.string()
                             .email()
                             .required()
-                            .example('strange@kamar-taj.com.np'),
+                            .example('strange@kamar-taj.com.np')
+                            .description('Email address of the user.'),
                         password: Joi.string()
                             .required()
-                            .example('tales-126'),
-                        token: Joi.string().example('shamballa')
+                            .example('tales-126')
+                            .description(
+                                'A new strong password. Ideally this is generated and saved in a password manager.'
+                            ),
+                        token: Joi.string()
+                            .example('shamballa')
+                            .description('Password reset token which is send as email to the user.')
                     }
                 }
             },

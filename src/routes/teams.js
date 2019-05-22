@@ -146,7 +146,9 @@ module.exports = {
                         name: Joi.string()
                             .required()
                             .example('Revengers'),
-                        settings: Joi.object(),
+                        settings: Joi.object({
+                            type: Joi.string()
+                        }),
                         defaultTheme: Joi.string().example('space')
                     }
                 }
@@ -167,7 +169,9 @@ module.exports = {
                     },
                     payload: {
                         name: Joi.string().example('New Revengers'),
-                        settings: Joi.object(),
+                        settings: Joi.object({
+                            type: Joi.string()
+                        }),
                         defaultTheme: Joi.string().example('light')
                     }
                 }

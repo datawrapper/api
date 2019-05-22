@@ -95,10 +95,24 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: Joi.object({
-                        title: Joi.string(),
-                        theme: Joi.string(),
-                        type: Joi.string(),
-                        metadata: Joi.object()
+                        title: Joi.string()
+                            .example('My cool chart')
+                            .description('Title of your chart. This will be the chart headline.'),
+                        theme: Joi.string()
+                            .example('datawrapper')
+                            .description('Chart theme to use.'),
+                        type: Joi.string()
+                            .example('d3-lines')
+                            .description(
+                                'Type of the chart, like line chart, bar chart, ... Type keys can be found [here].'
+                            ),
+                        metadata: Joi.object({
+                            data: Joi.object({
+                                transpose: Joi.boolean()
+                            })
+                        }).description(
+                            'Metadata that saves all chart specific settings and options.'
+                        )
                     }).allow(null)
                 }
             },
@@ -201,7 +215,7 @@ module.exports = {
                             .length(5)
                             .required()
                     }),
-                    payload: Joi.string()
+                    payload: Joi.string().description('CSV data to visualize in the chart.')
                 }
             },
             handler: writeChartData

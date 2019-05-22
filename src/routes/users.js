@@ -75,12 +75,18 @@ module.exports = {
                     payload: {
                         name: Joi.string()
                             .allow(null)
-                            .example('Rocket Raccoon'),
+                            .example('Rocket Raccoon')
+                            .description('New user name'),
                         email: Joi.string()
                             .email()
-                            .example('89P13@half.world'),
-                        role: Joi.string().valid(['editor', 'admin']),
-                        language: Joi.string().example('en_US')
+                            .example('89P13@half.world')
+                            .description('New user email address'),
+                        role: Joi.string()
+                            .valid(['editor', 'admin'])
+                            .description('New user role. Can only be changed by admins.'),
+                        language: Joi.string()
+                            .example('en_US')
+                            .description('New language preference.')
                     }
                 }
             },
@@ -97,14 +103,24 @@ module.exports = {
                     payload: Joi.object({
                         name: Joi.string()
                             .allow(null)
-                            .example('Carol Danvers'),
+                            .example('Carol Danvers')
+                            .description(
+                                'Name of the user that should get created. This can be omitted.'
+                            ),
                         email: Joi.string()
                             .email()
                             .required()
-                            .example('cpt-marvel@shield.com'),
-                        role: Joi.string().valid(['editor', 'admin']),
-                        language: Joi.string().example('en_US'),
-                        password: Joi.string().example('13-binary-1968')
+                            .example('cpt-marvel@shield.com')
+                            .description('User email address'),
+                        role: Joi.string()
+                            .valid(['editor', 'admin'])
+                            .description('User role. This can be omitted.'),
+                        language: Joi.string()
+                            .example('en_US')
+                            .description('User language preference. This can be omitted.'),
+                        password: Joi.string()
+                            .example('13-binary-1968')
+                            .description('Strong user password.')
                     }).unknown()
                 }
             },
@@ -127,6 +143,7 @@ module.exports = {
                             .email()
                             .required()
                             .example('james.barnes@shield.com')
+                            .description('User email address to confirm deletion.')
                     }
                 }
             },
