@@ -1,7 +1,7 @@
 const Joi = require('joi');
 const Boom = require('boom');
 const { Op } = require('sequelize');
-const { camelizeKeys } = require('humps');
+const { camelizeKeys, decamelize } = require('humps');
 const nanoid = require('nanoid');
 const set = require('lodash/set');
 const { Chart, ChartPublic } = require('@datawrapper/orm/models');
@@ -21,7 +21,27 @@ module.exports = {
                             .valid(['json', 'string'])
                             .default('json')
                             .description('Deprecated'),
-                        userId: Joi.any().description('ID of the user to fetch charts for.')
+                        userId: Joi.any().description('ID of the user to fetch charts for.'),
+                        search: Joi.string().description(
+                            'Search for charts with a specific title.'
+                        ),
+                        order: Joi.string()
+                            .uppercase()
+                            .valid(['ASC', 'DESC'])
+                            .default('ASC')
+                            .description('Result order (ascending or descending)'),
+                        orderBy: Joi.string()
+                            .valid(['id', 'email', 'name', 'createdAt'])
+                            .default('id')
+                            .description('Attribute to order by'),
+                        limit: Joi.number()
+                            .integer()
+                            .default(100)
+                            .description('Maximum items to fetch. Useful for pagination.'),
+                        offset: Joi.number()
+                            .integer()
+                            .default(0)
+                            .description('Number of items to skip. Useful for pagination.')
                     })
                 }
             },
@@ -211,10 +231,22 @@ async function findChartId() {
 
 async function getAllCharts(request, h) {
     const { query, url, auth } = request;
-    let options = {
-        where: { deleted: { [Op.not]: true } },
-        attributes: ['id', 'title', 'type', 'created_at', 'last_modified_at']
+
+    const options = {
+        order: [[decamelize(query.orderBy), query.order]],
+        attributes: ['id', 'title', 'type', 'created_at', 'last_modified_at'],
+        where: {
+            deleted: {
+                [Op.not]: true
+            }
+        },
+        limit: query.limit,
+        offset: query.offset
     };
+
+    if (query.search) {
+        set(options, ['where', 'title', Op.like], `%${query.search}%`);
+    }
 
     let model = Chart;
 
@@ -237,10 +269,22 @@ async function getAllCharts(request, h) {
         url: `${url.pathname}/${chart.id}`
     }));
 
-    return {
+    const chartList = {
         list: charts,
         total: count
     };
+
+    if (query.limit + query.offset < count) {
+        const nextParams = new URLSearchParams({
+            ...query,
+            offset: query.limit + query.offset,
+            limit: query.limit
+        });
+
+        set(chartList, 'next', `${url.pathname}?${nextParams.toString()}`);
+    }
+
+    return chartList;
 }
 
 async function getChart(request, h) {
