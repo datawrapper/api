@@ -32,6 +32,7 @@
     "dependencies": {
         "@datawrapper/orm": "3.1.1",
         "@datawrapper/shared": "0.9.7",
+        "assign-deep": "1.0.0",
         "bcryptjs": "2.4.3",
         "boom": "7.3.0",
         "chalk": "2.4.2",

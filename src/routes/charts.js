@@ -4,6 +4,7 @@ const { Op } = require('sequelize');
 const { camelizeKeys, decamelize } = require('humps');
 const nanoid = require('nanoid');
 const set = require('lodash/set');
+const assign = require('assign-deep');
 const { Chart, ChartPublic } = require('@datawrapper/orm/models');
 
 module.exports = {
@@ -89,6 +90,46 @@ module.exports = {
         });
 
         server.route({
+            method: 'PATCH',
+            path: '/{id}',
+            options: {
+                tags: ['api'],
+                validate: {
+                    payload: Joi.object({
+                        title: Joi.string()
+                            .example('My cool chart')
+                            .description('Title of your chart. This will be the chart headline.'),
+                        theme: Joi.string()
+                            .example('datawrapper')
+                            .description('Chart theme to use.'),
+                        type: Joi.string()
+                            .example('d3-lines')
+                            .description(
+                                'Type of the chart, like line chart, bar chart, ... Type keys can be found [here].'
+                            ),
+                        lastEditStep: Joi.number()
+                            .integer()
+                            .example(1)
+                            .description(
+                                'Used in the app to determine where the user last edited the chart.'
+                            ),
+                        language: Joi.string().description('Chart language.'),
+                        metadata: Joi.object({
+                            data: Joi.object({
+                                transpose: Joi.boolean()
+                            }).unknown(true)
+                        })
+                            .description(
+                                'Metadata that saves all chart specific settings and options.'
+                            )
+                            .unknown(true)
+                    })
+                }
+            },
+            handler: editChart
+        });
+
+        server.route({
             method: 'POST',
             path: '/',
             options: {
@@ -109,10 +150,12 @@ module.exports = {
                         metadata: Joi.object({
                             data: Joi.object({
                                 transpose: Joi.boolean()
-                            })
-                        }).description(
-                            'Metadata that saves all chart specific settings and options.'
-                        )
+                            }).unknown(true)
+                        })
+                            .description(
+                                'Metadata that saves all chart specific settings and options.'
+                            )
+                            .unknown(true)
                     }).allow(null)
                 }
             },
@@ -355,6 +398,39 @@ async function createChart(request, h) {
     });
 
     return h.response({ ...prepareChart(chart), url: `${url.pathname}/${chart.id}` }).code(201);
+}
+
+async function editChart(request, h) {
+    const { params, payload, auth, url } = request;
+
+    let chart = await Chart.findOne({
+        where: {
+            id: params.id,
+            deleted: { [Op.not]: true }
+        }
+    });
+
+    if (!chart) {
+        return Boom.notFound();
+    }
+
+    const isGuestChart = chart.guest_session === auth.credentials.session;
+
+    const isEditable =
+        isGuestChart || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
+
+    if (!isEditable) {
+        return Boom.unauthorized();
+    }
+
+    const newData = assign(prepareChart(chart, { metadataFormat: 'json' }), payload);
+
+    chart = await chart.update(newData);
+
+    return {
+        ...prepareChart(chart, { metadataFormat: 'json' }),
+        url: `${url.pathname}`
+    };
 }
 
 async function exportChart(request, h) {
