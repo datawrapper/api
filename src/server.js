@@ -1,5 +1,5 @@
-const Hapi = require('hapi');
-const Boom = require('boom');
+const Hapi = require('@hapi/hapi');
+const Boom = require('@hapi/boom');
 const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
@@ -120,7 +120,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.method('generateToken', generateToken);
 
     if (process.env.NODE_ENV === 'development') {
-        server.register([require('inert'), require('vision')]);
+        server.register([require('@hapi/inert'), require('@hapi/vision')]);
     }
 
     await server.register(require('./auth/dw-auth'));

@@ -1,5 +1,5 @@
-const Joi = require('joi');
-const Boom = require('boom');
+const Joi = require('@hapi/joi');
+const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const { camelizeKeys, decamelize } = require('humps');
 const nanoid = require('nanoid');
