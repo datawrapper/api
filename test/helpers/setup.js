@@ -6,7 +6,7 @@ const passwordHash = '$2b$15$UdsGvrTLEk5DPRmRoHE4O..tzDpkWkAdKjBoKUjERXKoYHqTIRi
 
 function getCredentials() {
     return {
-        email: `test-${nanoid(5)}@ava.js`,
+        email: `test-${nanoid(5)}@ava.de`,
         password: 'test-password'
     };
 }

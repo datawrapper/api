@@ -1,5 +1,5 @@
-const Joi = require('joi');
-const Boom = require('boom');
+const Joi = require('@hapi/joi');
+const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
@@ -194,7 +194,7 @@ module.exports = {
                         email: Joi.string()
                             .email()
                             .required()
-                            .example('thor@asga.rd')
+                            .example('thor@gmail.com')
                     }
                 }
             },

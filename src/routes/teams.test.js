@@ -271,13 +271,13 @@ test('owners can invite new users to a team', async t => {
         url: `/v3/teams/${t.context.data.team.id}/members`,
         auth: t.context.auth,
         payload: {
-            email: 'test-member@ava.js'
+            email: 'test-member@ava.de'
         }
     });
 
     const user = await t.context.models.User.findOne({
         where: {
-            email: 'test-member@ava.js'
+            email: 'test-member@ava.de'
         }
     });
 
@@ -287,7 +287,7 @@ test('owners can invite new users to a team', async t => {
     await user.destroy();
     t.log('Removed user', user.email);
 
-    t.is(user.email, 'test-member@ava.js');
+    t.is(user.email, 'test-member@ava.de');
     t.truthy(user.activate_token);
     t.is(team.statusCode, 201);
 });
