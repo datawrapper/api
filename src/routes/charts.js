@@ -95,6 +95,12 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
+                    params: Joi.object().keys({
+                        id: Joi.string()
+                            .length(5)
+                            .required()
+                            .description('5 character long chart ID.')
+                    }),
                     payload: Joi.object({
                         title: Joi.string()
                             .example('My cool chart')
