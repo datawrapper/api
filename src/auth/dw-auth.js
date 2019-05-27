@@ -1,4 +1,4 @@
-const Boom = require('boom');
+const Boom = require('@hapi/boom');
 const get = require('lodash/get');
 const AuthBearer = require('hapi-auth-bearer-token');
 const AuthCookie = require('./cookie-auth');
@@ -15,7 +15,7 @@ async function getUser(userId, credentials, strategy) {
     }
 
     if (!user && credentials.session) {
-        user = { role: 'anonymous' };
+        user = { role: 'guest', mayEditChart: () => false };
     }
 
     return { isValid: true, credentials, artifacts: user };

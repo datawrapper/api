@@ -1,4 +1,4 @@
-const Joi = require('joi');
+const Joi = require('@hapi/joi');
 const get = require('lodash/get');
 
 module.exports = {
@@ -21,10 +21,22 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: {
-                        name: Joi.string().allow(null),
-                        email: Joi.string().email(),
-                        role: Joi.string().valid(['editor', 'admin']),
+                        name: Joi.string()
+                            .allow(null)
+                            .example('Ronin')
+                            .description('Your new user name.'),
+                        email: Joi.string()
+                            .email()
+                            .example('ronin@avengers.com')
+                            .description('Your new email address.'),
+                        role: Joi.string()
+                            .valid(['editor', 'admin'])
+                            .description(
+                                'Your new role. This can only be changed if you are an admin.'
+                            ),
                         language: Joi.string()
+                            .example('en_US')
+                            .description('Your new language preference.')
                     }
                 }
             },
@@ -38,7 +50,10 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: {
-                        email: Joi.string().email()
+                        email: Joi.string()
+                            .email()
+                            .example('zola@hydra.com')
+                            .description('User email address to confirm deletion.')
                     }
                 }
             },
@@ -48,7 +63,7 @@ module.exports = {
 };
 
 async function getMe(request, h) {
-    if (request.auth.artifacts.role === 'anonymous') {
+    if (request.auth.artifacts.role === 'guest') {
         return {
             role: request.auth.artifacts.role,
             language: get(

@@ -18,7 +18,7 @@ test.after.always(async t => {
     await t.context.data.cleanup();
 });
 
-test('It should be possible to create, fetch and delete charts', async t => {
+test('It should be possible to create, fetch, edit and delete charts', async t => {
     let chart = await t.context.server.inject({
         method: 'POST',
         url: '/v3/charts',
@@ -38,6 +38,17 @@ test('It should be possible to create, fetch and delete charts', async t => {
     t.truthy(chart.result.authorId);
     t.is(chart.result.id.length, 5);
     t.is(typeof chart.result.metadata, 'string');
+
+    chart = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/charts/${chart.result.id}`,
+        auth: t.context.auth,
+        payload: {
+            title: 'TEST TITLE'
+        }
+    });
+
+    t.is(chart.result.title, 'TEST TITLE');
 
     chart = await t.context.server.inject({
         method: 'DELETE',

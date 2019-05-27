@@ -21,7 +21,7 @@ test.before(async t => {
 
 test('It should be possible to create a user, login and logout', async t => {
     const credentials = {
-        email: `test-${nanoid(5)}@ava.js`,
+        email: `test-${nanoid(5)}@ava.de`,
         password: 'strong-secure-password'
     };
 
@@ -76,7 +76,7 @@ test('It should be possible to create a user, login and logout', async t => {
 
 test('New user passwords should be saved as bcrypt hash', async t => {
     const credentials = {
-        email: `test-${nanoid(5)}@ava.js`,
+        email: `test-${nanoid(5)}@ava.de`,
         password: 'strong-secure-password'
     };
 

@@ -1,5 +1,5 @@
-const Joi = require('joi');
-const Boom = require('boom');
+const Joi = require('@hapi/joi');
+const Boom = require('@hapi/boom');
 const sequelize = require('sequelize');
 const bcrypt = require('bcryptjs');
 const { decamelize, camelizeKeys } = require('humps');
@@ -20,21 +20,25 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     query: {
-                        teamId: Joi.string(),
-                        search: Joi.string(),
+                        teamId: Joi.string().description('Filter users by team.'),
+                        search: Joi.string().description('Search for a user.'),
                         order: Joi.string()
                             .uppercase()
                             .valid(['ASC', 'DESC'])
-                            .default('ASC'),
+                            .default('ASC')
+                            .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
                             .valid(['id', 'email', 'name', 'createdAt'])
-                            .default('id'),
+                            .default('id')
+                            .description('Attribute to order by'),
                         limit: Joi.number()
                             .integer()
-                            .default(100),
+                            .default(100)
+                            .description('Maximum items to fetch. Useful for pagination.'),
                         offset: Joi.number()
                             .integer()
                             .default(0)
+                            .description('Number of items to skip. Useful for pagination.')
                     }
                 }
             },
@@ -48,7 +52,9 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.number().required()
+                        id: Joi.number()
+                            .required()
+                            .description('User ID')
                     }
                 }
             },
@@ -62,13 +68,25 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.number().required()
+                        id: Joi.number()
+                            .required()
+                            .description('User ID')
                     },
                     payload: {
-                        name: Joi.string().allow(null),
-                        email: Joi.string().email(),
-                        role: Joi.string().valid(['editor', 'admin']),
+                        name: Joi.string()
+                            .allow(null)
+                            .example('Rocket Raccoon')
+                            .description('New user name'),
+                        email: Joi.string()
+                            .email()
+                            .example('89P13@half.world')
+                            .description('New user email address'),
+                        role: Joi.string()
+                            .valid(['editor', 'admin'])
+                            .description('New user role. Can only be changed by admins.'),
                         language: Joi.string()
+                            .example('en_US')
+                            .description('New language preference.')
                     }
                 }
             },
@@ -83,13 +101,26 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: Joi.object({
-                        name: Joi.string().allow(null),
+                        name: Joi.string()
+                            .allow(null)
+                            .example('Carol Danvers')
+                            .description(
+                                'Name of the user that should get created. This can be omitted.'
+                            ),
                         email: Joi.string()
                             .email()
-                            .required(),
-                        role: Joi.string().valid(['editor', 'admin']),
-                        language: Joi.string(),
+                            .required()
+                            .example('cpt-marvel@shield.com')
+                            .description('User email address'),
+                        role: Joi.string()
+                            .valid(['editor', 'admin'])
+                            .description('User role. This can be omitted.'),
+                        language: Joi.string()
+                            .example('en_US')
+                            .description('User language preference. This can be omitted.'),
                         password: Joi.string()
+                            .example('13-binary-1968')
+                            .description('Strong user password.')
                     }).unknown()
                 }
             },
@@ -103,12 +134,16 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.number().required()
+                        id: Joi.number()
+                            .required()
+                            .description('User ID')
                     },
                     payload: {
                         email: Joi.string()
                             .email()
                             .required()
+                            .example('james.barnes@shield.com')
+                            .description('User email address to confirm deletion.')
                     }
                 }
             },

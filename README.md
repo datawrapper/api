@@ -16,17 +16,11 @@ This repository contains the new Node.js API that is the backbone of Datawrapper
 
 ## Installation
 
-To run a production instance of this API, a `npm` initialization script is available with `npm init @datawrapper/api`. In it's essence, the following 3 commands are the setup. To get a more in depth look, read the sections about [configuration](#configuration) and [plugins](#plugins). That is the real strength of the API.
+To run a production instance of this API, clone the repository from Github. In it's essence, the following 3 commands are the setup. To get a more in depth look, read the sections about [configuration](#configuration) and [plugins](#plugins). That is the real strength of the API.
 
 ```sh
-# Create an empty folder where you want the API to initialize
-> mkdir new-api && cd new-api
-
-# Copy config (not needed if `config.js` is anywhere up in the tree from `new-api/`)
-> cp ./secret/config.js config.js
-
-# Initialize API with npm
-> npm init @datawrapper/api
+# Clone repository
+> git clone git@github.com:datawrapper/api.git
 ```
 
 You can start the server using:
@@ -94,7 +88,7 @@ After running these commands you will see something like this:
 
 ## Configuration
 
-The API will not start without a valid `config.js`. The repository includes a template `config.tpl.js` that can be used to create the configuration file.
+The API will not start without a valid `config.js`. The repository includes a template `config.tpl.js` that can be used to create the configuration file. `config.js` can either be located next to `config.tpl.js` or in `/etc/datawrapper/config.js`.
 
 `config.js` exports a javascript object with various configuration objects that are used by this project, as well as others, like the `render-client` or `render-server`.
 The following objects are used by the API.

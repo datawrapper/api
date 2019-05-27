@@ -2,8 +2,8 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
 const { camelizeKeys } = require('humps');
-const Joi = require('joi');
-const Boom = require('boom');
+const Joi = require('@hapi/joi');
+const Boom = require('@hapi/boom');
 const { User, Session, AuthToken, Chart } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const get = require('lodash/get');
@@ -75,7 +75,7 @@ module.exports = {
             method: 'POST',
             path: '/login',
             options: {
-                tags: ['api'],
+                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try',
                     strategy: 'session'
@@ -84,8 +84,11 @@ module.exports = {
                     payload: {
                         email: Joi.string()
                             .email()
-                            .required(),
-                        password: Joi.string().required(),
+                            .required()
+                            .example('tony@stark-industries.com'),
+                        password: Joi.string()
+                            .required()
+                            .example('morgan-3000'),
                         keepSession: Joi.boolean().default(true)
                     }
                 }
@@ -97,7 +100,7 @@ module.exports = {
             method: 'POST',
             path: '/logout',
             options: {
-                tags: ['api'],
+                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: 'session'
             },
             handler: logout
@@ -112,10 +115,12 @@ module.exports = {
                     query: {
                         limit: Joi.number()
                             .integer()
-                            .default(100),
+                            .default(100)
+                            .description('Maximum items to fetch. Useful for pagination.'),
                         offset: Joi.number()
                             .integer()
                             .default(0)
+                            .description('Number of items to skip. Useful for pagination.')
                     }
                 }
             },
@@ -129,7 +134,12 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     payload: Joi.object({
-                        comment: Joi.string().required()
+                        comment: Joi.string()
+                            .required()
+                            .example('Token for fun project')
+                            .description(
+                                'The comment can be everything. Tip: Use something to remember where this specific token is used.'
+                            )
                     })
                 }
             },
@@ -143,7 +153,10 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     params: {
-                        id: Joi.number().required()
+                        id: Joi.number()
+                            .integer()
+                            .required()
+                            .description('ID of the token to be deleted.')
                     }
                 }
             },
@@ -154,7 +167,7 @@ module.exports = {
             method: 'POST',
             path: '/signup',
             options: {
-                tags: ['api'],
+                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try',
                     strategy: 'session'
@@ -163,9 +176,18 @@ module.exports = {
                     payload: {
                         email: Joi.string()
                             .email()
-                            .required(),
-                        language: Joi.string().default('en_US'),
-                        password: Joi.string().required()
+                            .required()
+                            .example('tony@stark-industries.com')
+                            .description('Email address of the user signing up.'),
+                        password: Joi.string()
+                            .required()
+                            .example('morgan-3000')
+                            .description(
+                                'A strong user password. Ideally this is generated and saved in a password manager.'
+                            ),
+                        language: Joi.string()
+                            .default('en_US')
+                            .description('Preferred language for the user interface.')
                     }
                 }
             },
@@ -176,12 +198,16 @@ module.exports = {
             method: 'POST',
             path: '/activate/{token}',
             options: {
-                tags: ['api'],
+                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try'
                 },
                 validate: {
-                    params: { token: Joi.string().required() }
+                    params: {
+                        token: Joi.string()
+                            .required()
+                            .description('User activation token')
+                    }
                 }
             },
             handler: activateAccount
@@ -191,12 +217,14 @@ module.exports = {
             method: 'POST',
             path: '/resend-activation',
             options: {
-                tags: ['api'],
+                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 validate: {
                     payload: {
                         email: Joi.string()
                             .email()
                             .required()
+                            .example('strange@kamar-taj.com.np')
+                            .description('Email address of the user.')
                     }
                 }
             },
@@ -207,7 +235,7 @@ module.exports = {
             method: 'POST',
             path: '/reset-password',
             options: {
-                tags: ['api'],
+                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try'
                 },
@@ -215,8 +243,14 @@ module.exports = {
                     payload: {
                         email: Joi.string()
                             .email()
-                            .required(),
+                            .required()
+                            .example('strange@kamar-taj.com.np')
+                            .description('Email address of the user.'),
                         token: Joi.string()
+                            .example('shamballa')
+                            .description(
+                                'Admin users can specify this token otherwise a random token is generated.'
+                            )
                     }
                 }
             },
@@ -227,7 +261,7 @@ module.exports = {
             method: 'POST',
             path: '/change-password',
             options: {
-                tags: ['api'],
+                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try'
                 },
@@ -235,9 +269,18 @@ module.exports = {
                     payload: {
                         email: Joi.string()
                             .email()
-                            .required(),
-                        password: Joi.string().required(),
+                            .required()
+                            .example('strange@kamar-taj.com.np')
+                            .description('Email address of the user.'),
+                        password: Joi.string()
+                            .required()
+                            .example('tales-126')
+                            .description(
+                                'A new strong password. Ideally this is generated and saved in a password manager.'
+                            ),
                         token: Joi.string()
+                            .example('shamballa')
+                            .description('Password reset token which is send as email to the user.')
                     }
                 }
             },
@@ -248,7 +291,7 @@ module.exports = {
             method: 'POST',
             path: '/session',
             options: {
-                tags: ['api'],
+                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try'
                 }
@@ -362,7 +405,7 @@ async function login(request, h) {
 
     let session;
 
-    if (request.auth.artifacts && request.auth.artifacts.role === 'anonymous') {
+    if (request.auth.artifacts && request.auth.artifacts.role === 'guest') {
         session = request.auth.credentials.data;
         /* associate guest session with newly created user */
         await Promise.all([
@@ -409,6 +452,10 @@ async function logout(request, h) {
 async function getAllTokens(request, h) {
     const { query, auth, url } = request;
 
+    if (auth.artifacts.role === 'guest') {
+        return Boom.unauthorized();
+    }
+
     const options = {
         attributes: ['id', 'token', 'last_used_at', 'comment'],
         where: {
@@ -446,6 +493,10 @@ async function getAllTokens(request, h) {
 }
 
 async function createToken(request, h) {
+    if (request.auth.artifacts.role === 'guest') {
+        return Boom.unauthorized();
+    }
+
     const token = await AuthToken.newToken({
         user_id: request.auth.artifacts.id,
         comment: request.payload.comment
@@ -457,6 +508,10 @@ async function createToken(request, h) {
 }
 
 async function deleteToken(request, h) {
+    if (request.auth.artifacts.role === 'guest') {
+        return Boom.unauthorized();
+    }
+
     const token = await AuthToken.findByPk(request.params.id, {
         where: { user_id: request.auth.artifacts.id }
     });
