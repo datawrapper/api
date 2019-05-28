@@ -1,7 +1,7 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
-const { camelizeKeys, decamelize } = require('humps');
+const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
 const nanoid = require('nanoid');
 const set = require('lodash/set');
 const assign = require('assign-deep');
@@ -162,7 +162,9 @@ module.exports = {
                                 'Metadata that saves all chart specific settings and options.'
                             )
                             .unknown(true)
-                    }).allow(null)
+                    })
+                        .unknown(true)
+                        .allow(null)
                 }
             },
             handler: createChart
@@ -273,7 +275,10 @@ module.exports = {
 };
 
 function prepareChart(chart, { metadataFormat } = {}) {
-    chart = camelizeKeys(chart.dataValues);
+    chart = {
+        ...camelizeKeys(chart.dataValues),
+        metadata: chart.dataValues.metadata
+    };
     if (metadataFormat === 'json' && typeof chart.metadata === 'string') {
         chart.metadata = JSON.parse(chart.metadata);
     }
@@ -395,9 +400,9 @@ async function createChart(request, h) {
         title: '',
         theme: 'default',
         type: 'd3-bars',
-        metadata: { data: {} },
         language: auth.artifacts.language,
-        ...request.payload,
+        ...decamelizeKeys(request.payload),
+        metadata: request.payload ? request.payload.metadata : { data: {} },
         author_id: auth.artifacts.id,
         guest_session: auth.artifacts.role === 'guest' ? auth.credentials.session : undefined,
         id
@@ -431,7 +436,7 @@ async function editChart(request, h) {
 
     const newData = assign(prepareChart(chart, { metadataFormat: 'json' }), payload);
 
-    chart = await chart.update(newData);
+    chart = await chart.update({ ...decamelizeKeys(newData), metadata: newData.metadata });
 
     return {
         ...prepareChart(chart, { metadataFormat: 'json' }),
