@@ -1,6 +1,6 @@
 {
     "name": "@datawrapper/api",
-    "version": "2.7.0",
+    "version": "2.7.1",
     "description": "This repository contains the new Node.js based API that will power the future of Datawrapper.",
     "homepage": "https://github.com/datawrapper/datawrapper-api#readme",
     "bugs": {
