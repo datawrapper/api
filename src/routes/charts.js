@@ -180,7 +180,6 @@ module.exports = {
                         deprecated: true
                     }
                 },
-                tags: ['api'],
                 validate: {
                     params: Joi.object().keys({
                         id: Joi.string()

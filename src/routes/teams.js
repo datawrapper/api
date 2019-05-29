@@ -100,6 +100,22 @@ module.exports = {
 
         server.route({
             method: 'DELETE',
+            path: `/{id}/members`,
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: {
+                        id: Joi.string()
+                            .required()
+                            .description('ID of the team to delete.')
+                    }
+                }
+            },
+            handler: deleteTeam
+        });
+
+        server.route({
+            method: 'DELETE',
             path: `/{id}/members/{userId}`,
             options: {
                 tags: ['api'],
@@ -115,22 +131,6 @@ module.exports = {
                 }
             },
             handler: deleteTeamMember
-        });
-
-        server.route({
-            method: 'DELETE',
-            path: `/{id}/members`,
-            options: {
-                tags: ['api'],
-                validate: {
-                    params: {
-                        id: Joi.string()
-                            .required()
-                            .description('ID of the team to delete.')
-                    }
-                }
-            },
-            handler: deleteTeam
         });
 
         server.route({
