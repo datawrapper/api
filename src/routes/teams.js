@@ -100,7 +100,7 @@ module.exports = {
 
         server.route({
             method: 'DELETE',
-            path: `/{id}/members`,
+            path: `/{id}`,
             options: {
                 tags: ['api'],
                 validate: {
