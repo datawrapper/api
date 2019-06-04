@@ -24,7 +24,7 @@ if (!configPath) {
 Not starting the API server.
 Please check if there is a \`config.js\` file in either
 
-\`/etc/datawrapper\` or \`${path.join(process.cwd(), 'confasig.js')}\`
+\`/etc/datawrapper\` or \`${path.join(process.cwd(), 'config.js')}\`
 
 https://github.com/datawrapper/api#configuration
 
