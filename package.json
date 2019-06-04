@@ -23,7 +23,8 @@
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
         "test": "ava --verbose",
         "dev": "NODE_ENV=development nodemon src/index.js",
-        "api": "node src/index.js"
+        "api": "node src/index.js",
+        "start": "node src/index.js"
     },
     "repository": {
         "type": "git",
