@@ -33,8 +33,7 @@ module.exports = {
                 } else {
                     server.logger().info(
                         {
-                            version: get(plugin, ['pkg', 'version'], plugin.version),
-                            config: options.config
+                            version: get(plugin, ['pkg', 'version'], plugin.version)
                         },
                         `[Plugin] ${get(plugin, ['pkg', 'name'], plugin.name)}`
                     );
