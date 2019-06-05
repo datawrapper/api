@@ -109,7 +109,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         }
     });
 
-    server.logger().info({ file: configPath, config }, '[Initialize] config.js');
+    server.logger().info({ file: configPath }, '[Initialize] config.js');
 
     await ORM.init(config);
 
