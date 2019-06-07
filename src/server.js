@@ -49,6 +49,7 @@ const OpenAPI = {
     plugin: HapiSwagger,
     options: {
         host: process.env.NODE_ENV === 'development' ? `${host}:${port}` : host,
+        schemes: process.env.NODE_ENV === 'development' ? ['http'] : ['https'],
         info: {
             title: 'Datawrapper API v3 Documentation',
             version: pkg.version,
