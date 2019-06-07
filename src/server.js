@@ -112,6 +112,11 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.logger().info({ file: configPath }, '[Initialize] config.js');
 
     await ORM.init(config);
+    /* register api plugins with core db */
+    require('@datawrapper/orm/models/Plugin').register(
+        'datawrapper-api',
+        Object.keys(config.plugins)
+    );
 
     server.app.event = eventList;
     server.app.events = new ApiEventEmitter({ logger: server.logger });
