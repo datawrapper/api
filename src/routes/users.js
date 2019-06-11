@@ -162,7 +162,7 @@ async function isDeleted(id) {
         attributes: ['email']
     });
 
-    if (user.email === 'DELETED') {
+    if (!user || user.email === 'DELETED') {
         throw Boom.notFound();
     }
 }

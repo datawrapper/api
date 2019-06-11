@@ -126,3 +126,21 @@ test('GET /users/:id - should include teams when fetched as admin', async t => {
     await cleanup();
     await team.cleanup();
 });
+
+test('Users endpoints should return 404 if no user was found', async t => {
+    const { user, session, cleanup } = await t.context.getUser('admin');
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: '/v3/users/12345678',
+        auth: {
+            strategy: 'session',
+            credentials: session,
+            artifacts: user
+        }
+    });
+
+    t.is(res.statusCode, 404);
+
+    /* cleanup db entries */
+    await cleanup();
+});
