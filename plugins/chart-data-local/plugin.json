@@ -1,0 +1,5 @@
+{
+    "name": "chart-data-local",
+    "description": "This plugin hookes into the new v3 API to read and write chart data to a local directory.",
+    "version": "1.0.0"
+}
