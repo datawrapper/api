@@ -74,6 +74,8 @@ const server = Hapi.server({
     port,
     tls: config.api.https,
     router: { stripTrailingSlash: true },
+    /* https://hapijs.com/api#-serveroptionsdebug */
+    debug: process.env.NODE_ENV === 'development' ? { request: ['implementation'] } : false,
     routes: {
         cors: {
             origin: config.api.cors,
