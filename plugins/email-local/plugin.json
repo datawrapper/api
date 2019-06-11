@@ -1,0 +1,5 @@
+{
+    "name": "email-local",
+    "description": "This plugin hookes into the new v3 API to use a fake mail service for development.",
+    "version": "1.0.0"
+}
