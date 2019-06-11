@@ -173,6 +173,14 @@ function hashPassword(hashRounds) {
     };
 }
 
+function serializeTeam(team) {
+    return {
+        id: team.id,
+        name: team.name,
+        url: `/v3/teams/${team.id}`
+    };
+}
+
 async function getAllUsers(request, h) {
     const { query, auth, url, server } = request;
 
@@ -222,11 +230,7 @@ async function getAllUsers(request, h) {
             const { charts, teams, ...data } = dataValues;
 
             if (teams) {
-                data.teams = teams.map(team => ({
-                    id: team.id,
-                    name: team.name,
-                    url: `/v3/teams/${team.id}`
-                }));
+                data.teams = teams.map(serializeTeam);
             }
 
             return camelizeKeys({
@@ -263,14 +267,29 @@ async function getUser(request, h) {
         throw Boom.unauthorized();
     }
 
-    const { role, dataValues } = await User.findByPk(userId, {
-        attributes: attributes.concat(
-            isAdmin ? ['created_at', 'activate_token', 'reset_password_token'] : []
-        ),
+    const options = {
+        attributes,
         include: [{ model: Chart, attributes: ['id'] }]
-    });
+    };
 
-    const { charts, ...data } = dataValues;
+    if (isAdmin) {
+        set(options, ['include', 1], { model: Team, attributes: ['id', 'name'] });
+
+        options.attributes = options.attributes.concat([
+            'created_at',
+            'activate_token',
+            'reset_password_token'
+        ]);
+    }
+
+    const { role, dataValues } = await User.findByPk(userId, options);
+
+    const { charts, teams, ...data } = dataValues;
+
+    if (teams) {
+        data.teams = teams.map(serializeTeam);
+    }
+
     return camelizeKeys({
         ...data,
         role,
