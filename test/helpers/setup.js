@@ -15,11 +15,11 @@ export async function setup(options) {
     const server = await init(options);
     const models = require('@datawrapper/orm/models');
 
-    async function getUser() {
+    async function getUser(role = 'editor') {
         let user = await models.User.create({
             email: getCredentials().email,
             pwd: passwordHash,
-            role: 'editor'
+            role
         });
 
         let session = await models.Session.create({

@@ -4,7 +4,7 @@ import nanoid from 'nanoid';
 import { setup } from '../../test/helpers/setup';
 
 test.before(async t => {
-    const { server, models } = await setup({ usePlugins: false });
+    const { server, models, getUser, getTeamWithUser } = await setup({ usePlugins: false });
     t.context.server = server;
 
     const { User } = models;
@@ -17,6 +17,9 @@ test.before(async t => {
 
         await user.destroy();
     };
+
+    t.context.getUser = getUser;
+    t.context.getTeamWithUser = getTeamWithUser;
 });
 
 test('It should be possible to create a user, login and logout', async t => {
@@ -95,4 +98,31 @@ test('New user passwords should be saved as bcrypt hash', async t => {
 
     await t.context.deleteUserFromDB(credentials.email);
     t.log('Deleted', credentials.email);
+});
+
+test('GET /users/:id - should include teams when fetched as admin', async t => {
+    /* create admin user to fetch different user with team */
+    const { user, session, cleanup } = await t.context.getUser('admin');
+
+    /* create a team with user to fetch */
+    const team = await t.context.getTeamWithUser();
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/users/${team.user.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: session,
+            artifacts: user
+        }
+    });
+
+    t.is(res.result.teams.length, 1);
+    t.is(res.result.teams[0].id, team.team.id);
+    t.is(res.result.teams[0].name, team.team.name);
+    t.is(res.result.teams[0].url, `/v3/teams/${team.team.id}`);
+
+    /* cleanup db entries */
+    await cleanup();
+    await team.cleanup();
 });
