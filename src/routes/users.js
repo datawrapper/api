@@ -4,6 +4,7 @@ const sequelize = require('sequelize');
 const bcrypt = require('bcryptjs');
 const { decamelize, camelizeKeys } = require('humps');
 const set = require('lodash/set');
+const { db } = require('@datawrapper/orm');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
 
 const { Op } = sequelize;
@@ -28,7 +29,7 @@ module.exports = {
                             .default('ASC')
                             .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
-                            .valid(['id', 'email', 'name', 'createdAt'])
+                            .valid(['id', 'email', 'name', 'createdAt', 'chartCount'])
                             .default('id')
                             .description('Attribute to order by'),
                         limit: Joi.number()
@@ -181,67 +182,104 @@ function serializeTeam(team) {
     };
 }
 
+async function queryUsers({ attributes, limit, offset, orderBy, order, search = '' }) {
+    const userQuery = `
+SELECT
+    ${attributes.join(',')}
+FROM \`user\`
+LEFT JOIN \`chart\` ON user.id = chart.author_id
+WHERE
+    user.deleted IS NOT TRUE
+    AND user.email LIKE '%${search}%'
+GROUP BY
+    user.id
+ORDER BY
+    ${orderBy} ${order}
+LIMIT ${offset}, ${limit}
+    `.replace(/\r?\n|\r/g, ' ');
+
+    const countQuery = `
+SELECT
+	COUNT(user.id) AS count
+FROM
+	\`user\`
+WHERE
+	user.deleted IS NOT TRUE
+	AND user.email LIKE '%${search}%'
+    `.replace(/\r?\n|\r/g, ' ');
+
+    const [rows, count] = await Promise.all([
+        db.query(userQuery, {
+            type: sequelize.QueryTypes.SELECT
+        }),
+        db.query(countQuery, {
+            type: sequelize.QueryTypes.SELECT
+        })
+    ]);
+
+    return { rows, count: count[0].count };
+}
+
 async function getAllUsers(request, h) {
     const { query, auth, url, server } = request;
+    let isAdmin = server.methods.isAdmin(request);
 
-    const options = {
-        order: [[decamelize(query.orderBy), query.order]],
-        attributes,
-        include: [
-            {
-                model: Chart,
-                attributes: ['id']
-            }
-        ],
-        where: {
-            deleted: {
-                [Op.not]: true
-            }
-        },
-        limit: query.limit,
-        offset: query.offset,
-        distinct: true
+    const userList = {
+        list: [],
+        total: 0
     };
 
-    if (query.search) {
-        set(options, ['where', 'email', Op.like], `%${query.search}%`);
-    }
+    const { rows, count } = await queryUsers({
+        attributes: ['user.id', 'COUNT(chart.id) AS chart_count'],
+        orderBy: decamelize(query.orderBy),
+        order: query.order,
+        search: query.search,
+        limit: query.limit,
+        offset: query.offset
+    });
 
-    if (server.methods.isAdmin(request)) {
-        set(options, ['include', 1], { model: Team, attributes: ['id', 'name'] });
+    const options = {
+        attributes,
+        where: {
+            id: { [Op.or]: rows.map(row => row.id) }
+        },
+        include: [
+            {
+                model: Team,
+                attributes: ['id', 'name']
+            }
+        ]
+    };
 
+    if (isAdmin) {
         options.attributes = options.attributes.concat([
             'created_at',
             'activate_token',
             'reset_password_token'
         ]);
-
-        if (query.teamId) {
-            set(options, ['include', 1, 'where', 'id'], query.teamId);
-        }
     } else {
         set(options, ['where', 'id'], auth.artifacts.id);
     }
 
-    const { rows, count } = await User.findAndCountAll(options);
+    const users = await User.findAll(options);
 
-    const userList = {
-        list: rows.map(({ role, dataValues }) => {
-            const { charts, teams, ...data } = dataValues;
+    userList.total = count;
+    userList.list = users.map((user, i) => {
+        const { role, dataValues } = user;
 
-            if (teams) {
-                data.teams = teams.map(serializeTeam);
-            }
+        const { teams, ...data } = dataValues;
 
-            return camelizeKeys({
-                ...data,
-                role,
-                chartCount: charts.length,
-                url: `${url.pathname}/${data.id}`
-            });
-        }),
-        total: count
-    };
+        if (teams) {
+            data.teams = teams.map(serializeTeam);
+        }
+
+        return camelizeKeys({
+            ...data,
+            role,
+            chartCount: rows[i].chart_count,
+            url: `${url.pathname}/${data.id}`
+        });
+    });
 
     if (query.limit + query.offset < count) {
         const nextParams = new URLSearchParams({
