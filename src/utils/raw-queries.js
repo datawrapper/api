@@ -22,13 +22,16 @@ queries.queryUsers = async function({
     search = '',
     userIds = []
 }) {
+    const WHERE = SQL`WHERE
+user.deleted IS NOT TRUE
+AND user.email LIKE '%${search}%'
+${userIds.length ? `AND (${userIds.map(id => `user.id = ${id}`).join(' OR ')})` : ''}
+`;
+
     const userQuery = SQL`SELECT ${attributes.join(',')}
 FROM \`user\`
 LEFT JOIN \`chart\` ON user.id = chart.author_id
-WHERE
-  user.deleted IS NOT TRUE
-  AND user.email LIKE '%${search}%'
-  ${userIds.length ? `AND (${userIds.map(id => `user.id = ${id}`).join(' OR ')})` : ''}
+${WHERE}
 GROUP BY user.id
 ORDER BY ${orderBy} ${order}
 LIMIT ${offset}, ${limit}
@@ -36,10 +39,7 @@ LIMIT ${offset}, ${limit}
 
     const countQuery = SQL`SELECT COUNT(user.id) AS count
 FROM \`user\`
-WHERE
-  user.deleted IS NOT TRUE
-  AND user.email LIKE '%${search}%'
-  ${userIds.length ? `AND (${userIds.map(id => `user.id = ${id}`).join(' OR ')})` : ''}
+${WHERE}
   `;
 
     const [rows, count] = await Promise.all([
