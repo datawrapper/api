@@ -187,7 +187,7 @@ async function getAllUsers(request, h) {
     let isAdmin = server.methods.isAdmin(request);
 
     let teamMemberIds = [];
-    if (query.teamId) {
+    if (query.teamId && isAdmin) {
         const res = await server.inject({
             url: `/v3/teams/${query.teamId}/members`,
             method: 'GET',
