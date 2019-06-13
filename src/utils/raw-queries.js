@@ -7,7 +7,8 @@ function SQL(strings, ...values) {
 
     strings.forEach((string, i) => {
         string = string.replace(/\n/g, ' ').replace(/\s+/g, ' ');
-        str += string + (values[i] || '');
+        /* 0 is a valid value but falsy. This is checking for null and undefined. */
+        str += string + (values[i] == null ? '' : values[i]);
     });
 
     return str;
