@@ -21,12 +21,16 @@ queries.queryUsers = async function({
     orderBy,
     order,
     search = '',
-    userIds = []
+    teamId
 }) {
     const WHERE = SQL`WHERE
 user.deleted IS NOT TRUE
-AND user.email LIKE '%${search}%'
-${userIds.length ? `AND (${userIds.map(id => `user.id = ${id}`).join(' OR ')})` : ''}
+${search ? ` AND user.email LIKE '%${search}%'` : ''}
+${
+    teamId
+        ? `AND user.id IN (SELECT user_id FROM user_organization WHERE organization_id = '${teamId}')`
+        : ''
+}
 `;
 
     const userQuery = SQL`SELECT ${attributes.join(',')}

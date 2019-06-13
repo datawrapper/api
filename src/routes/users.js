@@ -186,16 +186,6 @@ async function getAllUsers(request, h) {
     const { query, auth, url, server } = request;
     let isAdmin = server.methods.isAdmin(request);
 
-    let teamMemberIds = [];
-    if (query.teamId && isAdmin) {
-        const res = await server.inject({
-            url: `/v3/teams/${query.teamId}/members`,
-            method: 'GET',
-            auth: auth
-        });
-        teamMemberIds = res.result.list.map(member => member.id);
-    }
-
     const userList = {
         list: [],
         total: 0
@@ -208,7 +198,7 @@ async function getAllUsers(request, h) {
         search: query.search,
         limit: query.limit,
         offset: query.offset,
-        userIds: teamMemberIds
+        teamId: isAdmin ? query.teamId : null
     });
 
     const options = {
