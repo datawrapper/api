@@ -194,7 +194,9 @@ async function getAllUsers(request, h) {
 
     const { rows, count } = await queryUsers({
         attributes: ['user.id', 'COUNT(chart.id) AS chart_count'],
-        orderBy: decamelize(query.orderBy),
+        orderBy: decamelize(
+            query.orderBy === 'createdAt' ? `user.${query.orderBy}` : query.orderBy
+        ),
         order: query.order,
         search: query.search,
         limit: query.limit,
