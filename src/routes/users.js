@@ -4,6 +4,7 @@ const sequelize = require('sequelize');
 const bcrypt = require('bcryptjs');
 const { decamelize, camelizeKeys } = require('humps');
 const set = require('lodash/set');
+const keyBy = require('lodash/keyBy');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
 const { queryUsers } = require('../utils/raw-queries');
 
@@ -204,7 +205,7 @@ async function getAllUsers(request, h) {
     const options = {
         attributes,
         where: {
-            id: { [Op.or]: rows.map(row => row.id) }
+            id: { [Op.in]: rows.map(row => row.id) }
         },
         include: [
             {
@@ -225,10 +226,11 @@ async function getAllUsers(request, h) {
     }
 
     const users = await User.findAll(options);
+    const keyedUsers = keyBy(users, 'id');
 
     userList.total = count;
-    userList.list = users.map((user, i) => {
-        const { role, dataValues } = user;
+    userList.list = rows.map((row, i) => {
+        const { role, dataValues } = keyedUsers[row.id];
 
         const { teams, ...data } = dataValues;
 
@@ -239,7 +241,7 @@ async function getAllUsers(request, h) {
         return camelizeKeys({
             ...data,
             role,
-            chartCount: rows[i].chart_count,
+            chartCount: row.chart_count,
             url: `${url.pathname}/${data.id}`
         });
     });
