@@ -282,17 +282,26 @@ async function getUser(request, h) {
         ]);
     }
 
-    const { role, dataValues } = await User.findByPk(userId, options);
+    const user = await User.findByPk(userId, options);
 
-    const { charts, teams, ...data } = dataValues;
+    const { charts, teams, ...data } = user.dataValues;
 
     if (teams) {
         data.teams = teams.map(serializeTeam);
     }
 
+    if (isAdmin) {
+        const products = await user.getAllProducts();
+        data.products = products.map(product => ({
+            id: product.id,
+            name: product.name,
+            url: `/v3/products/${product.id}`
+        }));
+    }
+
     return camelizeKeys({
         ...data,
-        role,
+        role: user.role,
         chartCount: charts.length,
         url: url.pathname
     });
