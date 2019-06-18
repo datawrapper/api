@@ -4,7 +4,9 @@ const sequelize = require('sequelize');
 const bcrypt = require('bcryptjs');
 const { decamelize, camelizeKeys } = require('humps');
 const set = require('lodash/set');
+const keyBy = require('lodash/keyBy');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
+const { queryUsers } = require('../utils/raw-queries');
 
 const { Op } = sequelize;
 const attributes = ['id', 'email', 'name', 'role', 'language'];
@@ -28,7 +30,7 @@ module.exports = {
                             .default('ASC')
                             .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
-                            .valid(['id', 'email', 'name', 'createdAt'])
+                            .valid(['id', 'email', 'name', 'createdAt', 'chartCount'])
                             .default('id')
                             .description('Attribute to order by'),
                         limit: Joi.number()
@@ -183,65 +185,68 @@ function serializeTeam(team) {
 
 async function getAllUsers(request, h) {
     const { query, auth, url, server } = request;
+    let isAdmin = server.methods.isAdmin(request);
 
-    const options = {
-        order: [[decamelize(query.orderBy), query.order]],
-        attributes,
-        include: [
-            {
-                model: Chart,
-                attributes: ['id']
-            }
-        ],
-        where: {
-            deleted: {
-                [Op.not]: true
-            }
-        },
-        limit: query.limit,
-        offset: query.offset,
-        distinct: true
+    const userList = {
+        list: [],
+        total: 0
     };
 
-    if (query.search) {
-        set(options, ['where', 'email', Op.like], `%${query.search}%`);
-    }
+    const { rows, count } = await queryUsers({
+        attributes: ['user.id', 'COUNT(chart.id) AS chart_count'],
+        orderBy: decamelize(
+            query.orderBy === 'createdAt' ? `user.${query.orderBy}` : query.orderBy
+        ),
+        order: query.order,
+        search: query.search,
+        limit: query.limit,
+        offset: query.offset,
+        teamId: isAdmin ? query.teamId : null
+    });
 
-    if (server.methods.isAdmin(request)) {
-        set(options, ['include', 1], { model: Team, attributes: ['id', 'name'] });
+    const options = {
+        attributes,
+        where: {
+            id: { [Op.in]: rows.map(row => row.id) }
+        },
+        include: [
+            {
+                model: Team,
+                attributes: ['id', 'name']
+            }
+        ]
+    };
 
+    if (isAdmin) {
         options.attributes = options.attributes.concat([
             'created_at',
             'activate_token',
             'reset_password_token'
         ]);
-
-        if (query.teamId) {
-            set(options, ['include', 1, 'where', 'id'], query.teamId);
-        }
     } else {
         set(options, ['where', 'id'], auth.artifacts.id);
     }
 
-    const { rows, count } = await User.findAndCountAll(options);
+    const users = await User.findAll(options);
+    const keyedUsers = keyBy(users, 'id');
 
-    const userList = {
-        list: rows.map(({ role, dataValues }) => {
-            const { charts, teams, ...data } = dataValues;
+    userList.total = count;
+    userList.list = rows.map((row, i) => {
+        const { role, dataValues } = keyedUsers[row.id];
 
-            if (teams) {
-                data.teams = teams.map(serializeTeam);
-            }
+        const { teams, ...data } = dataValues;
 
-            return camelizeKeys({
-                ...data,
-                role,
-                chartCount: charts.length,
-                url: `${url.pathname}/${data.id}`
-            });
-        }),
-        total: count
-    };
+        if (teams) {
+            data.teams = teams.map(serializeTeam);
+        }
+
+        return camelizeKeys({
+            ...data,
+            role,
+            chartCount: row.chart_count,
+            url: `${url.pathname}/${data.id}`
+        });
+    });
 
     if (query.limit + query.offset < count) {
         const nextParams = new URLSearchParams({
