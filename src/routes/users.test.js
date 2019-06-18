@@ -270,3 +270,51 @@ test('Admin can sort users by chart count - Descending', async t => {
     /* cleanup db entries */
     await admin.cleanup();
 });
+
+test('Users endpoint searches in name field', async t => {
+    const search = 'editor';
+    const admin = await t.context.getUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/users?search=${search}`,
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        }
+    });
+
+    const user = res.result.list.find(u => u.name.includes(search));
+    t.is(res.statusCode, 200);
+    t.truthy(user);
+    t.true(user.name.includes(search));
+    t.false(user.email.includes(search));
+
+    /* cleanup db entries */
+    await admin.cleanup();
+});
+
+test('Users endpoint searches in email field', async t => {
+    const search = '@datawrapper';
+    const admin = await t.context.getUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/users?search=${search}`,
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        }
+    });
+
+    const user = res.result.list.find(u => u.email.includes(search));
+    t.is(res.statusCode, 200);
+    t.truthy(user);
+    t.true(user.email.includes(search));
+    t.false(user.name.includes(search));
+
+    /* cleanup db entries */
+    await admin.cleanup();
+});

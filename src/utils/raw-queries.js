@@ -25,7 +25,7 @@ queries.queryUsers = async function({
 }) {
     const WHERE = SQL`WHERE
 user.deleted IS NOT TRUE
-${search ? ` AND user.email LIKE '%${search}%'` : ''}
+${search ? `AND (user.email LIKE '%${search}%' OR user.name LIKE '%${search}%')` : ''}
 ${
     teamId
         ? `AND user.id IN (SELECT user_id FROM user_organization WHERE organization_id = '${teamId}')`
