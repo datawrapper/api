@@ -1,5 +1,6 @@
 import test from 'ava';
 import nanoid from 'nanoid';
+import sortBy from 'lodash/sortBy';
 
 import { setup } from '../../test/helpers/setup';
 
@@ -7,8 +8,10 @@ test.before(async t => {
     const { server, models, getUser, getTeamWithUser } = await setup({ usePlugins: false });
     t.context.server = server;
 
-    const { User } = models;
+    const { User, Product, UserProduct } = models;
     t.context.User = User;
+    t.context.Product = Product;
+    t.context.UserProduct = UserProduct;
     t.context.deleteUserFromDB = async email => {
         const user = await User.findOne({
             where: { email },
@@ -143,4 +146,127 @@ test('Users endpoints should return 404 if no user was found', async t => {
 
     /* cleanup db entries */
     await cleanup();
+});
+
+test('Users endpoints should return products for admins', async t => {
+    const [admin, user] = await Promise.all([t.context.getUser('admin'), t.context.getUser()]);
+    const product = await t.context.Product.create({
+        name: 'test-product'
+    });
+    const userProduct = await t.context.UserProduct.create({
+        user_id: user.user.id,
+        product_id: product.id
+    });
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/users/${user.user.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        }
+    });
+
+    t.is(res.statusCode, 200);
+    t.deepEqual(res.result.products, [
+        {
+            id: product.id,
+            name: product.name,
+            url: `/v3/products/${product.id}`
+        }
+    ]);
+
+    /* cleanup db entries */
+    await userProduct.destroy();
+    await product.destroy();
+    await Promise.all([admin.cleanup(), user.cleanup()]);
+});
+
+test('Admin can sort users by creation date - Ascending', async t => {
+    const admin = await t.context.getUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: '/v3/users?orderBy=createdAt&order=ASC',
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        }
+    });
+
+    const sortedDates = sortBy(res.result.list.map(d => d.createdAt));
+    t.is(res.statusCode, 200);
+    t.deepEqual(res.result.list.map(d => d.createdAt), sortedDates);
+
+    /* cleanup db entries */
+    await admin.cleanup();
+});
+
+test('Admin can sort users by creation date - Descending', async t => {
+    const admin = await t.context.getUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: '/v3/users?orderBy=createdAt&order=DESC',
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        }
+    });
+
+    const sortedDates = sortBy(res.result.list.map(d => d.createdAt));
+    sortedDates.reverse();
+
+    t.is(res.statusCode, 200);
+    t.deepEqual(res.result.list.map(d => d.createdAt), sortedDates);
+
+    /* cleanup db entries */
+    await admin.cleanup();
+});
+
+test('Admin can sort users by chart count - Ascending', async t => {
+    const admin = await t.context.getUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: '/v3/users?orderBy=chartCount&order=ASC',
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        }
+    });
+
+    const sortedChartCount = sortBy(res.result.list.map(d => d.chartCount));
+    t.is(res.statusCode, 200);
+    t.deepEqual(res.result.list.map(d => d.chartCount), sortedChartCount);
+
+    /* cleanup db entries */
+    await admin.cleanup();
+});
+
+test('Admin can sort users by chart count - Descending', async t => {
+    const admin = await t.context.getUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: '/v3/users?orderBy=chartCount&order=DESC',
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        }
+    });
+
+    const sortedChartCount = sortBy(res.result.list.map(d => d.chartCount));
+    sortedChartCount.reverse();
+
+    t.is(res.statusCode, 200);
+    t.deepEqual(res.result.list.map(d => d.chartCount), sortedChartCount);
+
+    /* cleanup db entries */
+    await admin.cleanup();
 });
