@@ -82,7 +82,6 @@ test("Login set's correct cookie", async t => {
     let maxAge = cookie['Max-Age'] / 24 / 60 / 60; // convert to seconds
 
     t.true(cookie['HttpOnly']);
-    t.is(cookie['SameSite'], 'Strict');
     t.is(maxAge, 90);
 
     res = await t.context.server.inject({
