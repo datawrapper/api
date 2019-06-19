@@ -16,9 +16,9 @@ internals.implementation = (server, options) => {
     server.state(opts.cookie, {
         ttl: cookieTTL(90),
         isSecure: process.env.NODE_ENV === 'production',
-        strictHeader: true,
+        strictHeader: false,
         domain: api.domain,
-        isSameSite: 'Strict',
+        isSameSite: false,
         path: '/'
     });
 
