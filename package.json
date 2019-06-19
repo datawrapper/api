@@ -22,6 +22,7 @@
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
         "test": "ava --verbose",
+        "posttest": "node test/helpers/teardown.js",
         "dev": "NODE_ENV=development nodemon src/index.js",
         "api": "node src/index.js",
         "start": "node src/index.js"

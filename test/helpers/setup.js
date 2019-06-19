@@ -1,6 +1,13 @@
+import fs from 'fs';
+import os from 'os';
+import { promisify } from 'util';
+import path from 'path';
 import nanoid from 'nanoid';
-import { Op } from 'sequelize';
 import { init } from '../../src/server';
+
+const appendFile = promisify(fs.appendFile);
+
+const cleanupFile = path.join(os.tmpdir(), 'cleanup.csv');
 
 const passwordHash = '$2b$15$UdsGvrTLEk5DPRmRoHE4O..tzDpkWkAdKjBoKUjERXKoYHqTIRis6';
 
@@ -14,6 +21,10 @@ function getCredentials() {
 export async function setup(options) {
     const server = await init(options);
     const models = require('@datawrapper/orm/models');
+
+    async function addToCleanup(name, id) {
+        await appendFile(cleanupFile, `${name};${id}\n`, { encoding: 'utf-8' });
+    }
 
     async function getUser(role = 'editor') {
         let user = await models.User.create({
@@ -31,20 +42,13 @@ export async function setup(options) {
             }
         });
 
-        async function cleanup() {
-            await models.Chart.destroy({ where: { author_id: user.id } });
-            await models.UserTeam.destroy({ where: { user_id: user.id } });
-            await models.Session.destroy({
-                where: {
-                    data: {
-                        [Op.like]: `dw-user-id|i:${user.id}%`
-                    }
-                }
-            });
-            await user.destroy();
-        }
+        const data = `session;${session.id}
+user;${user.id}
+`;
 
-        return { user, session, cleanup };
+        await appendFile(cleanupFile, data, { encoding: 'utf-8' });
+
+        return { user, session };
     }
 
     async function getTeamWithUser(role = 'owner') {
@@ -54,7 +58,7 @@ export async function setup(options) {
         });
 
         const [team, userData] = await Promise.all([teamPromise, getUser()]);
-        const { user, session, cleanup: userCleanup } = userData;
+        const { user, session } = userData;
 
         await models.UserTeam.create({
             user_id: user.id,
@@ -75,15 +79,12 @@ export async function setup(options) {
             return user;
         }
 
-        async function cleanup() {
-            await models.UserTeam.destroy({ where: { organization_id: team.id } });
-            await team.destroy();
-            await userCleanup();
-            await Promise.all(usersToCleanup.map(f => f()));
-        }
+        const data = `team;${team.id}\n`;
 
-        return { team, user, session, cleanup, userCleanup, addUser };
+        await appendFile(cleanupFile, data, { encoding: 'utf-8' });
+
+        return { team, user, session, addUser };
     }
 
-    return { server, models, getUser, getTeamWithUser };
+    return { server, models, getUser, getTeamWithUser, addToCleanup };
 }

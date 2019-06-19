@@ -16,10 +16,6 @@ test.before(async t => {
     };
 });
 
-test.after.always(async t => {
-    await t.context.data.cleanup();
-});
-
 test('user can fetch their teams', async t => {
     let teams = await t.context.server.inject({
         method: 'GET',
@@ -81,7 +77,6 @@ test('user can not fetch teams they are not a part of', async t => {
     });
 
     t.is(teams.statusCode, 401);
-    await data.cleanup();
 });
 
 test('user can fetch their team members', async t => {
@@ -110,7 +105,6 @@ test('user can not fetch team members of team they are not a part of', async t =
     });
 
     t.is(teams.statusCode, 401);
-    await data.cleanup();
 });
 
 test('owner can remove team members', async t => {
@@ -259,8 +253,6 @@ test('owners can invite new members to a team', async t => {
             email: data.user.email
         }
     });
-
-    await data.cleanup();
 
     t.is(team.statusCode, 201);
 });

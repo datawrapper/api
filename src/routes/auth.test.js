@@ -14,17 +14,13 @@ function parseSetCookie(string) {
 }
 
 test.before(async t => {
-    const { server, getUser } = await setup({ usePlugins: false });
+    const { server, getUser, addToCleanup } = await setup({ usePlugins: false });
 
     t.context.server = server;
 
-    const { user, cleanup } = await getUser();
+    const { user } = await getUser();
     t.context.user = user;
-    t.context.cleanup = cleanup;
-});
-
-test.after.always(async t => {
-    await t.context.cleanup();
+    t.context.addToCleanup = addToCleanup;
 });
 
 test('Login and logout work with correct credentials', async t => {
@@ -79,6 +75,8 @@ test("Login set's correct cookie", async t => {
     });
 
     let cookie = parseSetCookie(res.headers['set-cookie'][0]);
+    t.log('session', cookie['DW-SESSION']);
+    await t.context.addToCleanup('session', cookie['DW-SESSION']);
     let maxAge = cookie['Max-Age'] / 24 / 60 / 60; // convert to seconds
 
     t.true(cookie['HttpOnly']);
@@ -95,6 +93,8 @@ test("Login set's correct cookie", async t => {
     });
 
     cookie = parseSetCookie(res.headers['set-cookie'][0]);
+    t.log('session', cookie['DW-SESSION']);
+    await t.context.addToCleanup('session', cookie['DW-SESSION']);
     maxAge = cookie['Max-Age'] / 24 / 60 / 60; // convert to seconds
 
     t.is(maxAge, 30);
