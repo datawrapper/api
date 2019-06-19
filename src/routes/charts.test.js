@@ -14,10 +14,6 @@ test.before(async t => {
     };
 });
 
-test.after.always(async t => {
-    await t.context.data.cleanup();
-});
-
 test('It should be possible to create, fetch, edit and delete charts', async t => {
     let chart = await t.context.server.inject({
         method: 'POST',

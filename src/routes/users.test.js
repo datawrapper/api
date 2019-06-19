@@ -13,12 +13,10 @@ test.before(async t => {
     t.context.Product = Product;
     t.context.UserProduct = UserProduct;
     t.context.deleteUserFromDB = async email => {
-        const user = await User.findOne({
+        await User.destroy({
             where: { email },
             attributes: ['id']
         });
-
-        await user.destroy();
     };
 
     t.context.getUser = getUser;
@@ -105,7 +103,7 @@ test('New user passwords should be saved as bcrypt hash', async t => {
 
 test('GET /users/:id - should include teams when fetched as admin', async t => {
     /* create admin user to fetch different user with team */
-    const { user, session, cleanup } = await t.context.getUser('admin');
+    const { user, session } = await t.context.getUser('admin');
 
     /* create a team with user to fetch */
     const team = await t.context.getTeamWithUser();
@@ -124,14 +122,10 @@ test('GET /users/:id - should include teams when fetched as admin', async t => {
     t.is(res.result.teams[0].id, team.team.id);
     t.is(res.result.teams[0].name, team.team.name);
     t.is(res.result.teams[0].url, `/v3/teams/${team.team.id}`);
-
-    /* cleanup db entries */
-    await cleanup();
-    await team.cleanup();
 });
 
 test('Users endpoints should return 404 if no user was found', async t => {
-    const { user, session, cleanup } = await t.context.getUser('admin');
+    const { user, session } = await t.context.getUser('admin');
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/users/12345678',
@@ -143,9 +137,6 @@ test('Users endpoints should return 404 if no user was found', async t => {
     });
 
     t.is(res.statusCode, 404);
-
-    /* cleanup db entries */
-    await cleanup();
 });
 
 test('Users endpoints should return products for admins', async t => {
@@ -180,10 +171,9 @@ test('Users endpoints should return products for admins', async t => {
     /* cleanup db entries */
     await userProduct.destroy();
     await product.destroy();
-    await Promise.all([admin.cleanup(), user.cleanup()]);
 });
 
-test.skip('Admin can sort users by creation date - Ascending', async t => {
+test('Admin can sort users by creation date - Ascending', async t => {
     const admin = await t.context.getUser('admin');
 
     const res = await t.context.server.inject({
@@ -199,12 +189,9 @@ test.skip('Admin can sort users by creation date - Ascending', async t => {
     const sortedDates = sortBy(res.result.list.map(d => d.createdAt));
     t.is(res.statusCode, 200);
     t.deepEqual(res.result.list.map(d => d.createdAt), sortedDates);
-
-    /* cleanup db entries */
-    await admin.cleanup();
 });
 
-test.skip('Admin can sort users by creation date - Descending', async t => {
+test('Admin can sort users by creation date - Descending', async t => {
     const admin = await t.context.getUser('admin');
 
     const res = await t.context.server.inject({
@@ -222,12 +209,9 @@ test.skip('Admin can sort users by creation date - Descending', async t => {
 
     t.is(res.statusCode, 200);
     t.deepEqual(res.result.list.map(d => d.createdAt), sortedDates);
-
-    /* cleanup db entries */
-    await admin.cleanup();
 });
 
-test.skip('Admin can sort users by chart count - Ascending', async t => {
+test('Admin can sort users by chart count - Ascending', async t => {
     const admin = await t.context.getUser('admin');
 
     const res = await t.context.server.inject({
@@ -243,12 +227,9 @@ test.skip('Admin can sort users by chart count - Ascending', async t => {
     const sortedChartCount = sortBy(res.result.list.map(d => d.chartCount));
     t.is(res.statusCode, 200);
     t.deepEqual(res.result.list.map(d => d.chartCount), sortedChartCount);
-
-    /* cleanup db entries */
-    await admin.cleanup();
 });
 
-test.skip('Admin can sort users by chart count - Descending', async t => {
+test('Admin can sort users by chart count - Descending', async t => {
     const admin = await t.context.getUser('admin');
 
     const res = await t.context.server.inject({
@@ -266,12 +247,9 @@ test.skip('Admin can sort users by chart count - Descending', async t => {
 
     t.is(res.statusCode, 200);
     t.deepEqual(res.result.list.map(d => d.chartCount), sortedChartCount);
-
-    /* cleanup db entries */
-    await admin.cleanup();
 });
 
-test.skip('Users endpoint searches in name field', async t => {
+test('Users endpoint searches in name field', async t => {
     const search = 'editor';
     const admin = await t.context.getUser('admin');
 
@@ -290,9 +268,6 @@ test.skip('Users endpoint searches in name field', async t => {
     t.truthy(user);
     t.true(user.name.includes(search));
     t.false(user.email.includes(search));
-
-    /* cleanup db entries */
-    await admin.cleanup();
 });
 
 test('Users endpoint searches in email field', async t => {
@@ -315,7 +290,4 @@ test('Users endpoint searches in email field', async t => {
     t.truthy(user);
     t.true(user.email.includes(search));
     t.false(name.includes(search));
-
-    /* cleanup db entries */
-    await admin.cleanup();
 });
