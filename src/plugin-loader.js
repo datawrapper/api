@@ -14,7 +14,7 @@ module.exports = {
         function registerPlugin(name) {
             try {
                 return {
-                    plugin: require(path.join(root, name)),
+                    plugin: require(path.join(root, name, 'api.js')),
                     options: {
                         models,
                         config: get(config, ['plugins', name], {})
