@@ -49,6 +49,7 @@ jobs:
                       mv test/_config.ci.js config.js
                       mkdir -p ~/reports/ava
                       npm test -- --tap | npx tap-xunit > ~/reports/ava/results.xml
+            - run: npm run clean:db
             - store_test_results:
                   path: ~/reports
             - store_artifacts:
