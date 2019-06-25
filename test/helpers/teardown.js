@@ -19,12 +19,20 @@ async function main() {
     const models = require('@datawrapper/orm/models');
     const { Op } = ORM.db;
 
-    const csv = fs.readFileSync(cleanupFile, { encoding: 'utf-8' });
+    let csv;
+    try {
+        csv = fs.readFileSync(cleanupFile, { encoding: 'utf-8' });
+    } catch (error) {
+        log('Nothing to clean up.');
+        process.exit(0);
+    }
+
     const list = {
         team: [],
         session: [],
         user: []
     };
+
     csv.split('\n').forEach(line => {
         const row = line.split(';');
         if (list[row[0]]) {
