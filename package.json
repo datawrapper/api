@@ -33,21 +33,21 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/orm": "3.1.1",
+        "@datawrapper/orm": "3.2.1",
         "@datawrapper/shared": "0.9.8",
+        "@hapi/boom": "7.4.2",
+        "@hapi/hapi": "18.3.1",
+        "@hapi/joi": "15.0.3",
         "assign-deep": "1.0.0",
         "bcryptjs": "2.4.3",
-        "@hapi/boom": "7.4.2",
         "chalk": "2.4.2",
-        "@hapi/hapi": "18.3.1",
         "hapi-auth-bearer-token": "6.2.1",
         "hapi-pino": "6.0.1",
         "hapi-swagger": "10.0.1",
         "humps": "2.0.1",
-        "@hapi/joi": "15.0.3",
         "lodash": "4.17.11",
         "nanoid": "2.0.3",
-        "sequelize": "4.43.0"
+        "sequelize": "6.0.0"
     },
     "devDependencies": {
         "ava": "~1.4.1",

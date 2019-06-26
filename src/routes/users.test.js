@@ -140,18 +140,19 @@ test('Users endpoints should return 404 if no user was found', async t => {
 });
 
 test('Users endpoints should return products for admins', async t => {
-    const [admin, user] = await Promise.all([t.context.getUser('admin'), t.context.getUser()]);
+    const [admin, { user }] = await Promise.all([t.context.getUser('admin'), t.context.getUser()]);
     const product = await t.context.Product.create({
         name: 'test-product'
     });
+
     const userProduct = await t.context.UserProduct.create({
-        user_id: user.user.id,
-        product_id: product.id
+        userId: user.id,
+        productId: product.id
     });
 
     const res = await t.context.server.inject({
         method: 'GET',
-        url: `/v3/users/${user.user.id}`,
+        url: `/v3/users/${user.id}`,
         auth: {
             strategy: 'session',
             credentials: admin.session,
