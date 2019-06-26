@@ -86,5 +86,15 @@ user;${user.id}
         return { team, user, session, addUser };
     }
 
-    return { server, models, getUser, getTeamWithUser, addToCleanup };
+    async function createTheme(themeData) {
+        const theme = await models.Theme.findOrCreate({
+            where: { id: themeData.id },
+            defaults: themeData
+        });
+
+        await addToCleanup('theme', themeData.id);
+        return theme;
+    }
+
+    return { server, models, getUser, getTeamWithUser, addToCleanup, createTheme };
 }
