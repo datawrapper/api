@@ -30,7 +30,8 @@ async function main() {
     const list = {
         team: [],
         session: [],
-        user: []
+        user: [],
+        theme: []
     };
 
     csv.split('\n').forEach(line => {
@@ -40,13 +41,15 @@ async function main() {
         }
     });
 
-    const [, , sessions] = await Promise.all([
+    const [, , sessions, themes] = await Promise.all([
         models.Chart.destroy({ where: { author_id: { [Op.in]: list.user } } }),
         models.UserTeam.destroy({ where: { organization_id: { [Op.in]: list.team } } }),
-        models.Session.destroy({ where: { session_id: { [Op.in]: list.session } } })
+        models.Session.destroy({ where: { session_id: { [Op.in]: list.session } } }),
+        models.Theme.destroy({ where: { id: { [Op.in]: list.theme } } })
     ]);
 
     log(chalk.magenta(`🧹 Cleaned ${sessions} sessions`));
+    log(chalk.magenta(`🧹 Cleaned ${themes} themes`));
 
     const teams = await models.Team.destroy({ where: { id: { [Op.in]: list.team } } });
     log(chalk.magenta(`🧹 Cleaned ${teams} teams`));
