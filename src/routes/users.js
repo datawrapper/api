@@ -336,7 +336,7 @@ async function editUser(request, h) {
 }
 
 async function createUser(request, h) {
-    const { password = 'EMPTY', ...data } = request.payload;
+    const { password = '', ...data } = request.payload;
 
     const existingUser = await User.findOne({ where: { email: data.email } });
 
@@ -344,7 +344,7 @@ async function createUser(request, h) {
         return Boom.conflict('User already exists');
     }
 
-    const hash = await request.server.methods.hashPassword(password);
+    const hash = password === '' ? password : await request.server.methods.hashPassword(password);
 
     const newUser = {
         role: 'pending',
