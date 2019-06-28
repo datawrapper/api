@@ -292,3 +292,21 @@ test('Users endpoint searches in email field', async t => {
     t.true(user.email.includes(search));
     t.false(name.includes(search));
 });
+
+test('/v3/users/:id/setup creates token', async t => {
+    let [admin, { user }] = await Promise.all([t.context.getUser('admin'), t.context.getUser()]);
+
+    const res = await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/users/${user.id}/setup`,
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        }
+    });
+
+    user = await user.reload();
+    t.is(res.result.token, user.dataValues.activate_token);
+    t.is(user.dataValues.pwd, '');
+});
