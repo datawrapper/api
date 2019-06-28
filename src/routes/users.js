@@ -441,6 +441,7 @@ async function handleSetup(request, h) {
         to: user.email,
         language: user.language,
         data: {
+            email: user.email,
             invite_link: `${https ? 'https' : 'http'}://${domain}/account/invite/${token}`
         }
     });
