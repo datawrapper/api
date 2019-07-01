@@ -5,7 +5,7 @@ const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
 const fs = require('fs');
 const path = require('path');
-const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/shared/configSchema');
+const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/schemas/config');
 
 const { generateToken } = require('./utils');
 const { ApiEventEmitter, eventList } = require('./utils/events');
