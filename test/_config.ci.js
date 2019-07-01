@@ -1,4 +1,5 @@
 module.exports = {
+    general: {},
     frontend: {
         domain: 'localhost',
         https: false
