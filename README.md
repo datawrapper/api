@@ -93,6 +93,12 @@ The API will not start without a valid `config.js`. The repository includes a te
 `config.js` exports a javascript object with various configuration objects that are used by this project, as well as others, like the `render-client` or `render-server`.
 The following objects are used by the API.
 
+### `general`
+
+Key | Example Value | Description
+---------|----------|---------
+`general.localPluginRoot` | `"./datawrapper/plugins"` | Path where to find locally installed Datawrapper plugins
+
 ### `api`
 
 Key | Example Value | Description
@@ -100,7 +106,6 @@ Key | Example Value | Description
 `api.port` | `3000` | Network port the node process will be running on.
 `api.domain` | `"datawrapper.de"` | Domain where the API will be available at and used for the session cookies `Domain` value.
 `api.subdomain` | `"api"` | Subdomain where the API will be available. Value will be combined with `api.domain`. If the session cookie is supposed to be available only under the subdomain, it can be included in `api.domain` and this key can be removed.
-`api.localPluginRoot` | `"./datawrapper/plugins"` | Path where to find locally installed Datawrapper plugins
 `api.cors` | `['*']` | Array of fully qualified origins.
 `api.sessionID` | `"DW-SESSION"` | Name for session cookie.
 `api.https` | `true` | Flag if the API is served over `https`. This will most likely be `false` in development.
@@ -151,7 +156,7 @@ plugins: {
     }
 }
 
-/* index.js */
+/* api.js */
 module.exports = {
     name: 'my-plugin',
     version: '1.0.0',
@@ -164,14 +169,14 @@ module.exports = {
 
 ### Local plugins
 
-Plugins can be loaded from the local file system. This is very useful for plugin development. The plugin needs to be a folder inside the `plugins/` directory, with an `index.js`.
+Plugins can be loaded from the local file system. This is very useful for plugin development. The plugin needs to be a folder inside the `plugins/` directory, with an `api.js`.
 
 ```
 plugins
 ├── email-local
-│   └── index.js
+│   └── api.js
 └── hello-world
-    └── index.js
+    └── api.js
 ```
 
 After cloning the repository for local development, there are 2 local plugins available as examples, `email-local` and `hello-world`.

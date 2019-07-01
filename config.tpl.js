@@ -1,4 +1,7 @@
 module.exports = {
+    general: {
+        localPluginRoot: './datawrapper/plugins'
+    },
     frontend: {
         domain: '<domain>.<tld>',
         https: false
@@ -11,7 +14,6 @@ module.exports = {
         https: false,
         enableMigration: false,
         cors: ['*'],
-        localPluginRoot: './datawrapper/plugins',
         /**
          * Amount of iterations the hashing algorithm uses. Value should be based on the hardware
          * the API server is running on.

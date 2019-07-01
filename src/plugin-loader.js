@@ -7,7 +7,7 @@ module.exports = {
     version: '1.0.0',
     register: async (server, options) => {
         const config = server.methods.config();
-        const root = config.api.localPluginRoot || path.join(process.cwd(), 'plugins');
+        const root = config.general.localPluginRoot || path.join(process.cwd(), 'plugins');
 
         const plugins = Object.keys(config.plugins || []).map(registerPlugin);
 
