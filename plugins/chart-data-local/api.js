@@ -15,7 +15,7 @@ module.exports = {
         events.on(event.GET_CHART_DATA, async ({ chart, filename }) => {
             const filePath = path.join(
                 options.config.path,
-                getDataPath(chart.created_at),
+                getDataPath(chart.dataValues.created_at),
                 filename
             );
 
@@ -24,7 +24,10 @@ module.exports = {
         });
 
         events.on(event.PUT_CHART_DATA, async ({ chart, data, filename }) => {
-            const dataPath = path.join(options.config.path, getDataPath(chart.created_at));
+            const dataPath = path.join(
+                options.config.path,
+                getDataPath(chart.dataValues.created_at)
+            );
             const filePath = path.join(dataPath, filename);
 
             let fileExists = false;
