@@ -1,6 +1,5 @@
 const Joi = require('@hapi/joi');
 const assign = require('assign-deep');
-const { camelizeKeys } = require('humps');
 const { Theme } = require('@datawrapper/orm/models');
 
 module.exports = {
@@ -62,5 +61,6 @@ ${dataValues.less}
     dataValues.extend = originalExtend;
     dataValues.url = url.pathname;
 
-    return camelizeKeys(dataValues);
+    const { created_at, ...theme } = dataValues;
+    return { createdAt: created_at, ...theme };
 }
