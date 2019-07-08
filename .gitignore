@@ -2,4 +2,7 @@ node_modules
 config.js
 *.pem
 create-api/test
-plugins/plugin-*
+plugins/*
+!plugins/chart-data-local
+!plugins/email-local
+!plugins/hello-world
