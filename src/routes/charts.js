@@ -25,11 +25,11 @@ module.exports = {
                         order: Joi.string()
                             .uppercase()
                             .valid(['ASC', 'DESC'])
-                            .default('ASC')
+                            .default('DESC')
                             .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
                             .valid(['id', 'email', 'name', 'createdAt'])
-                            .default('id')
+                            .default('createdAt')
                             .description('Attribute to order by'),
                         limit: Joi.number()
                             .integer()
