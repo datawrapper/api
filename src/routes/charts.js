@@ -5,7 +5,7 @@ const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
 const nanoid = require('nanoid');
 const set = require('lodash/set');
 const assign = require('assign-deep');
-const { Chart, ChartPublic } = require('@datawrapper/orm/models');
+const { Chart, ChartPublic, User } = require('@datawrapper/orm/models');
 
 module.exports = {
     name: 'chart-routes',
@@ -281,6 +281,7 @@ async function findChartId() {
 
 async function getAllCharts(request, h) {
     const { query, url, auth } = request;
+    const isAdmin = request.server.methods.isAdmin(request);
 
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
@@ -307,16 +308,22 @@ async function getAllCharts(request, h) {
 
     let model = Chart;
 
-    if (query.userId === 'me') {
-        if (auth.artifacts.role === 'guest') {
-            set(options, ['where', 'guest_session'], auth.credentials.session);
-        } else {
-            set(options, ['where', 'author_id'], auth.artifacts.id);
-        }
+    if (auth.artifacts.role === 'guest') {
+        set(options, ['where', 'guest_session'], auth.credentials.session);
     } else {
-        model = ChartPublic;
-        set(options, ['where'], undefined);
-        set(options, ['attributes'], ['id', 'title', 'type']);
+        set(options, ['where', 'author_id'], auth.artifacts.id);
+    }
+
+    if (isAdmin) {
+        if (query.userId) {
+            set(options, ['where', 'author_id'], query.userId);
+        }
+
+        if (query.userId === 'all') {
+            delete options.where.author_id;
+        }
+
+        set(options, ['include'], [{ model: User, attributes: ['name', 'email'] }]);
     }
 
     const { count, rows } = await model.findAndCountAll(options);
@@ -345,14 +352,21 @@ async function getAllCharts(request, h) {
 }
 
 async function getChart(request, h) {
-    const { query, url, params, auth } = request;
+    const { url, params, auth, server } = request;
+    const isAdmin = server.methods.isAdmin(request);
 
-    let chart = await Chart.findOne({
+    const options = {
         where: {
             id: params.id,
             deleted: { [Op.not]: true }
         }
-    });
+    };
+
+    if (isAdmin) {
+        set(options, ['include'], [{ model: User, attributes: ['name', 'email'] }]);
+    }
+
+    let chart = await Chart.findOne(options);
 
     if (!chart) {
         return Boom.notFound();
