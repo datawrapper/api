@@ -18,10 +18,6 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     query: Joi.object().keys({
-                        metadataFormat: Joi.string()
-                            .valid(['json', 'string'])
-                            .default('json')
-                            .description('Deprecated'),
                         userId: Joi.any().description('ID of the user to fetch charts for.'),
                         search: Joi.string().description(
                             'Search for charts with a specific title.'
@@ -55,12 +51,6 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    query: Joi.object().keys({
-                        metadataFormat: Joi.string()
-                            .valid(['json', 'string'])
-                            .default('json')
-                            .description('Deprecated')
-                    }),
                     params: Joi.object().keys({
                         id: Joi.string()
                             .length(5)
@@ -278,13 +268,6 @@ function prepareChart(chart, { metadataFormat } = {}) {
         ...camelizeKeys(chart.dataValues),
         metadata: chart.dataValues.metadata
     };
-    if (metadataFormat === 'json' && typeof chart.metadata === 'string') {
-        chart.metadata = JSON.parse(chart.metadata);
-    }
-
-    if (metadataFormat === 'string' && typeof chart.metadata === 'object') {
-        chart.metadata = JSON.stringify(chart.metadata);
-    }
 
     chart.guestSession = undefined;
 
@@ -332,7 +315,7 @@ async function getAllCharts(request, h) {
     const { count, rows } = await model.findAndCountAll(options);
 
     const charts = rows.map(chart => ({
-        ...prepareChart(chart, { metadataFormat: query.metadataFormat }),
+        ...prepareChart(chart),
         url: `${url.pathname}/${chart.id}`
     }));
 
@@ -386,7 +369,7 @@ async function getChart(request, h) {
     }
 
     return {
-        ...prepareChart(chart, { metadataFormat: query.metadataFormat }),
+        ...prepareChart(chart),
         url: `${url.pathname}`
     };
 }
@@ -433,12 +416,12 @@ async function editChart(request, h) {
         return Boom.unauthorized();
     }
 
-    const newData = assign(prepareChart(chart, { metadataFormat: 'json' }), payload);
+    const newData = assign(prepareChart(chart), payload);
 
     chart = await chart.update({ ...decamelizeKeys(newData), metadata: newData.metadata });
 
     return {
-        ...prepareChart(chart, { metadataFormat: 'json' }),
+        ...prepareChart(chart),
         url: `${url.pathname}`
     };
 }
