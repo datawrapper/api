@@ -27,13 +27,12 @@ test('It should be possible to create, fetch, edit and delete charts', async t =
 
     chart = await t.context.server.inject({
         method: 'GET',
-        url: `/v3/charts/${chart.result.id}?metadataFormat=string`,
+        url: `/v3/charts/${chart.result.id}`,
         auth: t.context.auth
     });
 
     t.truthy(chart.result.authorId);
     t.is(chart.result.id.length, 5);
-    t.is(typeof chart.result.metadata, 'string');
 
     chart = await t.context.server.inject({
         method: 'PATCH',
