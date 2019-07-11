@@ -19,6 +19,9 @@ module.exports = {
                 validate: {
                     query: Joi.object().keys({
                         userId: Joi.any().description('ID of the user to fetch charts for.'),
+                        published: Joi.boolean().description(
+                            'Flag to filter results by publish status'
+                        ),
                         search: Joi.string().description(
                             'Search for charts with a specific title.'
                         ),
@@ -285,7 +288,7 @@ async function getAllCharts(request, h) {
 
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
-        attributes: ['id', 'title', 'type', 'created_at', 'last_modified_at'],
+        attributes: ['id', 'title', 'type', 'created_at', 'last_modified_at', 'public_version'],
         where: {
             deleted: {
                 [Op.not]: true
@@ -294,6 +297,11 @@ async function getAllCharts(request, h) {
         limit: query.limit,
         offset: query.offset
     };
+
+    // A chart is published when it's public_version is > 0.
+    if (query.published) {
+        set(options, ['where', 'public_version', Op.gt], 0);
+    }
 
     if (query.search) {
         const search = [
