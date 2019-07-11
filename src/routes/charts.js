@@ -263,15 +263,15 @@ module.exports = {
     }
 };
 
-function prepareChart(chart, { metadataFormat } = {}) {
-    chart = {
-        ...camelizeKeys(chart.dataValues),
-        metadata: chart.dataValues.metadata
+function prepareChart(chart) {
+    const { user, ...dataValues } = chart.dataValues;
+
+    return {
+        ...camelizeKeys(dataValues),
+        metadata: dataValues.metadata,
+        author: user ? { name: user.name, email: user.email } : undefined,
+        guestSession: undefined
     };
-
-    chart.guestSession = undefined;
-
-    return chart;
 }
 
 async function findChartId() {
@@ -295,7 +295,14 @@ async function getAllCharts(request, h) {
     };
 
     if (query.search) {
-        set(options, ['where', 'title', Op.like], `%${query.search}%`);
+        const search = [
+            { title: { [Op.like]: `%${query.search}%` } },
+            { metadata: { describe: { intro: { [Op.like]: `%${query.search}%` } } } },
+            { metadata: { describe: { byline: { [Op.like]: `%${query.search}%` } } } },
+            { metadata: { describe: { 'source-name': { [Op.like]: `%${query.search}%` } } } },
+            { metadata: { describe: { 'source-url': { [Op.like]: `%${query.search}%` } } } }
+        ];
+        set(options, ['where', Op.or], search);
     }
 
     let model = Chart;
