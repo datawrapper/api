@@ -84,6 +84,9 @@ test('Should be possible to search in multiple fields', async t => {
                     byline: 'byline-search',
                     'source-name': 'source-search',
                     'source-url': 'https://source.com'
+                },
+                annotate: {
+                    notes: 'notes-search'
                 }
             }
         }
@@ -91,7 +94,7 @@ test('Should be possible to search in multiple fields', async t => {
 
     const chartId = chart.result.id;
 
-    const searchQueries = ['title', 'intro', 'byline', 'source', 'source.com'];
+    const searchQueries = ['title', 'intro', 'byline', 'source', 'source.com', 'notes'];
 
     for (let query of searchQueries) {
         chart = await t.context.server.inject({

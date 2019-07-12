@@ -309,7 +309,8 @@ async function getAllCharts(request, h) {
             { metadata: { describe: { intro: { [Op.like]: `%${query.search}%` } } } },
             { metadata: { describe: { byline: { [Op.like]: `%${query.search}%` } } } },
             { metadata: { describe: { 'source-name': { [Op.like]: `%${query.search}%` } } } },
-            { metadata: { describe: { 'source-url': { [Op.like]: `%${query.search}%` } } } }
+            { metadata: { describe: { 'source-url': { [Op.like]: `%${query.search}%` } } } },
+            { metadata: { annotate: { notes: { [Op.like]: `%${query.search}%` } } } }
         ];
         set(options, ['where', Op.or], search);
     }
