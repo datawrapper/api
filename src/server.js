@@ -126,6 +126,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     server.method('config', key => (key ? config[key] : config));
     server.method('generateToken', generateToken);
+    server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
 
     if (process.env.NODE_ENV === 'development') {
         server.register([require('@hapi/inert'), require('@hapi/vision')]);
