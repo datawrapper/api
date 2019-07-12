@@ -16,26 +16,26 @@ test.before(async t => {
     t.context.theme = await createTheme({
         title: 'Test Theme',
         id: 'my-theme-1',
-        data: JSON.stringify({ test: 'test', deep: { key: [1, 2, 3] } }),
+        data: { test: 'test', deep: { key: [1, 2, 3] } },
         less: 'h1 { z-index: 1 }'
     });
 
     t.context.secondTheme = await createTheme({
         title: 'Test Theme 2',
         id: 'my-theme-2',
-        data: JSON.stringify({ test: 'test', deep: { key: [3, 4, 5] } }),
+        data: { test: 'test', deep: { key: [3, 4, 5] } },
         extend: 'my-theme-1',
         less: 'h1 { z-index: 2 }',
-        assets: JSON.stringify({ key1: 1, key2: { deep: true } })
+        assets: { key1: 1, key2: { deep: true } }
     });
 
     t.context.thirdTheme = await createTheme({
         title: 'Test Theme 3',
         id: 'my-theme-3',
-        data: JSON.stringify({ test: 'test3' }),
+        data: { test: 'test3' },
         extend: 'my-theme-2',
         less: 'h1 { z-index: 3 }',
-        assets: JSON.stringify({ key1: 1, key2: { blue: false } })
+        assets: { key1: 1, key2: { blue: false } }
     });
 });
 
