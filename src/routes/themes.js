@@ -42,9 +42,6 @@ async function getTheme(request, h) {
             dataValues = extendedTheme.dataValues;
         }
 
-        extendedTheme.data = JSON.parse(extendedTheme.data);
-        extendedTheme.assets = JSON.parse(extendedTheme.assets);
-
         if (extendedTheme.less !== dataValues.less) {
             dataValues.less = `${extendedTheme.less}
 ${dataValues.less}
