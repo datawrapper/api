@@ -5,7 +5,7 @@ const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
 const nanoid = require('nanoid');
 const set = require('lodash/set');
 const assign = require('assign-deep');
-const { Chart, ChartPublic } = require('@datawrapper/orm/models');
+const { Chart, ChartPublic, User } = require('@datawrapper/orm/models');
 
 module.exports = {
     name: 'chart-routes',
@@ -18,22 +18,21 @@ module.exports = {
                 tags: ['api'],
                 validate: {
                     query: Joi.object().keys({
-                        metadataFormat: Joi.string()
-                            .valid(['json', 'string'])
-                            .default('json')
-                            .description('Deprecated'),
                         userId: Joi.any().description('ID of the user to fetch charts for.'),
+                        published: Joi.boolean().description(
+                            'Flag to filter results by publish status'
+                        ),
                         search: Joi.string().description(
                             'Search for charts with a specific title.'
                         ),
                         order: Joi.string()
                             .uppercase()
                             .valid(['ASC', 'DESC'])
-                            .default('ASC')
+                            .default('DESC')
                             .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
                             .valid(['id', 'email', 'name', 'createdAt'])
-                            .default('id')
+                            .default('createdAt')
                             .description('Attribute to order by'),
                         limit: Joi.number()
                             .integer()
@@ -55,12 +54,6 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    query: Joi.object().keys({
-                        metadataFormat: Joi.string()
-                            .valid(['json', 'string'])
-                            .default('json')
-                            .description('Deprecated')
-                    }),
                     params: Joi.object().keys({
                         id: Joi.string()
                             .length(5)
@@ -273,22 +266,15 @@ module.exports = {
     }
 };
 
-function prepareChart(chart, { metadataFormat } = {}) {
-    chart = {
-        ...camelizeKeys(chart.dataValues),
-        metadata: chart.dataValues.metadata
+function prepareChart(chart) {
+    const { user, ...dataValues } = chart.dataValues;
+
+    return {
+        ...camelizeKeys(dataValues),
+        metadata: dataValues.metadata,
+        author: user ? { name: user.name, email: user.email } : undefined,
+        guestSession: undefined
     };
-    if (metadataFormat === 'json' && typeof chart.metadata === 'string') {
-        chart.metadata = JSON.parse(chart.metadata);
-    }
-
-    if (metadataFormat === 'string' && typeof chart.metadata === 'object') {
-        chart.metadata = JSON.stringify(chart.metadata);
-    }
-
-    chart.guestSession = undefined;
-
-    return chart;
 }
 
 async function findChartId() {
@@ -298,10 +284,11 @@ async function findChartId() {
 
 async function getAllCharts(request, h) {
     const { query, url, auth } = request;
+    const isAdmin = request.server.methods.isAdmin(request);
 
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
-        attributes: ['id', 'title', 'type', 'created_at', 'last_modified_at'],
+        attributes: ['id', 'title', 'type', 'created_at', 'last_modified_at', 'public_version'],
         where: {
             deleted: {
                 [Op.not]: true
@@ -311,28 +298,47 @@ async function getAllCharts(request, h) {
         offset: query.offset
     };
 
+    // A chart is published when it's public_version is > 0.
+    if (query.published) {
+        set(options, ['where', 'public_version', Op.gt], 0);
+    }
+
     if (query.search) {
-        set(options, ['where', 'title', Op.like], `%${query.search}%`);
+        const search = [
+            { title: { [Op.like]: `%${query.search}%` } },
+            { metadata: { describe: { intro: { [Op.like]: `%${query.search}%` } } } },
+            { metadata: { describe: { byline: { [Op.like]: `%${query.search}%` } } } },
+            { metadata: { describe: { 'source-name': { [Op.like]: `%${query.search}%` } } } },
+            { metadata: { describe: { 'source-url': { [Op.like]: `%${query.search}%` } } } },
+            { metadata: { annotate: { notes: { [Op.like]: `%${query.search}%` } } } }
+        ];
+        set(options, ['where', Op.or], search);
     }
 
     let model = Chart;
 
-    if (query.userId === 'me') {
-        if (auth.artifacts.role === 'guest') {
-            set(options, ['where', 'guest_session'], auth.credentials.session);
-        } else {
-            set(options, ['where', 'author_id'], auth.artifacts.id);
-        }
+    if (auth.artifacts.role === 'guest') {
+        set(options, ['where', 'guest_session'], auth.credentials.session);
     } else {
-        model = ChartPublic;
-        set(options, ['where'], undefined);
-        set(options, ['attributes'], ['id', 'title', 'type']);
+        set(options, ['where', 'author_id'], auth.artifacts.id);
+    }
+
+    if (isAdmin) {
+        if (query.userId) {
+            set(options, ['where', 'author_id'], query.userId);
+        }
+
+        if (query.userId === 'all') {
+            delete options.where.author_id;
+        }
+
+        set(options, ['include'], [{ model: User, attributes: ['name', 'email'] }]);
     }
 
     const { count, rows } = await model.findAndCountAll(options);
 
     const charts = rows.map(chart => ({
-        ...prepareChart(chart, { metadataFormat: query.metadataFormat }),
+        ...prepareChart(chart),
         url: `${url.pathname}/${chart.id}`
     }));
 
@@ -355,14 +361,21 @@ async function getAllCharts(request, h) {
 }
 
 async function getChart(request, h) {
-    const { query, url, params, auth } = request;
+    const { url, params, auth, server } = request;
+    const isAdmin = server.methods.isAdmin(request);
 
-    let chart = await Chart.findOne({
+    const options = {
         where: {
             id: params.id,
             deleted: { [Op.not]: true }
         }
-    });
+    };
+
+    if (isAdmin) {
+        set(options, ['include'], [{ model: User, attributes: ['name', 'email'] }]);
+    }
+
+    let chart = await Chart.findOne(options);
 
     if (!chart) {
         return Boom.notFound();
@@ -386,7 +399,7 @@ async function getChart(request, h) {
     }
 
     return {
-        ...prepareChart(chart, { metadataFormat: query.metadataFormat }),
+        ...prepareChart(chart),
         url: `${url.pathname}`
     };
 }
@@ -433,12 +446,12 @@ async function editChart(request, h) {
         return Boom.unauthorized();
     }
 
-    const newData = assign(prepareChart(chart, { metadataFormat: 'json' }), payload);
+    const newData = assign(prepareChart(chart), payload);
 
     chart = await chart.update({ ...decamelizeKeys(newData), metadata: newData.metadata });
 
     return {
-        ...prepareChart(chart, { metadataFormat: 'json' }),
+        ...prepareChart(chart),
         url: `${url.pathname}`
     };
 }
