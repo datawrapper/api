@@ -479,6 +479,12 @@ async function exportChart(request, h) {
             throw error;
         }
 
+        await request.server.methods.logAction(
+            auth.artifacts.id,
+            `chart/export/${params.format}`,
+            params.id
+        );
+
         const { stream, type } = successfulResult.data;
         return h.response(stream).header('Content-Type', type);
     } catch (error) {

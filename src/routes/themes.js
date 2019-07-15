@@ -39,11 +39,12 @@ async function getTheme(request, h) {
         }
 
         if (!dataValues.id) {
-            dataValues = extendedTheme.dataValues;
+            dataValues = {
+                ...extendedTheme.dataValues,
+                assets: extendedTheme.assets,
+                data: extendedTheme.data
+            };
         }
-
-        extendedTheme.data = JSON.parse(extendedTheme.data);
-        extendedTheme.assets = JSON.parse(extendedTheme.assets);
 
         if (extendedTheme.less !== dataValues.less) {
             dataValues.less = `${extendedTheme.less}
