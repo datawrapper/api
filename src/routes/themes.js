@@ -39,7 +39,11 @@ async function getTheme(request, h) {
         }
 
         if (!dataValues.id) {
-            dataValues = extendedTheme.dataValues;
+            dataValues = {
+                ...extendedTheme.dataValues,
+                assets: extendedTheme.assets,
+                data: extendedTheme.data
+            };
         }
 
         if (extendedTheme.less !== dataValues.less) {

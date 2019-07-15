@@ -17,7 +17,8 @@ test.before(async t => {
         title: 'Test Theme',
         id: 'my-theme-1',
         data: { test: 'test', deep: { key: [1, 2, 3] } },
-        less: 'h1 { z-index: 1 }'
+        less: 'h1 { z-index: 1 }',
+        assets: {}
     });
 
     t.context.secondTheme = await createTheme({
