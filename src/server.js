@@ -112,7 +112,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         }
     });
 
-    server.logger().info({ file: configPath }, '[Initialize] config.js');
+    server
+        .logger()
+        .info({ CONFIG_FILE: configPath, NODE_ENV: process.env.NODE_ENV }, '[Initialize]');
 
     await ORM.init(config);
     /* register api plugins with core db */
