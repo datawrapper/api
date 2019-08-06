@@ -35,7 +35,7 @@
     "dependencies": {
         "@datawrapper/orm": "^3.4.1",
         "@datawrapper/schemas": "1.0.0",
-        "@datawrapper/shared": "0.9.8",
+        "@datawrapper/shared": "^0.12.2",
         "@hapi/boom": "7.4.2",
         "@hapi/hapi": "18.3.1",
         "@hapi/joi": "15.0.3",
