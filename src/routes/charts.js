@@ -192,7 +192,7 @@ module.exports = {
                         scale: Joi.number().default(1),
                         border: Joi.object().keys({
                             width: Joi.number(),
-                            color: Joi.string().default('#ffffff')
+                            color: Joi.string().default('auto')
                         })
                     })
                 }
