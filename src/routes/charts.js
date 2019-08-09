@@ -190,6 +190,7 @@ module.exports = {
                         height: Joi.any(),
                         plain: Joi.boolean().default(false),
                         scale: Joi.number().default(1),
+                        zoom: Joi.number().default(2),
                         border: Joi.object().keys({
                             width: Joi.number(),
                             color: Joi.string().default('auto')
