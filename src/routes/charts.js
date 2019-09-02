@@ -504,7 +504,7 @@ async function handleChartExport(request, h) {
         };
     }
 
-    request.payload = Object.assign(query, border);
+    request.payload = Object.assign(query, { border });
     return exportChart(request, h);
 }
 
