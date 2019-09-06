@@ -6,6 +6,7 @@ const nanoid = require('nanoid');
 const set = require('lodash/set');
 const assign = require('assign-deep');
 const { Chart, ChartPublic, User } = require('@datawrapper/orm/models');
+const CodedError = require('@datawrapper/shared/CodedError');
 
 module.exports = {
     name: 'chart-routes',
@@ -475,7 +476,10 @@ async function exportChart(request, h) {
 
         if (!successfulResult) {
             const { error } = results.find(res => res.status === 'error') || {
-                error: new Error('notImplemented')
+                error: new CodedError(
+                    'notImplemented',
+                    `the export format "${params.format}" is not available`
+                )
             };
             throw error;
         }
@@ -489,7 +493,12 @@ async function exportChart(request, h) {
         const { stream, type } = successfulResult.data;
         return h.response(stream).header('Content-Type', type);
     } catch (error) {
-        return Boom[error.message]();
+        if (error.name === 'CodedError' && Boom[error.code]) {
+            // this seems to be an orderly error
+            return Boom[error.code](error.message);
+        }
+        // this is an unexpected error, so let's log it
+        return Boom.badImplementation();
     }
 }
 
@@ -568,7 +577,7 @@ async function getChartData(request, h) {
             .header('Content-Type', 'text/csv')
             .header('Content-Disposition', `attachment; filename=${filename}`);
     } catch (error) {
-        request.logger.error(error.message);
+        request.logger.error(error);
         return Boom.notFound();
     }
 }
@@ -597,7 +606,7 @@ async function writeChartData(request, h) {
 
         return h.response().code(code);
     } catch (error) {
-        request.logger.error(error.message);
+        request.logger.error(error);
         return Boom.notFound();
     }
 }
