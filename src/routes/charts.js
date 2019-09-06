@@ -191,9 +191,10 @@ module.exports = {
                         height: Joi.any(),
                         plain: Joi.boolean().default(false),
                         scale: Joi.number().default(1),
+                        zoom: Joi.number().default(2),
                         border: Joi.object().keys({
                             width: Joi.number(),
-                            color: Joi.string().default('#ffffff')
+                            color: Joi.string().default('auto')
                         })
                     })
                 }
@@ -512,7 +513,7 @@ async function handleChartExport(request, h) {
         };
     }
 
-    request.payload = Object.assign(query, border);
+    request.payload = Object.assign(query, { border });
     return exportChart(request, h);
 }
 
