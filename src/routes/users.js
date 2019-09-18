@@ -2,7 +2,7 @@ const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const sequelize = require('sequelize');
 const bcrypt = require('bcryptjs');
-const { decamelize, camelizeKeys } = require('humps');
+const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
 const set = require('lodash/set');
 const keyBy = require('lodash/keyBy');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
@@ -88,7 +88,12 @@ module.exports = {
                             .description('New user role. Can only be changed by admins.'),
                         language: Joi.string()
                             .example('en_US')
-                            .description('New language preference.')
+                            .description('New language preference.'),
+                        activateToken: Joi.string()
+                            .allow(null)
+                            .description(
+                                'Activate token, typically used to unset it when activating user.'
+                            )
                     }
                 }
             },
@@ -338,7 +343,7 @@ async function editUser(request, h) {
         request.server.methods.isAdmin(request, { throwError: true });
     }
 
-    await User.update(request.payload, {
+    await User.update(decamelizeKeys(request.payload), {
         where: { id: userId }
     });
 
