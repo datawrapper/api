@@ -293,10 +293,10 @@ test('Users endpoint searches in email field', async t => {
     t.false(name.includes(search));
 });
 
-test('/v3/users/:id/setup creates token', async t => {
+test('/v3/users/:id/setup creates token, token can later be emptied', async t => {
     let [admin, { user }] = await Promise.all([t.context.getUser('admin'), t.context.getUser()]);
 
-    const res = await t.context.server.inject({
+    let res = await t.context.server.inject({
         method: 'POST',
         url: `/v3/users/${user.id}/setup`,
         auth: {
@@ -309,4 +309,20 @@ test('/v3/users/:id/setup creates token', async t => {
     user = await user.reload();
     t.is(res.result.token, user.dataValues.activate_token);
     t.is(user.dataValues.pwd, '');
+
+    res = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        },
+        payload: {
+            activateToken: null
+        }
+    });
+
+    user = await user.reload();
+    t.is(null, user.dataValues.activate_token);
 });
