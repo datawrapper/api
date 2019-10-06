@@ -169,10 +169,32 @@ module.exports = {
                     },
                     payload: {
                         name: Joi.string().example('New Revengers'),
+                        defaultTheme: Joi.string().example('light'),
                         settings: Joi.object({
-                            type: Joi.string()
-                        }),
-                        defaultTheme: Joi.string().example('light')
+                            type: Joi.string().optional(),
+                            folders: Joi.string().optional(),
+                            displayLocale: Joi.boolean().optional(),
+                            embed: Joi.object({
+                                preferred_embed: Joi.string().optional(),
+                                custom_embed: Joi.object({
+                                    title: Joi.string()
+                                        .allow('')
+                                        .optional(),
+                                    text: Joi.string()
+                                        .allow('')
+                                        .optional(),
+                                    template: Joi.string()
+                                        .allow('')
+                                        .optional()
+                                }).optional()
+                            }),
+                            default: Joi.object({
+                                locale: Joi.string().optional(),
+                                folder: Joi.number()
+                                    .allow(null)
+                                    .optional()
+                            }).optional()
+                        })
                     }
                 }
             },
