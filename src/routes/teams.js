@@ -428,9 +428,17 @@ async function getTeamMembers(request, h) {
         return Boom.unauthorized();
     }
 
+    if (!server.methods.isAdmin(request)) {
+        const memberRole = await getMemberRole(auth.artifacts.id, params.id);
+
+        if (memberRole === ROLES[2]) {
+            return Boom.unauthorized();
+        }
+    }
+
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
-        attributes: ['id', 'name', 'email'],
+        attributes: ['id', 'name', 'email', 'activate_token'],
         include: [
             {
                 model: Team,
@@ -459,12 +467,26 @@ async function getTeamMembers(request, h) {
     }
 
     return {
-        list: rows.map(user => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            url: `/v3/users/${user.id}`
-        })),
+        list: rows.map(user => {
+            const u = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                url: `/v3/users/${user.id}`
+            };
+
+            user.teams.forEach(el => {
+                if (el.id !== params.id) return;
+
+                u.role = ROLES[el.user_team.dataValues.team_role];
+                u.token = el.user_team.dataValues.invite_token;
+                if (u.token && u.token.length) {
+                    u.isNewUser = user.dataValues.activate_token === u.token;
+                }
+            });
+
+            return u;
+        }),
         total: count
     };
 }
@@ -652,8 +674,8 @@ async function inviteTeamMember(request, h) {
     const data = {
         user_id: user.id,
         organization_id: params.id,
-        team_role: ROLES[2],
-        token
+        team_role: payload.role,
+        invite_token: token
     };
 
     await UserTeam.create(data);
