@@ -468,24 +468,17 @@ async function getTeamMembers(request, h) {
 
     return {
         list: rows.map(user => {
-            const u = {
+            const { user_team } = user.teams[0];
+            const token = user_team.invite_token;
+            return {
                 id: user.id,
                 name: user.name,
                 email: user.email,
+                role: ROLES[user_team.dataValues.team_role],
+                token,
+                isNewUser: token ? user.activate_token === token : undefined,
                 url: `/v3/users/${user.id}`
             };
-
-            user.teams.forEach(el => {
-                if (el.id !== params.id) return;
-
-                u.role = ROLES[el.user_team.dataValues.team_role];
-                u.token = el.user_team.dataValues.invite_token;
-                if (u.token && u.token.length) {
-                    u.isNewUser = user.dataValues.activate_token === u.token;
-                }
-            });
-
-            return u;
         }),
         total: count
     };

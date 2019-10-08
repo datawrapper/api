@@ -247,10 +247,11 @@ test('owners can invite new members to a team', async t => {
     const data = await t.context.getUser();
     const team = await t.context.server.inject({
         method: 'POST',
-        url: `/v3/teams/${t.context.data.team.id}/members`,
+        url: `/v3/teams/${t.context.data.team.id}/invites`,
         auth: t.context.auth,
         payload: {
-            email: data.user.email
+            email: data.user.email,
+            role: 'member'
         }
     });
 
@@ -260,10 +261,11 @@ test('owners can invite new members to a team', async t => {
 test('owners can invite new users to a team', async t => {
     const team = await t.context.server.inject({
         method: 'POST',
-        url: `/v3/teams/${t.context.data.team.id}/members`,
+        url: `/v3/teams/${t.context.data.team.id}/invites`,
         auth: t.context.auth,
         payload: {
-            email: 'test-member@ava.de'
+            email: 'test-member@ava.de',
+            role: 'member'
         }
     });
 
@@ -303,4 +305,24 @@ test('owners can change a members status', async t => {
     });
 
     t.is(userTeam.dataValues.team_role, 1);
+});
+
+test('admins can add new members to a team', async t => {
+    const data = await t.context.getUser();
+    const { user: admin, session } = await t.context.getUser('admin');
+    const team = await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/teams/${t.context.data.team.id}/members`,
+        auth: {
+            strategy: 'session',
+            credentials: session,
+            artifacts: admin
+        },
+        payload: {
+            userId: data.user.id,
+            role: 'member'
+        }
+    });
+
+    t.is(team.statusCode, 201);
 });
