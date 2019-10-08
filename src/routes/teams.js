@@ -213,14 +213,42 @@ module.exports = {
                             .description('Team ID (eg. guardians-of-the-galaxy)')
                     },
                     payload: {
-                        email: Joi.string()
-                            .email()
+                        userId: Joi.number()
+                            .integer()
                             .required()
-                            .example('thor@gmail.com')
+                            .description('ID of the team member you want to change the status of.'),
+                        role: Joi.string()
+                            .valid(ROLES)
+                            .required()
                     }
                 }
             },
             handler: addTeamMember
+        });
+
+        server.route({
+            method: 'POST',
+            path: `/{id}/invites`,
+            options: {
+                tags: ['api'],
+                validate: {
+                    params: {
+                        id: Joi.string()
+                            .required()
+                            .description('Team ID (eg. guardians-of-the-galaxy)')
+                    },
+                    payload: {
+                        email: Joi.string()
+                            .email()
+                            .required()
+                            .example('thor@gmail.com'),
+                        role: Joi.string()
+                            .valid(ROLES)
+                            .required()
+                    }
+                }
+            },
+            handler: inviteTeamMember
         });
 
         server.route({
@@ -400,9 +428,17 @@ async function getTeamMembers(request, h) {
         return Boom.unauthorized();
     }
 
+    if (!server.methods.isAdmin(request)) {
+        const memberRole = await getMemberRole(auth.artifacts.id, params.id);
+
+        if (memberRole === ROLES[2]) {
+            return Boom.unauthorized();
+        }
+    }
+
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
-        attributes: ['id', 'name', 'email'],
+        attributes: ['id', 'name', 'email', 'activate_token'],
         include: [
             {
                 model: Team,
@@ -431,12 +467,19 @@ async function getTeamMembers(request, h) {
     }
 
     return {
-        list: rows.map(user => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            url: `/v3/users/${user.id}`
-        })),
+        list: rows.map(user => {
+            const { user_team } = user.teams[0];
+            const token = user_team.invite_token;
+            return {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: ROLES[user_team.dataValues.team_role],
+                token,
+                isNewUser: token ? user.activate_token === token : undefined,
+                url: `/v3/users/${user.id}`
+            };
+        }),
         total: count
     };
 }
@@ -570,10 +613,11 @@ async function createTeam(request, h) {
     }
 }
 
-async function addTeamMember(request, h) {
+async function inviteTeamMember(request, h) {
     const { auth, params, payload, server } = request;
 
     const isAdmin = server.methods.isAdmin(request);
+    let userWasCreated = false;
 
     if (!isAdmin) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
@@ -595,7 +639,8 @@ async function addTeamMember(request, h) {
     });
 
     const token = server.methods.generateToken();
-    if (!user && !isAdmin) {
+
+    if (!user) {
         const passwordToken = server.methods.generateToken();
         const hash = await request.server.methods.hashPassword(passwordToken);
         user = await User.create({
@@ -605,10 +650,7 @@ async function addTeamMember(request, h) {
             pwd: hash,
             name: null
         });
-    }
-
-    if (!user && isAdmin) {
-        return Boom.conflict('User does not exist.');
+        userWasCreated = true;
     }
 
     const isMember = !!(await UserTeam.findOne({
@@ -625,29 +667,64 @@ async function addTeamMember(request, h) {
     const data = {
         user_id: user.id,
         organization_id: params.id,
-        team_role: ROLES[2]
+        team_role: payload.role,
+        invite_token: token
     };
-
-    if (!isAdmin) {
-        data.token = token;
-    }
 
     await UserTeam.create(data);
 
-    if (!isAdmin) {
-        const { https, domain } = server.methods.config('frontend');
-        await server.app.events.emit(server.app.event.SEND_EMAIL, {
-            type: 'team-invite',
-            to: user.email,
-            language: user.language,
-            data: {
-                activation_link: `${
-                    https ? 'https' : 'http'
-                }://${domain}/datawrapper-invite/${data.token || 'lol'}`
-            }
-        });
+    const { https, domain } = server.methods.config('frontend');
+    await server.app.events.emit(server.app.event.SEND_EMAIL, {
+        type: 'team-invite',
+        to: user.email,
+        language: user.language,
+        data: {
+            activation_link: `${https ? 'https' : 'http'}://${domain}/${
+                userWasCreated ? 'datawrapper-invite' : 'organization-invite'
+            }/${data.token}`
+        }
+    });
+
+    return h.response().code(201);
+}
+
+async function addTeamMember(request, h) {
+    const { params, payload, server } = request;
+    const isAdmin = server.methods.isAdmin(request);
+
+    if (!isAdmin) return Boom.unauthorized();
+
+    let teamCount = await Team.count({
+        where: { id: params.id, deleted: { [Op.not]: true } }
+    });
+
+    if (!teamCount) return Boom.notFound();
+
+    let user = await User.findOne({
+        where: { id: payload.userId },
+        attributes: ['id', 'email', 'language']
+    });
+
+    if (!user) return Boom.conflict('User does not exist.');
+
+    const isMember = !!(await UserTeam.findOne({
+        where: {
+            user_id: user.id,
+            organization_id: params.id
+        }
+    }));
+
+    if (isMember) {
+        return Boom.badRequest('User is already member of team.');
     }
 
+    const data = {
+        user_id: user.id,
+        organization_id: params.id,
+        team_role: payload.role
+    };
+
+    await UserTeam.create(data);
     return h.response().code(201);
 }
 
