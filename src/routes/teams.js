@@ -189,11 +189,17 @@ module.exports = {
                                 }).optional()
                             }),
                             default: Joi.object({
-                                locale: Joi.string().optional(),
+                                locale: Joi.string()
+                                    .allow(null)
+                                    .optional(),
                                 folder: Joi.number()
                                     .allow(null)
                                     .optional()
-                            }).optional()
+                            }).optional(),
+                            slack_enabled: Joi.boolean().optional(),
+                            slack_webhook_url: Joi.string()
+                                .allow('')
+                                .optional()
                         })
                     }
                 }
