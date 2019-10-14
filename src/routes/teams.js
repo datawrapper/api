@@ -444,7 +444,7 @@ async function getTeamMembers(request, h) {
 
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
-        attributes: ['id', 'name', 'email', 'activate_token'],
+        attributes: ['id', 'name', 'email', 'role', 'activate_token'],
         include: [
             {
                 model: Team,
@@ -480,6 +480,7 @@ async function getTeamMembers(request, h) {
                 id: user.id,
                 name: user.name,
                 email: user.email,
+                isAdmin: user.role === 'admin' || user.role === 'sysadmin',
                 role: ROLES[user_team.dataValues.team_role],
                 token,
                 isNewUser: token ? user.activate_token === token : undefined,
