@@ -199,7 +199,25 @@ module.exports = {
                             slack_enabled: Joi.boolean().optional(),
                             slack_webhook_url: Joi.string()
                                 .allow('')
-                                .optional()
+                                .optional(),
+                            customFields: Joi.array()
+                                .items(
+                                    Joi.object({
+                                        title: Joi.string(),
+                                        description: Joi.string(),
+                                        key: Joi.string(),
+                                        type: Joi.string()
+                                    })
+                                )
+                                .optional(),
+                            ftp: Joi.object({
+                                enabled: Joi.boolean(),
+                                server: Joi.string(),
+                                user: Joi.string(),
+                                password: Joi.string(),
+                                directory: Joi.string(),
+                                filename: Joi.string()
+                            }).optional()
                         })
                     }
                 }
@@ -680,15 +698,27 @@ async function inviteTeamMember(request, h) {
 
     await UserTeam.create(data);
 
+    const invitingUser = await User.findOne({
+        where: { id: auth.artifacts.id },
+        attributes: ['id', 'email']
+    });
+
+    const team = await Team.findOne({
+        where: { id: params.id },
+        attributes: ['id', 'name']
+    });
+
     const { https, domain } = server.methods.config('frontend');
     await server.app.events.emit(server.app.event.SEND_EMAIL, {
         type: 'team-invite',
         to: user.email,
         language: user.language,
         data: {
+            team_admin: invitingUser.email,
+            team_name: team.name,
             activation_link: `${https ? 'https' : 'http'}://${domain}/${
                 userWasCreated ? 'datawrapper-invite' : 'organization-invite'
-            }/${data.token}`
+            }/${data.invite_token}`
         }
     });
 
