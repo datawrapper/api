@@ -204,7 +204,7 @@ module.exports = {
                                 .items(
                                     Joi.object({
                                         title: Joi.string(),
-                                        description: Joi.string(),
+                                        description: Joi.string().allow(''),
                                         key: Joi.string(),
                                         type: Joi.string()
                                     })
@@ -217,7 +217,14 @@ module.exports = {
                                 password: Joi.string(),
                                 directory: Joi.string(),
                                 filename: Joi.string()
-                            }).optional()
+                            }).optional(),
+                            disableVisualizations: Joi.object({
+                                enabled: Joi.boolean(),
+                                visualizations: Joi.object()
+                                    .unknown(true)
+                                    .optional(),
+                                allowAdmins: Joi.boolean().optional()
+                            })
                         })
                     }
                 }
