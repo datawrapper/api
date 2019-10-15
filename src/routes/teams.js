@@ -190,9 +190,11 @@ module.exports = {
                             }),
                             default: Joi.object({
                                 locale: Joi.string()
+                                    .allow('')
                                     .allow(null)
                                     .optional(),
                                 folder: Joi.number()
+                                    .allow('')
                                     .allow(null)
                                     .optional()
                             }).optional(),
@@ -212,11 +214,11 @@ module.exports = {
                                 .optional(),
                             ftp: Joi.object({
                                 enabled: Joi.boolean(),
-                                server: Joi.string(),
-                                user: Joi.string(),
-                                password: Joi.string(),
-                                directory: Joi.string(),
-                                filename: Joi.string()
+                                server: Joi.string().allow(''),
+                                user: Joi.string().allow(''),
+                                password: Joi.string().allow(''),
+                                directory: Joi.string().allow(''),
+                                filename: Joi.string().allow('')
                             }).optional(),
                             disableVisualizations: Joi.object({
                                 enabled: Joi.boolean(),
@@ -224,7 +226,7 @@ module.exports = {
                                     .unknown(true)
                                     .optional(),
                                 allowAdmins: Joi.boolean().optional()
-                            })
+                            }).optional()
                         })
                     }
                 }
