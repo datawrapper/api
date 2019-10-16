@@ -172,6 +172,7 @@ module.exports = {
                         defaultTheme: Joi.string().example('light'),
                         settings: Joi.object({
                             type: Joi.string().optional(),
+                            'chart-templates': Joi.boolean().optional(),
                             folders: Joi.string().optional(),
                             displayLocale: Joi.boolean().optional(),
                             embed: Joi.object({
