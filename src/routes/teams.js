@@ -175,6 +175,7 @@ module.exports = {
                             'chart-templates': Joi.boolean().optional(),
                             folders: Joi.string().optional(),
                             displayLocale: Joi.boolean().optional(),
+                            restrictDefaultThemes: Joi.boolean().optional(),
                             embed: Joi.object({
                                 preferred_embed: Joi.string().optional(),
                                 custom_embed: Joi.object({
