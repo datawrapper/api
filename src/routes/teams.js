@@ -3,7 +3,7 @@ const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
-const { Team, User, UserTeam } = require('@datawrapper/orm/models');
+const { Chart, Team, User, UserTeam } = require('@datawrapper/orm/models');
 
 const ROLES = ['owner', 'admin', 'member'];
 
@@ -483,7 +483,8 @@ async function getTeamMembers(request, h) {
                         [Op.not]: true
                     }
                 }
-            }
+            },
+            { model: Chart, attributes: ['id'] }
         ],
         limit: query.limit,
         offset: query.offset,
@@ -508,6 +509,7 @@ async function getTeamMembers(request, h) {
                 id: user.id,
                 name: user.name,
                 email: user.email,
+                charts: user.charts.length,
                 isAdmin: user.role === 'admin' || user.role === 'sysadmin',
                 role: ROLES[user_team.dataValues.team_role],
                 token,
