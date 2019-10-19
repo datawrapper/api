@@ -432,9 +432,9 @@ async function createChart(request, h) {
 }
 
 async function editChart(request, h) {
-    const { params, payload, auth, url } = request;
-
+    const { params, payload, auth, url, server } = request;
     const user = await User.findOne({ where: { id: auth.artifacts.id } });
+    const isAdmin = server.methods.isAdmin(request);
 
     let chart = await Chart.findOne({
         where: {
@@ -456,8 +456,8 @@ async function editChart(request, h) {
         return Boom.unauthorized();
     }
 
-    if (payload.organizationId && !(await user.hasTeam(payload.organizationId))) {
-        return Boom.badRequest('User does not have access to the specified team.');
+    if (payload.organizationId && !isAdmin && !(await user.hasTeam(payload.organizationId))) {
+        return Boom.unauthorized('User does not have access to the specified team.');
     }
 
     if (payload.folderId) {
@@ -466,9 +466,13 @@ async function editChart(request, h) {
 
         if (
             !folder ||
-            (folder.user_id !== auth.artifacts.id && !(await user.hasTeam(folder.org_id)))
+            (!isAdmin &&
+                folder.user_id !== auth.artifacts.id &&
+                !(await user.hasTeam(folder.org_id)))
         ) {
-            return Boom.badRequest('User does not have access to the specified folder.');
+            return Boom.unauthorized(
+                'User does not have access to the specified folder, or it does not exist.'
+            );
         }
 
         payload.organizationId = folder.org_id ? folder.org_id : null;
