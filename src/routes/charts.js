@@ -5,7 +5,7 @@ const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
 const nanoid = require('nanoid');
 const set = require('lodash/set');
 const assign = require('assign-deep');
-const { Chart, ChartPublic, User } = require('@datawrapper/orm/models');
+const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
 const CodedError = require('@datawrapper/shared/CodedError');
 
 module.exports = {
@@ -114,6 +114,12 @@ module.exports = {
                                 'Used in the app to determine where the user last edited the chart.'
                             ),
                         language: Joi.string().description('Chart language.'),
+                        folderId: Joi.number()
+                            .allow(null)
+                            .optional(),
+                        organizationId: Joi.string()
+                            .allow(null)
+                            .optional(),
                         metadata: Joi.object({
                             data: Joi.object({
                                 transpose: Joi.boolean()
@@ -428,6 +434,8 @@ async function createChart(request, h) {
 async function editChart(request, h) {
     const { params, payload, auth, url } = request;
 
+    const user = await User.findOne({ where: { id: auth.artifacts.id } });
+
     let chart = await Chart.findOne({
         where: {
             id: params.id,
@@ -447,6 +455,27 @@ async function editChart(request, h) {
     if (!isEditable) {
         return Boom.unauthorized();
     }
+
+    if (payload.organizationId && !(await user.hasTeam(payload.organizationId))) {
+        return Boom.badRequest('User does not have access to the specified team.');
+    }
+
+    if (payload.folderId) {
+        // check if folder belongs to user to team
+        const folder = await Folder.findOne({ where: { id: payload.folderId } });
+
+        if (
+            !folder ||
+            (folder.user_id !== auth.artifacts.id && !(await user.hasTeam(folder.org_id)))
+        ) {
+            return Boom.badRequest('User does not have access to the specified folder.');
+        }
+
+        payload.organizationId = folder.org_id ? folder.org_id : null;
+    }
+
+    payload.inFolder = payload.folderId;
+    delete payload.folderId;
 
     const newData = assign(prepareChart(chart), payload);
 
