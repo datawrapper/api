@@ -37,5 +37,11 @@ module.exports = {
                 prefix: '/themes'
             }
         });
+
+        server.register(require('./folders'), {
+            routes: {
+                prefix: '/folders'
+            }
+        });
     }
 };
