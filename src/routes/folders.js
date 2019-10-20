@@ -26,6 +26,7 @@ const routes = [
                 all.push({
                     type: 'team',
                     id: team.id,
+                    name: team.name,
                     charts: (await Chart.findAll({
                         where: { organization_id: team.id, in_folder: null }
                     })).map(cleanChart),
