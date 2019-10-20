@@ -3,9 +3,162 @@ const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
-const { Chart, Team, User, UserTeam } = require('@datawrapper/orm/models');
+const { Chart, Team, User, UserTeam, TeamProduct } = require('@datawrapper/orm/models');
 
 const ROLES = ['owner', 'admin', 'member'];
+
+const routes = [
+    {
+        method: 'GET',
+        path: '/{teamId}/products',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team to fetch products for.')
+        },
+        handler: async function getAllTeamProducts(request, h) {
+            const { auth, params } = request;
+            const user = await User.findOne({ where: { id: auth.artifacts.id } });
+
+            if (!user.mayAdministrateTeam(params.teamId)) {
+                return Boom.unauthorized();
+            }
+
+            const teamProducts = await TeamProduct.findAll({
+                where: {
+                    organization_id: params.teamId
+                }
+            }).map(tp => {
+                return {
+                    productId: tp.productId,
+                    expires: tp.expires
+                };
+            });
+
+            return h.response(teamProducts).code(200);
+        }
+    },
+    {
+        method: 'POST',
+        path: '/{teamId}/products',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team to create the product for.')
+        },
+        payload: {
+            expires: Joi.date()
+                .allow(null)
+                .optional(),
+            productId: Joi.number()
+        },
+        handler: async function addTeamProduct(request, h) {
+            const { server, payload, params } = request;
+            const isAdmin = server.methods.isAdmin(request);
+
+            if (!isAdmin) {
+                return Boom.unauthorized();
+            }
+
+            const hasProduct = !!(await TeamProduct.findOne({
+                where: {
+                    organization_id: params.teamId,
+                    productId: payload.productId
+                }
+            }));
+
+            if (hasProduct) {
+                return Boom.badRequest('This product is already associated to this team.');
+            }
+
+            const teamProduct = await TeamProduct.create({
+                organization_id: params.teamId,
+                productId: payload.productId,
+                expires: payload.expires || null,
+                created_by_admin: true
+            });
+
+            return h.response(teamProduct).code(201);
+        }
+    },
+    {
+        method: 'PUT',
+        path: '/{teamId}/products/{productId}',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team.'),
+            productId: Joi.number()
+                .required()
+                .description('ID of the product.')
+        },
+        payload: {
+            expires: Joi.date()
+                .allow(null)
+                .optional()
+        },
+        handler: async function updateTeamProduct(request, h) {
+            const { server, payload, params } = request;
+            const isAdmin = server.methods.isAdmin(request);
+
+            if (!isAdmin) {
+                return Boom.unauthorized();
+            }
+
+            const teamProduct = await TeamProduct.findOne({
+                where: {
+                    organization_id: params.teamId,
+                    product_id: params.productId
+                }
+            });
+
+            if (!teamProduct) {
+                return Boom.badRequest('This product is not associated to this team.');
+            }
+
+            await teamProduct.update({
+                expires: payload.expires
+            });
+
+            return h.response().code(204);
+        }
+    },
+    {
+        method: 'DELETE',
+        path: '/{teamId}/products/{productId}',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team.'),
+            productId: Joi.number()
+                .required()
+                .description('ID of the product.')
+        },
+        handler: async function deleteTeamProduct(request, h) {
+            const { server, params } = request;
+            const isAdmin = server.methods.isAdmin(request);
+
+            if (!isAdmin) {
+                return Boom.unauthorized();
+            }
+
+            const teamProduct = await TeamProduct.findOne({
+                where: {
+                    organization_id: params.teamId,
+                    product_id: params.productId
+                }
+            });
+
+            if (!teamProduct) {
+                return Boom.badRequest('This product is not associated to this team.');
+            }
+
+            await teamProduct.destroy();
+
+            return h.response().code(204);
+        }
+    }
+];
 
 module.exports = {
     name: 'teams-routes',
@@ -309,6 +462,22 @@ module.exports = {
                 }
             },
             handler: changeMemberStatus
+        });
+
+        routes.forEach(route => {
+            server.route({
+                method: route.method,
+                path: route.path,
+                options: {
+                    tags: ['api'],
+                    validate: {
+                        params: route.params,
+                        query: route.query,
+                        payload: route.payload
+                    }
+                },
+                handler: route.handler
+            });
         });
     }
 };
