@@ -3,7 +3,7 @@ const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
-const { Chart, Team, User, UserTeam } = require('@datawrapper/orm/models');
+const { Chart, Team, User, UserTeam, TeamProduct, TeamTheme } = require('@datawrapper/orm/models');
 
 const ROLES = ['owner', 'admin', 'member'];
 
@@ -581,6 +581,36 @@ async function deleteTeam(request, h) {
                 deleted: {
                     [Op.not]: true
                 }
+            }
+        }
+    );
+
+    await UserTeam.destroy({
+        where: {
+            organization_id: params.id
+        }
+    });
+
+    await TeamProduct.destroy({
+        where: {
+            organization_id: params.id
+        }
+    });
+
+    await TeamTheme.destroy({
+        where: {
+            organization_id: params.id
+        }
+    });
+
+    await Chart.update(
+        {
+            organization_id: null,
+            in_folder: null
+        },
+        {
+            where: {
+                organization_id: params.id
             }
         }
     );
