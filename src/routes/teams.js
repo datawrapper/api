@@ -113,7 +113,7 @@ const routes = [
             });
 
             if (!teamProduct) {
-                return Boom.badRequest('This product is not associated to this team.');
+                return Boom.badRequestnotFound('This product is not associated to this team.');
             }
 
             await teamProduct.update({
@@ -150,7 +150,7 @@ const routes = [
             });
 
             if (!teamProduct) {
-                return Boom.badRequest('This product is not associated to this team.');
+                return Boom.notFound('This product is not associated to this team.');
             }
 
             await teamProduct.destroy();
