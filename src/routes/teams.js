@@ -501,7 +501,7 @@ async function getTeamMembers(request, h) {
     const { rows, count } = await User.findAndCountAll(options);
 
     if (!rows.length) {
-        return Boom.notFound();
+        return [];
     }
 
     return {
