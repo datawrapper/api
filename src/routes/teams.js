@@ -625,9 +625,8 @@ async function deleteTeamMember(request, h) {
 }
 
 async function createTeam(request, h) {
-    const { payload, server } = request;
-
-    server.methods.isAdmin(request, { throwError: true });
+    const { auth, payload, server } = request;
+    const isAdmin = server.methods.isAdmin(request);
 
     async function unusedId(name) {
         async function isUsed(id) {
@@ -659,6 +658,15 @@ async function createTeam(request, h) {
         if (payload.setting) teamParams.settings = payload.settings;
 
         const team = await Team.create(teamParams);
+
+        if (!isAdmin) {
+            // not an admin, so let's add user to team
+            await UserTeam.create({
+                organization_id: team.id,
+                user_id: auth.artifacts.id,
+                team_role: 'owner'
+            });
+        }
 
         return h
             .response({
