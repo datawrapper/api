@@ -141,15 +141,17 @@ module.exports = {
                 validate: {
                     payload: {
                         id: Joi.string()
-                            .required()
+                            .optional()
                             .example('revengers'),
                         name: Joi.string()
                             .required()
                             .example('Revengers'),
                         settings: Joi.object({
                             type: Joi.string()
-                        }),
-                        defaultTheme: Joi.string().example('space')
+                        }).optional(),
+                        defaultTheme: Joi.string()
+                            .example('space')
+                            .optional()
                     }
                 }
             },
@@ -627,21 +629,43 @@ async function createTeam(request, h) {
 
     server.methods.isAdmin(request, { throwError: true });
 
-    try {
-        const team = await Team.create({
-            id: payload.id,
-            name: payload.name,
-            settings: JSON.stringify(payload.settings),
-            default_theme: payload.defaultTheme
-        });
-
-        const data = team.dataValues;
-
-        if (typeof data.settings === 'string') {
-            data.settings = JSON.parse(data.settings);
+    async function unusedId(name) {
+        async function isUsed(id) {
+            return !!(await Team.findOne({ where: { id } }));
         }
 
-        return h.response(camelizeKeys(data)).code(201);
+        const normalized = name
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^\w]/gi, '');
+
+        if (!(await isUsed(normalized))) return normalized;
+
+        let i = 2;
+        while (await isUsed(`${normalized}-${i}`)) {
+            i++;
+        }
+        return `${normalized}-${i}`;
+    }
+
+    try {
+        const teamParams = {
+            id: payload.id ? payload.id : await unusedId(payload.name),
+            name: payload.name
+        };
+
+        if (payload.defaultTheme) teamParams.default_theme = payload.defaultTheme;
+        if (payload.setting) teamParams.settings = payload.settings;
+
+        const team = await Team.create(teamParams);
+
+        return h
+            .response({
+                id: team.id,
+                name: team.name
+            })
+            .code(201);
     } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
             return Boom.conflict(`Organization with ID [${payload.id}] already exists.`);
