@@ -37,5 +37,11 @@ module.exports = {
                 prefix: '/themes'
             }
         });
+
+        server.register(require('./products'), {
+            routes: {
+                prefix: '/products'
+            }
+        });
     }
 };
