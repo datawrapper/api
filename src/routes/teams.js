@@ -500,10 +500,6 @@ async function getTeamMembers(request, h) {
 
     const { rows, count } = await User.findAndCountAll(options);
 
-    if (!rows.length) {
-        return [];
-    }
-
     return {
         list: rows.map(user => {
             const { user_team } = user.teams[0];
