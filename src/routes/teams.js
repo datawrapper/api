@@ -78,6 +78,9 @@ const routes = [
                 created_by_admin: true
             });
 
+            const team = await Team.findByPk(params.teamId);
+            await team.invalidatePluginCache();
+
             return h.response(teamProduct).code(201);
         }
     },
@@ -120,6 +123,9 @@ const routes = [
                 expires: payload.expires
             });
 
+            const team = await Team.findByPk(params.teamId);
+            await team.invalidatePluginCache();
+
             return h.response().code(204);
         }
     },
@@ -154,6 +160,9 @@ const routes = [
             }
 
             await teamProduct.destroy();
+
+            const team = await Team.findByPk(params.teamId);
+            await team.invalidatePluginCache();
 
             return h.response().code(204);
         }
