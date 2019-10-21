@@ -3,7 +3,7 @@ const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
-const { Chart, Team, User, UserTeam, TeamProduct } = require('@datawrapper/orm/models');
+const { Chart, Team, User, UserTeam, TeamProduct, Product } = require('@datawrapper/orm/models');
 
 const ROLES = ['owner', 'admin', 'member'];
 
@@ -28,14 +28,21 @@ const routes = [
                 where: {
                     organization_id: params.teamId
                 }
-            }).map(tp => {
-                return {
-                    productId: tp.productId,
-                    expires: tp.expires
-                };
             });
 
-            return h.response(teamProducts).code(200);
+            const products = [];
+
+            for (const tp of teamProducts) {
+                const product = await Product.findByPk(tp.productId);
+
+                products.push({
+                    id: tp.productId,
+                    name: product.name,
+                    expires: tp.expires
+                });
+            }
+
+            return products;
         }
     },
     {
