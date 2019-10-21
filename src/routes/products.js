@@ -10,7 +10,7 @@ module.exports = {
             options: {
                 tags: ['api']
             },
-            handler: async function getAllFolders(request, h) {
+            handler: async function getAllProducts(request, h) {
                 request.server.methods.isAdmin(request, { throwError: true });
 
                 let { rows, count } = await Product.findAndCountAll();
