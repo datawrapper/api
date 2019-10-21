@@ -68,7 +68,10 @@ const routes = [
                 return arr;
             }
 
-            return all;
+            return {
+                list: all,
+                count: all.length
+            };
         }
     },
     {
