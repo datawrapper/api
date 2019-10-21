@@ -18,31 +18,32 @@ const routes = [
         },
         handler: async function getAllTeamProducts(request, h) {
             const { auth, params } = request;
-            const user = await User.findOne({ where: { id: auth.artifacts.id } });
+            const user = auth.artifacts;
 
-            if (!user.mayAdministrateTeam(params.teamId)) {
+            if (!user || !user.mayAdministrateTeam(params.teamId)) {
                 return Boom.unauthorized();
             }
 
-            const teamProducts = await TeamProduct.findAll({
-                where: {
-                    organization_id: params.teamId
-                }
+            const team = await Team.findByPk(params.teamId, {
+                attributes: ['id'],
+                include: [
+                    {
+                        model: Product,
+                        attributes: ['id', 'name']
+                    }
+                ]
             });
 
-            const products = [];
+            const products = team.products.map(product => ({
+                id: product.id,
+                name: product.name,
+                expires: product.team_product.expires
+            }));
 
-            for (const tp of teamProducts) {
-                const product = await Product.findByPk(tp.productId);
-
-                products.push({
-                    id: tp.productId,
-                    name: product.name,
-                    expires: tp.expires
-                });
-            }
-
-            return products;
+            return {
+                list: products,
+                total: products.length
+            };
         }
     },
     {
@@ -61,11 +62,7 @@ const routes = [
         },
         handler: async function addTeamProduct(request, h) {
             const { server, payload, params } = request;
-            const isAdmin = server.methods.isAdmin(request);
-
-            if (!isAdmin) {
-                return Boom.unauthorized();
-            }
+            server.methods.isAdmin(request, { throwError: true });
 
             const hasProduct = !!(await TeamProduct.findOne({
                 where: {
@@ -109,11 +106,7 @@ const routes = [
         },
         handler: async function updateTeamProduct(request, h) {
             const { server, payload, params } = request;
-            const isAdmin = server.methods.isAdmin(request);
-
-            if (!isAdmin) {
-                return Boom.unauthorized();
-            }
+            server.methods.isAdmin(request, { throwError: true });
 
             const teamProduct = await TeamProduct.findOne({
                 where: {
@@ -155,18 +148,16 @@ const routes = [
                 return Boom.unauthorized();
             }
 
-            const teamProduct = await TeamProduct.findOne({
+            const deleteCount = await TeamProduct.destroy({
                 where: {
                     organization_id: params.teamId,
                     product_id: params.productId
                 }
             });
 
-            if (!teamProduct) {
+            if (!deleteCount) {
                 return Boom.notFound('This product is not associated to this team.');
             }
-
-            await teamProduct.destroy();
 
             const team = await Team.findByPk(params.teamId);
             await team.invalidatePluginCache();
@@ -683,10 +674,6 @@ async function getTeamMembers(request, h) {
 
     const { rows, count } = await User.findAndCountAll(options);
 
-    if (!rows.length) {
-        return [];
-    }
-
     return {
         list: rows.map(user => {
             const { user_team } = user.teams[0];
@@ -896,11 +883,6 @@ async function inviteTeamMember(request, h) {
 
     await UserTeam.create(data);
 
-    const invitingUser = await User.findOne({
-        where: { id: auth.artifacts.id },
-        attributes: ['id', 'email']
-    });
-
     const team = await Team.findOne({
         where: { id: params.id },
         attributes: ['id', 'name']
@@ -912,7 +894,7 @@ async function inviteTeamMember(request, h) {
         to: user.email,
         language: user.language,
         data: {
-            team_admin: invitingUser.email,
+            team_admin: auth.artifacts.email,
             team_name: team.name,
             activation_link: `${https ? 'https' : 'http'}://${domain}/${
                 userWasCreated ? 'datawrapper-invite' : 'organization-invite'

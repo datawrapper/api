@@ -12,10 +12,16 @@ module.exports = {
             },
             handler: async function getAllFolders(request, h) {
                 request.server.methods.isAdmin(request, { throwError: true });
-                return Product.findAll().map(el => {
-                    el.data = JSON.parse(el.data);
-                    return el;
-                });
+
+                let { rows, count } = await Product.findAndCountAll();
+
+                return {
+                    list: rows.map(product => {
+                        product.data = JSON.parse(product.data);
+                        return product;
+                    }),
+                    total: count
+                };
             }
         });
     }
