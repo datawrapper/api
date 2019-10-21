@@ -70,7 +70,7 @@ const routes = [
 
             return {
                 list: all,
-                count: all.length
+                total: all.length
             };
         }
     },
