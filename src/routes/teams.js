@@ -701,13 +701,14 @@ async function createTeam(request, h) {
         return h
             .response({
                 id: team.id,
-                name: team.name
+                name: team.name,
+                settings: team.settings,
+                defaultTheme: team.default_theme,
+                createdAt: team.createdAt,
+                url: `/v3/teams/${team.id}`
             })
             .code(201);
     } catch (error) {
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            return Boom.conflict(`Organization with ID [${payload.id}] already exists.`);
-        }
         request.logger.error(error);
         return Boom.conflict();
     }
