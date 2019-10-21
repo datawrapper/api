@@ -772,17 +772,7 @@ async function inviteTeamMember(request, h) {
         invite_token: token
     };
 
-    await UserTeam.create(data);
-
-    const invitingUser = await User.findOne({
-        where: { id: auth.artifacts.id },
-        attributes: ['id', 'email']
-    });
-
-    const team = await Team.findOne({
-        where: { id: params.id },
-        attributes: ['id', 'name']
-    });
+    const team = await UserTeam.create(data);
 
     const { https, domain } = server.methods.config('frontend');
     await server.app.events.emit(server.app.event.SEND_EMAIL, {
@@ -790,7 +780,7 @@ async function inviteTeamMember(request, h) {
         to: user.email,
         language: user.language,
         data: {
-            team_admin: invitingUser.email,
+            team_admin: auth.artifacts.email,
             team_name: team.name,
             activation_link: `${https ? 'https' : 'http'}://${domain}/${
                 userWasCreated ? 'datawrapper-invite' : 'organization-invite'
