@@ -1,6 +1,6 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { Chart, User, Folder } = require('@datawrapper/orm/models');
+const { Chart, User, Folder, Team } = require('@datawrapper/orm/models');
 
 const routes = [
     {
@@ -8,14 +8,17 @@ const routes = [
         path: '/',
         handler: async function getAllFolders(request, h) {
             const { auth } = request;
-            const user = await User.findOne({ where: { id: auth.artifacts.id } });
-            const teams = await user.getTeams();
+
+            const { teams } = await User.findByPk(auth.artifacts.id, {
+                include: [{ model: Team, attributes: ['id', 'name'] }]
+            });
 
             const all = [
                 {
                     type: 'user',
                     id: auth.artifacts.id,
                     charts: (await Chart.findAll({
+                        attributes: ['id', 'title', 'type', 'theme', 'createdAt'],
                         where: { author_id: auth.artifacts.id, in_folder: null }
                     })).map(cleanChart),
                     folders: await getFolders('user_id', auth.artifacts.id)
@@ -28,6 +31,7 @@ const routes = [
                     id: team.id,
                     name: team.name,
                     charts: (await Chart.findAll({
+                        attributes: ['id', 'title', 'type', 'theme', 'createdAt'],
                         where: { organization_id: team.id, in_folder: null }
                     })).map(cleanChart),
                     folders: await getFolders('org_id', team.id)
@@ -64,7 +68,7 @@ const routes = [
                 return arr;
             }
 
-            return h.response(all).code(200);
+            return all;
         }
     },
     {
