@@ -5,7 +5,7 @@ const AuthCookie = require('./cookie-auth');
 
 const { AuthToken, Session, User } = require('@datawrapper/orm/models');
 
-async function getUser(userId, credentials, strategy) {
+async function getUser(userId, { credentials, strategy, logger } = {}) {
     let user = await User.findByPk(userId, {
         attributes: ['id', 'email', 'role', 'language', 'activate_token', 'reset_password_token']
     });
@@ -15,7 +15,18 @@ async function getUser(userId, credentials, strategy) {
     }
 
     if (!user && credentials.session) {
-        user = { role: 'guest', mayEditChart: () => false };
+        user = new Proxy(
+            { role: 'guest' },
+            {
+                get: (obj, prop) => {
+                    if (prop in obj) {
+                        return obj[prop];
+                    }
+                    logger && logger.debug(`Property "${prop}" does not exist on anonymous user.`);
+                    return () => {};
+                }
+            }
+        );
     }
 
     return { isValid: true, credentials, artifacts: user };
@@ -35,7 +46,11 @@ async function cookieValidation(request, session, h) {
         }
     });
 
-    return getUser(row.data['dw-user-id'], { session, data: row }, 'Session');
+    return getUser(row.data['dw-user-id'], {
+        credentials: { session, data: row },
+        strategy: 'Session',
+        logger: request.server.logger()
+    });
 }
 
 async function bearerValidation(request, token, h) {
@@ -47,7 +62,7 @@ async function bearerValidation(request, token, h) {
 
     await row.update({ last_used_at: new Date() });
 
-    return getUser(row.user_id, { token }, 'Token');
+    return getUser(row.user_id, { credentials: { token }, strategy: 'Token' });
 }
 
 const internals = {};
