@@ -3,9 +3,177 @@ const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
-const { Chart, Team, User, UserTeam, TeamProduct, TeamTheme } = require('@datawrapper/orm/models');
+const {
+    Chart,
+    Team,
+    User,
+    UserTeam,
+    TeamProduct,
+    Product,
+    TeamTheme
+} = require('@datawrapper/orm/models');
 
 const ROLES = ['owner', 'admin', 'member'];
+
+const routes = [
+    {
+        method: 'GET',
+        path: '/{teamId}/products',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team to fetch products for.')
+        },
+        handler: async function getAllTeamProducts(request, h) {
+            const { auth, params } = request;
+            const user = auth.artifacts;
+
+            if (!user || !user.mayAdministrateTeam(params.teamId)) {
+                return Boom.unauthorized();
+            }
+
+            const team = await Team.findByPk(params.teamId, {
+                attributes: ['id'],
+                include: [
+                    {
+                        model: Product,
+                        attributes: ['id', 'name']
+                    }
+                ]
+            });
+
+            const products = team.products.map(product => ({
+                id: product.id,
+                name: product.name,
+                expires: product.team_product.expires
+            }));
+
+            return {
+                list: products,
+                total: products.length
+            };
+        }
+    },
+    {
+        method: 'POST',
+        path: '/{teamId}/products',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team to create the product for.')
+        },
+        payload: {
+            expires: Joi.date()
+                .allow(null)
+                .optional(),
+            productId: Joi.number()
+        },
+        handler: async function addTeamProduct(request, h) {
+            const { server, payload, params } = request;
+            server.methods.isAdmin(request, { throwError: true });
+
+            const hasProduct = !!(await TeamProduct.findOne({
+                where: {
+                    organization_id: params.teamId,
+                    productId: payload.productId
+                }
+            }));
+
+            if (hasProduct) {
+                return Boom.badRequest('This product is already associated to this team.');
+            }
+
+            const teamProduct = await TeamProduct.create({
+                organization_id: params.teamId,
+                productId: payload.productId,
+                expires: payload.expires || null,
+                created_by_admin: true
+            });
+
+            const team = await Team.findByPk(params.teamId);
+            await team.invalidatePluginCache();
+
+            return h.response(teamProduct).code(201);
+        }
+    },
+    {
+        method: 'PUT',
+        path: '/{teamId}/products/{productId}',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team.'),
+            productId: Joi.number()
+                .required()
+                .description('ID of the product.')
+        },
+        payload: {
+            expires: Joi.date()
+                .allow(null)
+                .optional()
+        },
+        handler: async function updateTeamProduct(request, h) {
+            const { server, payload, params } = request;
+            server.methods.isAdmin(request, { throwError: true });
+
+            const teamProduct = await TeamProduct.findOne({
+                where: {
+                    organization_id: params.teamId,
+                    product_id: params.productId
+                }
+            });
+
+            if (!teamProduct) {
+                return Boom.notFound('This product is not associated to this team.');
+            }
+
+            await teamProduct.update({
+                expires: payload.expires
+            });
+
+            const team = await Team.findByPk(params.teamId);
+            await team.invalidatePluginCache();
+
+            return h.response().code(204);
+        }
+    },
+    {
+        method: 'DELETE',
+        path: '/{teamId}/products/{productId}',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team.'),
+            productId: Joi.number()
+                .required()
+                .description('ID of the product.')
+        },
+        handler: async function deleteTeamProduct(request, h) {
+            const { server, params } = request;
+            const isAdmin = server.methods.isAdmin(request);
+
+            if (!isAdmin) {
+                return Boom.unauthorized();
+            }
+
+            const deleteCount = await TeamProduct.destroy({
+                where: {
+                    organization_id: params.teamId,
+                    product_id: params.productId
+                }
+            });
+
+            if (!deleteCount) {
+                return Boom.notFound('This product is not associated to this team.');
+            }
+
+            const team = await Team.findByPk(params.teamId);
+            await team.invalidatePluginCache();
+
+            return h.response().code(204);
+        }
+    }
+];
 
 module.exports = {
     name: 'teams-routes',
@@ -311,6 +479,22 @@ module.exports = {
                 }
             },
             handler: changeMemberStatus
+        });
+
+        routes.forEach(route => {
+            server.route({
+                method: route.method,
+                path: route.path,
+                options: {
+                    tags: ['api'],
+                    validate: {
+                        params: route.params,
+                        query: route.query,
+                        payload: route.payload
+                    }
+                },
+                handler: route.handler
+            });
         });
     }
 };
