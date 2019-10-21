@@ -433,7 +433,7 @@ async function createChart(request, h) {
 
 async function editChart(request, h) {
     const { params, payload, auth, url, server } = request;
-    const user = await User.findOne({ where: { id: auth.artifacts.id } });
+    const user = auth.artifacts;
     const isAdmin = server.methods.isAdmin(request);
 
     let chart = await Chart.findOne({

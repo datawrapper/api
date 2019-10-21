@@ -3,9 +3,177 @@ const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
-const { Chart, Team, User, UserTeam } = require('@datawrapper/orm/models');
+const {
+    Chart,
+    Team,
+    User,
+    UserTeam,
+    TeamProduct,
+    Product,
+    TeamTheme
+} = require('@datawrapper/orm/models');
 
 const ROLES = ['owner', 'admin', 'member'];
+
+const routes = [
+    {
+        method: 'GET',
+        path: '/{teamId}/products',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team to fetch products for.')
+        },
+        handler: async function getAllTeamProducts(request, h) {
+            const { auth, params } = request;
+            const user = auth.artifacts;
+
+            if (!user || !user.mayAdministrateTeam(params.teamId)) {
+                return Boom.unauthorized();
+            }
+
+            const team = await Team.findByPk(params.teamId, {
+                attributes: ['id'],
+                include: [
+                    {
+                        model: Product,
+                        attributes: ['id', 'name']
+                    }
+                ]
+            });
+
+            const products = team.products.map(product => ({
+                id: product.id,
+                name: product.name,
+                expires: product.team_product.expires
+            }));
+
+            return {
+                list: products,
+                total: products.length
+            };
+        }
+    },
+    {
+        method: 'POST',
+        path: '/{teamId}/products',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team to create the product for.')
+        },
+        payload: {
+            expires: Joi.date()
+                .allow(null)
+                .optional(),
+            productId: Joi.number()
+        },
+        handler: async function addTeamProduct(request, h) {
+            const { server, payload, params } = request;
+            server.methods.isAdmin(request, { throwError: true });
+
+            const hasProduct = !!(await TeamProduct.findOne({
+                where: {
+                    organization_id: params.teamId,
+                    productId: payload.productId
+                }
+            }));
+
+            if (hasProduct) {
+                return Boom.badRequest('This product is already associated to this team.');
+            }
+
+            const teamProduct = await TeamProduct.create({
+                organization_id: params.teamId,
+                productId: payload.productId,
+                expires: payload.expires || null,
+                created_by_admin: true
+            });
+
+            const team = await Team.findByPk(params.teamId);
+            await team.invalidatePluginCache();
+
+            return h.response(teamProduct).code(201);
+        }
+    },
+    {
+        method: 'PUT',
+        path: '/{teamId}/products/{productId}',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team.'),
+            productId: Joi.number()
+                .required()
+                .description('ID of the product.')
+        },
+        payload: {
+            expires: Joi.date()
+                .allow(null)
+                .optional()
+        },
+        handler: async function updateTeamProduct(request, h) {
+            const { server, payload, params } = request;
+            server.methods.isAdmin(request, { throwError: true });
+
+            const teamProduct = await TeamProduct.findOne({
+                where: {
+                    organization_id: params.teamId,
+                    product_id: params.productId
+                }
+            });
+
+            if (!teamProduct) {
+                return Boom.notFound('This product is not associated to this team.');
+            }
+
+            await teamProduct.update({
+                expires: payload.expires
+            });
+
+            const team = await Team.findByPk(params.teamId);
+            await team.invalidatePluginCache();
+
+            return h.response().code(204);
+        }
+    },
+    {
+        method: 'DELETE',
+        path: '/{teamId}/products/{productId}',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team.'),
+            productId: Joi.number()
+                .required()
+                .description('ID of the product.')
+        },
+        handler: async function deleteTeamProduct(request, h) {
+            const { server, params } = request;
+            const isAdmin = server.methods.isAdmin(request);
+
+            if (!isAdmin) {
+                return Boom.unauthorized();
+            }
+
+            const deleteCount = await TeamProduct.destroy({
+                where: {
+                    organization_id: params.teamId,
+                    product_id: params.productId
+                }
+            });
+
+            if (!deleteCount) {
+                return Boom.notFound('This product is not associated to this team.');
+            }
+
+            const team = await Team.findByPk(params.teamId);
+            await team.invalidatePluginCache();
+
+            return h.response().code(204);
+        }
+    }
+];
 
 module.exports = {
     name: 'teams-routes',
@@ -141,15 +309,17 @@ module.exports = {
                 validate: {
                     payload: {
                         id: Joi.string()
-                            .required()
+                            .optional()
                             .example('revengers'),
                         name: Joi.string()
                             .required()
                             .example('Revengers'),
                         settings: Joi.object({
                             type: Joi.string()
-                        }),
-                        defaultTheme: Joi.string().example('space')
+                        }).optional(),
+                        defaultTheme: Joi.string()
+                            .example('space')
+                            .optional()
                     }
                 }
             },
@@ -309,6 +479,22 @@ module.exports = {
                 }
             },
             handler: changeMemberStatus
+        });
+
+        routes.forEach(route => {
+            server.route({
+                method: route.method,
+                path: route.path,
+                options: {
+                    tags: ['api'],
+                    validate: {
+                        params: route.params,
+                        query: route.query,
+                        payload: route.payload
+                    }
+                },
+                handler: route.handler
+            });
         });
     }
 };
@@ -498,10 +684,6 @@ async function getTeamMembers(request, h) {
 
     const { rows, count } = await User.findAndCountAll(options);
 
-    if (!rows.length) {
-        return Boom.notFound();
-    }
-
     return {
         list: rows.map(user => {
             const { user_team } = user.teams[0];
@@ -583,6 +765,36 @@ async function deleteTeam(request, h) {
         }
     );
 
+    await UserTeam.destroy({
+        where: {
+            organization_id: params.id
+        }
+    });
+
+    await TeamProduct.destroy({
+        where: {
+            organization_id: params.id
+        }
+    });
+
+    await TeamTheme.destroy({
+        where: {
+            organization_id: params.id
+        }
+    });
+
+    await Chart.update(
+        {
+            organization_id: null,
+            in_folder: null
+        },
+        {
+            where: {
+                organization_id: params.id
+            }
+        }
+    );
+
     /* no rows got updated, which means the team is already deleted or doesn't exist */
     if (!updates[0]) {
         return Boom.notFound();
@@ -623,29 +835,60 @@ async function deleteTeamMember(request, h) {
 }
 
 async function createTeam(request, h) {
-    const { payload, server } = request;
+    const { auth, payload, server } = request;
+    const isAdmin = server.methods.isAdmin(request);
 
-    server.methods.isAdmin(request, { throwError: true });
+    async function unusedId(name) {
+        async function isUsed(id) {
+            return !!(await Team.findOne({ where: { id } }));
+        }
+
+        const normalized = name
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^\w]/gi, '');
+
+        if (!(await isUsed(normalized))) return normalized;
+
+        let i = 2;
+        while (await isUsed(`${normalized}-${i}`)) {
+            i++;
+        }
+        return `${normalized}-${i}`;
+    }
 
     try {
-        const team = await Team.create({
-            id: payload.id,
-            name: payload.name,
-            settings: JSON.stringify(payload.settings),
-            default_theme: payload.defaultTheme
-        });
+        const teamParams = {
+            id: payload.id ? payload.id : await unusedId(payload.name),
+            name: payload.name
+        };
 
-        const data = team.dataValues;
+        if (payload.defaultTheme) teamParams.default_theme = payload.defaultTheme;
+        if (payload.setting) teamParams.settings = payload.settings;
 
-        if (typeof data.settings === 'string') {
-            data.settings = JSON.parse(data.settings);
+        const team = await Team.create(teamParams);
+
+        if (!isAdmin) {
+            // not an admin, so let's add user to team
+            await UserTeam.create({
+                organization_id: team.id,
+                user_id: auth.artifacts.id,
+                team_role: 'owner'
+            });
         }
 
-        return h.response(camelizeKeys(data)).code(201);
+        return h
+            .response({
+                id: team.id,
+                name: team.name,
+                settings: team.settings,
+                defaultTheme: team.default_theme,
+                createdAt: team.createdAt,
+                url: `/v3/teams/${team.id}`
+            })
+            .code(201);
     } catch (error) {
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            return Boom.conflict(`Organization with ID [${payload.id}] already exists.`);
-        }
         request.logger.error(error);
         return Boom.conflict();
     }
@@ -709,17 +952,7 @@ async function inviteTeamMember(request, h) {
         invite_token: token
     };
 
-    await UserTeam.create(data);
-
-    const invitingUser = await User.findOne({
-        where: { id: auth.artifacts.id },
-        attributes: ['id', 'email']
-    });
-
-    const team = await Team.findOne({
-        where: { id: params.id },
-        attributes: ['id', 'name']
-    });
+    const team = await UserTeam.create(data);
 
     const { https, domain } = server.methods.config('frontend');
     await server.app.events.emit(server.app.event.SEND_EMAIL, {
@@ -727,7 +960,7 @@ async function inviteTeamMember(request, h) {
         to: user.email,
         language: user.language,
         data: {
-            team_admin: invitingUser.email,
+            team_admin: auth.artifacts.email,
             team_name: team.name,
             activation_link: `${https ? 'https' : 'http'}://${domain}/${
                 userWasCreated ? 'datawrapper-invite' : 'organization-invite'

@@ -2,10 +2,13 @@ import test from 'ava';
 import { setup } from '../../test/helpers/setup';
 
 test.before(async t => {
-    const { server, getTeamWithUser, getUser, models } = await setup({ usePlugins: false });
+    const { server, getTeamWithUser, getUser, models, addToCleanup } = await setup({
+        usePlugins: false
+    });
     const data = await getTeamWithUser();
 
     t.context.models = models;
+    t.context.addToCleanup = addToCleanup;
     t.context.getUser = getUser;
     t.context.server = server;
     t.context.data = data;
@@ -169,31 +172,32 @@ test('admins can create teams', async t => {
         url: `/v3/teams`,
         auth,
         payload: {
-            id: 'test-team',
+            id: 'test-admin',
             name: 'Test'
         }
     });
 
-    await t.context.models.Team.destroy({ where: { id: 'test-team' } });
+    await t.context.addToCleanup('team', team.result.id);
 
     t.is(team.statusCode, 201);
-    t.is(team.result.id, 'test-team');
     t.is(team.result.name, 'Test');
     t.truthy(team.result.createdAt);
 });
 
-test('users can not create teams', async t => {
+test('users can create teams', async t => {
     const team = await t.context.server.inject({
         method: 'POST',
         url: `/v3/teams`,
         auth: t.context.auth,
         payload: {
-            id: 'test-team',
+            id: 'test-user',
             name: 'Test'
         }
     });
 
-    t.is(team.statusCode, 401);
+    await t.context.addToCleanup('team', team.result.id);
+
+    t.is(team.statusCode, 201);
 });
 
 test('owners can edit team', async t => {

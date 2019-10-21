@@ -43,5 +43,11 @@ module.exports = {
                 prefix: '/folders'
             }
         });
+
+        server.register(require('./products'), {
+            routes: {
+                prefix: '/products'
+            }
+        });
     }
 };
