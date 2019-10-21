@@ -33,11 +33,11 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/orm": "^3.4.1",
+        "@datawrapper/orm": "^3.4.7",
         "@datawrapper/schemas": "1.0.0",
         "@datawrapper/shared": "^0.12.2",
         "@hapi/boom": "7.4.2",
-        "@hapi/hapi": "18.3.1",
+        "@hapi/hapi": "18.4.0",
         "@hapi/joi": "15.0.3",
         "assign-deep": "1.0.1",
         "bcryptjs": "2.4.3",
