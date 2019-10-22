@@ -398,7 +398,21 @@ module.exports = {
                                     .unknown(true)
                                     .optional(),
                                 allowAdmins: Joi.boolean().optional()
-                            }).optional()
+                            }).optional(),
+                            basemaps: Joi.array()
+                                .items(Joi.object().unknown(true))
+                                .optional(),
+                            publishFormats: Joi.array()
+                                .items(
+                                    Joi.object({
+                                        filename: Joi.string(),
+                                        format: Joi.string().allow('png'),
+                                        width: Joi.number(),
+                                        height: Joi.number(),
+                                        include: Joi.boolean()
+                                    })
+                                )
+                                .optional()
                         })
                     }
                 }
