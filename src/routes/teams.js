@@ -837,6 +837,25 @@ async function deleteTeamMember(request, h) {
         }
     });
 
+    const owner = await UserTeam.findOne({
+        where: {
+            role: ROLES[0],
+            organization_id: params.id
+        }
+    });
+
+    Chart.update(
+        {
+            author_id: owner.user_id
+        },
+        {
+            where: {
+                author_id: params.userId,
+                organization_id: params.id
+            }
+        }
+    );
+
     if (!row) return Boom.notFound();
 
     if (ROLES[row.dataValues.team_role] === 'owner' && !isAdmin) {
