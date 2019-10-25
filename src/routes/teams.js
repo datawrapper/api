@@ -851,9 +851,18 @@ async function deleteTeamMember(request, h) {
     }
 
     if (!owner && !isAdmin) {
-        return Boom.badRequest(
-            'Cannot delete team members, since team has no owner to transfer charts to.'
-        );
+        const chartCount = await Chart.count({
+            where: {
+                author_id: params.userId,
+                organization_id: params.id
+            }
+        });
+
+        if (chartCount > 0) {
+            return Boom.badRequest(
+                'Cannot delete team member, since team has no owner to transfer charts to.'
+            );
+        }
     }
 
     await Chart.update(
