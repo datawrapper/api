@@ -839,12 +839,24 @@ async function deleteTeamMember(request, h) {
 
     const owner = await UserTeam.findOne({
         where: {
-            role: ROLES[0],
+            team_role: ROLES[0],
             organization_id: params.id
         }
     });
 
-    Chart.update(
+    if (!row) return Boom.notFound();
+
+    if (ROLES[row.dataValues.team_role] === 'owner' && !isAdmin) {
+        return Boom.unauthorized('Can not delete team owner.');
+    }
+
+    if (!owner && !isAdmin) {
+        return Boom.badRequest(
+            'Cannot delete team members, since team has no owner to transfer charts to.'
+        );
+    }
+
+    await Chart.update(
         {
             author_id: owner.user_id
         },
@@ -855,12 +867,6 @@ async function deleteTeamMember(request, h) {
             }
         }
     );
-
-    if (!row) return Boom.notFound();
-
-    if (ROLES[row.dataValues.team_role] === 'owner' && !isAdmin) {
-        return Boom.unauthorized('Can not delete team owner.');
-    }
 
     await row.destroy();
 
