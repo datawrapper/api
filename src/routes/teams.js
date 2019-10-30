@@ -850,14 +850,12 @@ async function createTeam(request, h) {
 
         const team = await Team.create(teamParams);
 
-        if (!isAdmin) {
-            // not an admin, so let's add user to team
-            await UserTeam.create({
-                organization_id: team.id,
-                user_id: auth.artifacts.id,
-                team_role: 'owner'
-            });
-        }
+        // so let's add user to team
+        await UserTeam.create({
+            organization_id: team.id,
+            user_id: auth.artifacts.id,
+            team_role: 'owner'
+        });
 
         return h
             .response({
