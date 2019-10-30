@@ -11,7 +11,8 @@ const {
     UserTeam,
     TeamProduct,
     Product,
-    TeamTheme
+    TeamTheme,
+    Session
 } = require('@datawrapper/orm/models');
 
 const ROLES = ['owner', 'admin', 'member'];
@@ -172,6 +173,41 @@ const routes = [
             await team.invalidatePluginCache();
 
             return h.response().code(204);
+        }
+    },
+    {
+        method: 'GET',
+        path: '/{teamId}/activate',
+        params: {
+            teamId: Joi.string()
+                .required()
+                .description('ID of the team, or "@none" to deactivate all')
+        },
+        handler: async function activateTeam(request, h) {
+            const { params, auth, state } = request;
+            const user = auth.artifacts;
+
+            let teamId;
+            if (params.teamId === '@none') {
+                teamId = '%none%';
+            } else {
+                const team = await Team.findByPk(params.teamId);
+                if (!team) return Boom.notFound();
+                teamId = team.id;
+            }
+
+            if (user) {
+                if (state['DW-SESSION'] && state['DW-SESSION'][0]) {
+                    const sessionId = state['DW-SESSION'][0];
+                    const session = await Session.findByPk(sessionId);
+                    const data = session.get('data');
+                    data['dw-user-organization'] = teamId;
+                    session.set('data', data);
+                    await session.save();
+                    return h.response('done!');
+                }
+            }
+            return Boom.unauthorized();
         }
     }
 ];
@@ -395,6 +431,9 @@ module.exports = {
                     }
                 }
             },
+            /**
+             * handles POST /v3/teams/:id/invites
+             */
             handler: inviteTeamMember
         });
 
@@ -745,6 +784,9 @@ async function deleteTeam(request, h) {
     return h.response().code(204);
 }
 
+/**
+ * handles DELETE /v3/team/:id/members/:id requests
+ */
 async function deleteTeamMember(request, h) {
     const { auth, params, server } = request;
 
@@ -873,6 +915,9 @@ async function createTeam(request, h) {
     }
 }
 
+/**
+ * handles POST /v3/teams/:id/invites
+ */
 async function inviteTeamMember(request, h) {
     const { auth, params, payload, server } = request;
 
