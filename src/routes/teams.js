@@ -4,6 +4,7 @@ const { Op } = require('sequelize');
 const set = require('lodash/set');
 const nanoid = require('nanoid');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
+const { setUserData } = require('@datawrapper/orm/utils/userData');
 const {
     Chart,
     Team,
@@ -204,8 +205,9 @@ const routes = [
                     data['dw-user-organization'] = teamId;
                     session.set('data', data);
                     await session.save();
-                    return h.response('done!');
                 }
+                await setUserData(user.id, 'active_team', teamId);
+                return h.response('');
             }
             return Boom.unauthorized();
         }
