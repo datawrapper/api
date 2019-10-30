@@ -176,7 +176,7 @@ const routes = [
         }
     },
     {
-        method: 'GET',
+        method: 'PUT',
         path: '/{teamId}/activate',
         params: {
             teamId: Joi.string()
