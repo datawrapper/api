@@ -2,6 +2,7 @@ const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
+const nanoid = require('nanoid');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
 const {
     Chart,
@@ -809,6 +810,9 @@ async function deleteTeamMember(request, h) {
     return h.response().code(204);
 }
 
+/**
+ * handler for POST /v3/teams
+ */
 async function createTeam(request, h) {
     const { auth, payload, server } = request;
     const isAdmin = server.methods.isAdmin(request);
@@ -818,11 +822,13 @@ async function createTeam(request, h) {
             return !!(await Team.findOne({ where: { id } }));
         }
 
-        const normalized = name
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase()
-            .replace(/[^\w]/gi, '');
+        const normalized = isAdmin
+            ? name
+                  .normalize('NFD')
+                  .replace(/[\u0300-\u036f]/g, '')
+                  .toLowerCase()
+                  .replace(/[^\w]/gi, '')
+            : nanoid(8);
 
         if (!(await isUsed(normalized))) return normalized;
 
@@ -835,7 +841,7 @@ async function createTeam(request, h) {
 
     try {
         const teamParams = {
-            id: payload.id ? payload.id : await unusedId(payload.name),
+            id: payload.id && isAdmin ? payload.id : await unusedId(payload.name),
             name: payload.name
         };
 
