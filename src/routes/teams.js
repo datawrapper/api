@@ -860,6 +860,8 @@ async function deleteTeamMember(request, h) {
 async function createTeam(request, h) {
     const { auth, payload, server } = request;
     const isAdmin = server.methods.isAdmin(request);
+    // for now only admins can create teams
+    if (!isAdmin) return Boom.unauthorized();
 
     async function unusedId(name) {
         async function isUsed(id) {
