@@ -398,7 +398,6 @@ async function editUserSettings(request, h) {
             if (team) teamId = team.id;
             else return Boom.notFound('there is no team with that id');
         }
-        delete request.payload.activeTeam;
         await setUserData(userId, 'active_team', teamId);
         result.activeTeam = teamId;
     }
