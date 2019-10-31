@@ -4,7 +4,6 @@ const { Op } = require('sequelize');
 const set = require('lodash/set');
 const nanoid = require('nanoid');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
-const { setUserData } = require('@datawrapper/orm/utils/userData');
 const {
     Chart,
     Team,
@@ -12,8 +11,7 @@ const {
     UserTeam,
     TeamProduct,
     Product,
-    TeamTheme,
-    Session
+    TeamTheme
 } = require('@datawrapper/orm/models');
 
 const ROLES = ['owner', 'admin', 'member'];
@@ -174,42 +172,6 @@ const routes = [
             await team.invalidatePluginCache();
 
             return h.response().code(204);
-        }
-    },
-    {
-        method: 'PUT',
-        path: '/{teamId}/activate',
-        params: {
-            teamId: Joi.string()
-                .required()
-                .description('ID of the team, or "@none" to deactivate all')
-        },
-        handler: async function activateTeam(request, h) {
-            const { params, auth, state } = request;
-            const user = auth.artifacts;
-
-            let teamId;
-            if (params.teamId === '@none') {
-                teamId = '%none%';
-            } else {
-                const team = await Team.findByPk(params.teamId);
-                if (!team) return Boom.notFound();
-                teamId = team.id;
-            }
-
-            if (user) {
-                if (state['DW-SESSION'] && state['DW-SESSION'][0]) {
-                    const sessionId = state['DW-SESSION'][0];
-                    const session = await Session.findByPk(sessionId);
-                    const data = session.get('data');
-                    data['dw-user-organization'] = teamId;
-                    session.set('data', data);
-                    await session.save();
-                }
-                await setUserData(user.id, 'active_team', teamId);
-                return h.response('');
-            }
-            return Boom.unauthorized();
         }
     }
 ];
