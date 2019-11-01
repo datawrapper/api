@@ -184,7 +184,7 @@ test('admins can create teams', async t => {
     t.truthy(team.result.createdAt);
 });
 
-test('users can create teams', async t => {
+test("users can't create teams", async t => {
     const team = await t.context.server.inject({
         method: 'POST',
         url: `/v3/teams`,
@@ -195,9 +195,9 @@ test('users can create teams', async t => {
         }
     });
 
-    await t.context.addToCleanup('team', team.result.id);
+    // await t.context.addToCleanup('team', team.result.id);
 
-    t.is(team.statusCode, 201);
+    t.is(team.statusCode, 401);
 });
 
 test('owners can edit team', async t => {
