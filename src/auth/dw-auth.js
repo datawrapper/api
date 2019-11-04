@@ -2,56 +2,8 @@ const Boom = require('@hapi/boom');
 const get = require('lodash/get');
 const AuthBearer = require('hapi-auth-bearer-token');
 const AuthCookie = require('./cookie-auth');
-
-const { AuthToken, Session, User } = require('@datawrapper/orm/models');
-
-async function getUser(userId, { credentials, strategy, logger } = {}) {
-    let user = await User.findByPk(userId, {
-        attributes: ['id', 'email', 'role', 'language', 'activate_token', 'reset_password_token']
-    });
-
-    if (user && user.email === 'DELETED') {
-        return { isValid: false, message: Boom.unauthorized('User not found', strategy) };
-    }
-
-    if (!user && credentials.session) {
-        user = new Proxy(
-            { role: 'guest' },
-            {
-                get: (obj, prop) => {
-                    if (prop in obj) {
-                        return obj[prop];
-                    }
-                    logger && logger.debug(`Property "${prop}" does not exist on anonymous user.`);
-                    return () => {};
-                }
-            }
-        );
-    }
-
-    return { isValid: true, credentials, artifacts: user };
-}
-
-async function cookieValidation(request, session, h) {
-    let row = await Session.findByPk(session);
-
-    if (!row) {
-        return { isValid: false, message: Boom.unauthorized('Session not found', 'Session') };
-    }
-
-    row = await row.update({
-        data: {
-            ...row.data,
-            last_action_time: Math.floor(Date.now() / 1000)
-        }
-    });
-
-    return getUser(row.data['dw-user-id'], {
-        credentials: { session, data: row },
-        strategy: 'Session',
-        logger: request.server.logger()
-    });
-}
+const getUser = require('./get-user');
+const { AuthToken } = require('@datawrapper/orm/models');
 
 async function bearerValidation(request, token, h) {
     const row = await AuthToken.findOne({ where: { token } });
@@ -65,9 +17,7 @@ async function bearerValidation(request, token, h) {
     return getUser(row.user_id, { credentials: { token }, strategy: 'Token' });
 }
 
-const internals = {};
-
-internals.implementation = (server, options) => {
+function dwAuth(server, options = {}) {
     const scheme = {
         authenticate: async (request, h) => {
             let credentials = {};
@@ -83,11 +33,15 @@ internals.implementation = (server, options) => {
                     credentials = bearer.credentials;
                     artifacts = bearer.artifacts;
                 } catch (error) {
-                    return Boom.unauthorized('Invalid authentication credentials', [
+                    throw Boom.unauthorized('Invalid authentication credentials', [
                         'Session',
                         'Token'
                     ]);
                 }
+            }
+
+            if (options.validate) {
+                options.validate({ credentials, artifacts });
             }
 
             return h.authenticated({ credentials, artifacts });
@@ -95,21 +49,19 @@ internals.implementation = (server, options) => {
     };
 
     return scheme;
-};
+}
+
+function adminValidation({ artifacts } = {}) {
+    if (artifacts.role !== 'admin') {
+        throw Boom.unauthorized('ADMIN_ROLE_REQUIRED');
+    }
+}
 
 const DWAuth = {
     name: 'dw-auth',
     version: '1.0.0',
     register: async (server, options) => {
         await server.register([AuthCookie, AuthBearer]);
-
-        server.auth.strategy('bearer', 'bearer-access-token', {
-            validate: bearerValidation
-        });
-
-        server.auth.strategy('session', 'cookie-auth', {
-            validate: cookieValidation
-        });
 
         function isAdmin(request, { throwError = false } = {}) {
             const check = get(request, ['auth', 'artifacts', 'role'], '') === 'admin';
@@ -120,10 +72,16 @@ const DWAuth = {
 
             return check;
         }
-
         server.method('isAdmin', isAdmin);
 
-        server.auth.scheme('dw-auth', internals.implementation);
+        server.auth.scheme('dw-auth', dwAuth);
+
+        server.auth.strategy('bearer', 'bearer-access-token', { validate: bearerValidation });
+        server.auth.strategy('session', 'cookie-auth');
+        server.auth.strategy('simple', 'dw-auth');
+        server.auth.strategy('admin', 'dw-auth', { validate: adminValidation });
+
+        server.auth.default('simple');
     }
 };
 

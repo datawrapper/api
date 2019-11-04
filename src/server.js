@@ -136,9 +136,6 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     await server.register(require('./auth/dw-auth'));
 
-    server.auth.strategy('simple', 'dw-auth');
-    server.auth.default('simple');
-
     const routeOptions = {
         routes: { prefix: '/v3' }
     };

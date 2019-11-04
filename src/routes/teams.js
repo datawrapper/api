@@ -460,7 +460,7 @@ async function getMemberRole(userId, teamId) {
 }
 
 async function getAllTeams(request, h) {
-    const { query, auth, url, server } = request;
+    const { query, auth, url } = request;
 
     const options = {
         attributes: {
@@ -469,7 +469,8 @@ async function getAllTeams(request, h) {
         include: [
             {
                 model: User,
-                attributes: ['id']
+                attributes: ['id'],
+                where: { id: auth.artifacts.id }
             }
         ],
         where: {
@@ -495,10 +496,6 @@ async function getAllTeams(request, h) {
                 }
             ]
         );
-    }
-
-    if (!server.methods.isAdmin(request)) {
-        set(options, ['include', 0, 'where', 'id'], auth.artifacts.id);
     }
 
     const { rows, count } = await Team.findAndCountAll(options);
