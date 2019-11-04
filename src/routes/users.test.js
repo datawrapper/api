@@ -380,15 +380,15 @@ test('Admin can set activeTeam for users', async t => {
 });
 
 test('User can set and unset activeTeam herself', async t => {
-    const { team, user } = await t.context.getTeamWithUser();
+    const { team, user, session } = await t.context.getTeamWithUser();
 
     const res1 = await t.context.server.inject({
         method: 'PATCH',
         url: '/v3/me/settings',
         auth: {
             strategy: 'session',
-            credentials: user.session,
-            artifacts: user.user
+            credentials: session,
+            artifacts: user
         },
         payload: {
             activeTeam: team.id
@@ -403,8 +403,8 @@ test('User can set and unset activeTeam herself', async t => {
         url: '/v3/me/settings',
         auth: {
             strategy: 'session',
-            credentials: user.session,
-            artifacts: user.user
+            credentials: session,
+            artifacts: user
         },
         payload: {
             activeTeam: null
