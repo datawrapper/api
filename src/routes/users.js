@@ -398,8 +398,9 @@ async function editUserSettings(request, h) {
             if (team) teamId = team.id;
             else return Boom.notFound('there is no team with that id');
         }
+
         await setUserData(userId, 'active_team', teamId);
-        result.activeTeam = teamId;
+        result.activeTeam = teamId !== '%none%' ? teamId : null;
     }
 
     const updatedAt = new Date().toISOString();
