@@ -45,7 +45,8 @@ async function main() {
         models.Chart.destroy({ where: { author_id: { [Op.in]: list.user } } }),
         models.UserTeam.destroy({ where: { organization_id: { [Op.in]: list.team } } }),
         models.Session.destroy({ where: { session_id: { [Op.in]: list.session } } }),
-        models.Theme.destroy({ where: { id: { [Op.in]: list.theme } } })
+        models.Theme.destroy({ where: { id: { [Op.in]: list.theme } } }),
+        models.UserData.destroy({ where: { user_id: { [Op.in]: list.user } } })
     ]);
 
     log(chalk.magenta(`🧹 Cleaned ${sessions} sessions`));

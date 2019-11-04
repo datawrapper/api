@@ -44,6 +44,23 @@ module.exports = {
         });
 
         server.route({
+            method: 'PATCH',
+            path: '/settings',
+            options: {
+                tags: ['api'],
+                validate: {
+                    payload: {
+                        activeTeam: Joi.string()
+                            .allow(null)
+                            .example('teamxyz')
+                            .description('Your active team')
+                    }
+                }
+            },
+            handler: updateMySettings
+        });
+
+        server.route({
             method: 'DELETE',
             path: '/',
             options: {
@@ -86,6 +103,17 @@ async function updateMe(request, h) {
     const res = await request.server.inject({
         method: 'PATCH',
         url: `/v3/users/${request.auth.artifacts.id}`,
+        auth: request.auth,
+        payload: request.payload
+    });
+
+    return h.response(res.result).code(res.statusCode);
+}
+
+async function updateMySettings(request, h) {
+    const res = await request.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${request.auth.artifacts.id}/settings`,
         auth: request.auth,
         payload: request.payload
     });

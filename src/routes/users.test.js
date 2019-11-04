@@ -326,3 +326,91 @@ test('/v3/users/:id/setup creates token, token can later be emptied', async t =>
     user = await user.reload();
     t.is(null, user.dataValues.activate_token);
 });
+
+test('Admin can set activeTeam for users', async t => {
+    const admin = await t.context.getUser('admin');
+    const { team, user } = await t.context.getTeamWithUser();
+
+    const res1 = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user.id}/settings`,
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        },
+        payload: {
+            activeTeam: team.id
+        }
+    });
+
+    t.is(res1.statusCode, 200);
+    t.is(res1.result.activeTeam, team.id);
+
+    const res2 = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user.id}/settings`,
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        },
+        payload: {
+            activeTeam: null
+        }
+    });
+
+    t.is(res2.statusCode, 200);
+    t.is(res2.result.activeTeam, null);
+
+    const res3 = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user.id}/settings`,
+        auth: {
+            strategy: 'session',
+            credentials: admin.session,
+            artifacts: admin.user
+        },
+        payload: {
+            activeTeam: 'missing-team'
+        }
+    });
+
+    t.is(res3.statusCode, 404);
+});
+
+test('User can set and unset activeTeam herself', async t => {
+    const { team, user, session } = await t.context.getTeamWithUser();
+
+    const res1 = await t.context.server.inject({
+        method: 'PATCH',
+        url: '/v3/me/settings',
+        auth: {
+            strategy: 'session',
+            credentials: session,
+            artifacts: user
+        },
+        payload: {
+            activeTeam: team.id
+        }
+    });
+
+    t.is(res1.statusCode, 200);
+    t.is(res1.result.activeTeam, team.id);
+
+    const res2 = await t.context.server.inject({
+        method: 'PATCH',
+        url: '/v3/me/settings',
+        auth: {
+            strategy: 'session',
+            credentials: session,
+            artifacts: user
+        },
+        payload: {
+            activeTeam: null
+        }
+    });
+
+    t.is(res2.statusCode, 200);
+    t.is(res2.result.activeTeam, null);
+});
