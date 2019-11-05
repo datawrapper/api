@@ -48,6 +48,7 @@ const port = config.api.port || 3000;
 const OpenAPI = {
     plugin: HapiSwagger,
     options: {
+        debug: process.env.NODE_ENV === 'development',
         host: process.env.NODE_ENV === 'development' ? `${host}:${port}` : host,
         schemes: process.env.NODE_ENV === 'development' ? ['http'] : ['https'],
         info: {
@@ -64,7 +65,8 @@ const OpenAPI = {
         jsonPath: '/',
         basePath: '/v3/',
         documentationPage: process.env.NODE_ENV === 'development',
-        swaggerUI: process.env.NODE_ENV === 'development'
+        swaggerUI: process.env.NODE_ENV === 'development',
+        deReference: true
     }
 };
 
