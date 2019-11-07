@@ -1,7 +1,7 @@
 defaults: &defaults
     working_directory: ~/repo
     docker:
-        - image: sto3psl/dw-ci:1.1.0
+        - image: sto3psl/dw-ci:1.3.0
 
 cache: &cache
     key: v3-dependency-cache-{{ checksum "package-lock.json" }}
@@ -22,7 +22,11 @@ jobs:
             - run:
                   <<: *registry
 
-            - run: npm ci
+            - run:
+                  name: Install dependencies
+                  command: |
+                      export DW_CONFIG_PATH=$HOME/repo/test/_config.ci.js
+                      npm ci
 
             - save_cache:
                   <<: *cache
@@ -45,14 +49,16 @@ jobs:
                   <<: *registry
 
             - run:
+                  name: Run tests
+                  environment:
+                      DW_CONFIG_PATH: ./test/_config.ci.js
                   command: |
-                      mv test/_config.ci.js config.js
                       mkdir -p ~/reports/ava
                       npm test -- --tap | npx tap-xunit > ~/reports/ava/results.xml
             - run:
-                name: Cleanup DB because tests failed
-                command: npm run clean:db
-                when: on_fail
+                  name: Cleanup DB because tests failed
+                  command: npm run clean:db
+                  when: on_fail
             - store_test_results:
                   path: ~/reports
             - store_artifacts:
