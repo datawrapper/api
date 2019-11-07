@@ -631,6 +631,12 @@ async function getChartAsset(request, h) {
     }
 }
 
+function getAssetWhitelist(id) {
+    return ['{id}.csv', '{id}.map.json', '{id}.minimap.json', '{id}.highlight.json'].map(name =>
+        name.replace('{id}', id)
+    );
+}
+
 async function writeChartAsset(request, h) {
     const { params } = request;
     const { events, event } = request.server.app;
@@ -641,6 +647,10 @@ async function writeChartAsset(request, h) {
 
     if (!isEditable) {
         return Boom.forbidden();
+    }
+
+    if (!getAssetWhitelist(params.id).includes(params.asset)) {
+        return Boom.badRequest();
     }
 
     const filename = params.asset;
