@@ -6,7 +6,7 @@
     "bugs": {
         "url": "https://github.com/datawrapper/datawrapper-api/issues"
     },
-    "license": "MIT",
+    "license": "UNLICENSED",
     "author": "Datawrapper GmbH",
     "files": [
         "src",
