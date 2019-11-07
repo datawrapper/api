@@ -55,7 +55,8 @@ function register(server, options) {
             include: [
                 {
                     model: User,
-                    attributes: ['id']
+                    attributes: ['id'],
+                    where: query.userId ? { id: query.userId } : undefined
                 }
             ],
             where: {
@@ -90,7 +91,7 @@ function register(server, options) {
                 return camelizeKeys({
                     ...data,
                     memberCount: users.length,
-                    url: `${url.pathname}/${dataValues.id}`
+                    url: `/v3/teams/${dataValues.id}`
                 });
             }),
             total: count
