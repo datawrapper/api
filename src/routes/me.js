@@ -20,7 +20,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    payload: {
+                    payload: Joi.object({
                         name: Joi.string()
                             .allow(null)
                             .example('Ronin')
@@ -30,14 +30,14 @@ module.exports = {
                             .example('ronin@avengers.com')
                             .description('Your new email address.'),
                         role: Joi.string()
-                            .valid(['editor', 'admin'])
+                            .valid('editor', 'admin')
                             .description(
                                 'Your new role. This can only be changed if you are an admin.'
                             ),
                         language: Joi.string()
                             .example('en_US')
                             .description('Your new language preference.')
-                    }
+                    })
                 }
             },
             handler: updateMe
@@ -66,12 +66,12 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    payload: {
+                    payload: Joi.object({
                         email: Joi.string()
                             .email()
                             .example('zola@hydra.com')
                             .description('User email address to confirm deletion.')
-                    }
+                    })
                 }
             },
             handler: deleteMe

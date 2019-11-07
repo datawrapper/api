@@ -12,12 +12,12 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.string().required()
-                    },
-                    query: {
+                    }),
+                    query: Joi.object({
                         extend: Joi.boolean().default(false)
-                    }
+                    })
                 }
             },
             handler: getTheme

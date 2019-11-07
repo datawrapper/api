@@ -24,7 +24,7 @@ test('v3/ should return OpenAPI doc', async t => {
 test('3/ should redirect to v3/', async t => {
     const res = await t.context.server.inject('/3');
     t.is(res.statusCode, 301);
-    t.is(res.headers['location'], '/v3');
+    t.is(res.headers.location, '/v3');
 });
 
 test('Plugin "hello world" should be registered', async t => {

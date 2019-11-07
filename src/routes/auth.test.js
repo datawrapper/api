@@ -52,7 +52,7 @@ test('Login and logout work with correct credentials', async t => {
 });
 
 test('Login fails with incorrect credentials', async t => {
-    let res = await t.context.server.inject({
+    const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
         payload: {
@@ -79,7 +79,7 @@ test("Login set's correct cookie", async t => {
     await t.context.addToCleanup('session', cookie['DW-SESSION']);
     let maxAge = cookie['Max-Age'] / 24 / 60 / 60; // convert to seconds
 
-    t.true(cookie['HttpOnly']);
+    t.true(cookie.HttpOnly);
     t.is(maxAge, 90);
 
     res = await t.context.server.inject({

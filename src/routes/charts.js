@@ -18,7 +18,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    query: Joi.object().keys({
+                    query: Joi.object({
                         userId: Joi.any().description('ID of the user to fetch charts for.'),
                         published: Joi.boolean().description(
                             'Flag to filter results by publish status'
@@ -55,7 +55,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: Joi.object().keys({
+                    params: Joi.object({
                         id: Joi.string()
                             .length(5)
                             .required()
@@ -72,7 +72,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: Joi.object().keys({
+                    params: Joi.object({
                         id: Joi.string()
                             .length(5)
                             .required()
@@ -89,7 +89,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: Joi.object().keys({
+                    params: Joi.object({
                         id: Joi.string()
                             .length(5)
                             .required()
@@ -98,6 +98,7 @@ module.exports = {
                     payload: Joi.object({
                         title: Joi.string()
                             .example('My cool chart')
+                            .allow('')
                             .description('Title of your chart. This will be the chart headline.'),
                         theme: Joi.string()
                             .example('datawrapper')
@@ -181,7 +182,7 @@ module.exports = {
                     }
                 },
                 validate: {
-                    params: Joi.object().keys({
+                    params: Joi.object({
                         id: Joi.string()
                             .length(5)
                             .required()
@@ -190,7 +191,7 @@ module.exports = {
                             .required()
                             .description('Export format (PDF, PNG, SVG)')
                     }),
-                    payload: Joi.object().keys({
+                    payload: Joi.object({
                         unit: Joi.string().default('px'),
                         mode: Joi.string().default('rgb'),
                         width: Joi.number().default(600),
@@ -214,7 +215,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: Joi.object().keys({
+                    params: Joi.object({
                         id: Joi.string()
                             .length(5)
                             .required()
@@ -223,7 +224,7 @@ module.exports = {
                             .required()
                             .description('Export format (pdf, png, svg)')
                     }),
-                    query: Joi.object().keys({
+                    query: Joi.object({
                         unit: Joi.string().default('px'),
                         mode: Joi.string().default('rgb'),
                         width: Joi.number().default(600),
@@ -323,7 +324,7 @@ async function getAllCharts(request, h) {
         set(options, ['where', Op.or], search);
     }
 
-    let model = Chart;
+    const model = Chart;
 
     if (auth.artifacts.role === 'guest') {
         set(options, ['where', 'guest_session'], auth.credentials.session);

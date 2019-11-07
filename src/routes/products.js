@@ -13,7 +13,7 @@ module.exports = {
             handler: async function getAllProducts(request, h) {
                 request.server.methods.isAdmin(request, { throwError: true });
 
-                let { rows, count } = await Product.findAndCountAll();
+                const { rows, count } = await Product.findAndCountAll();
 
                 return {
                     list: rows.map(product => {

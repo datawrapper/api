@@ -22,16 +22,16 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    query: {
+                    query: Joi.object({
                         teamId: Joi.string().description('Filter users by team.'),
                         search: Joi.string().description('Search for a user.'),
                         order: Joi.string()
                             .uppercase()
-                            .valid(['ASC', 'DESC'])
+                            .valid('ASC', 'DESC')
                             .default('ASC')
                             .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
-                            .valid(['id', 'email', 'name', 'createdAt', 'chartCount'])
+                            .valid('id', 'email', 'name', 'createdAt', 'chartCount')
                             .default('id')
                             .description('Attribute to order by'),
                         limit: Joi.number()
@@ -42,7 +42,7 @@ module.exports = {
                             .integer()
                             .default(0)
                             .description('Number of items to skip. Useful for pagination.')
-                    }
+                    })
                 }
             },
             handler: getAllUsers
@@ -54,11 +54,11 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.number()
                             .required()
                             .description('User ID')
-                    }
+                    })
                 }
             },
             handler: getUser
@@ -70,12 +70,12 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.number()
                             .required()
                             .description('User ID')
-                    },
-                    payload: {
+                    }),
+                    payload: Joi.object({
                         name: Joi.string()
                             .allow(null)
                             .example('Rocket Raccoon')
@@ -85,7 +85,7 @@ module.exports = {
                             .example('89P13@half.world')
                             .description('New user email address'),
                         role: Joi.string()
-                            .valid(['editor', 'admin'])
+                            .valid('editor', 'admin')
                             .description('New user role. Can only be changed by admins.'),
                         language: Joi.string()
                             .example('en_US')
@@ -95,7 +95,7 @@ module.exports = {
                             .description(
                                 'Activate token, typically used to unset it when activating user.'
                             )
-                    }
+                    })
                 }
             },
             handler: editUser
@@ -107,11 +107,11 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.number()
                             .required()
                             .description('User ID')
-                    }
+                    })
                 }
             },
             handler: handleSetup
@@ -137,7 +137,7 @@ module.exports = {
                             .example('cpt-marvel@shield.com')
                             .description('User email address'),
                         role: Joi.string()
-                            .valid(['editor', 'admin'])
+                            .valid('editor', 'admin')
                             .description('User role. This can be omitted.'),
                         language: Joi.string()
                             .example('en_US')
@@ -157,18 +157,18 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.number()
                             .required()
                             .description('User ID')
-                    },
-                    payload: {
+                    }),
+                    payload: Joi.object({
                         email: Joi.string()
                             .email()
                             .required()
                             .example('james.barnes@shield.com')
                             .description('User email address to confirm deletion.')
-                    }
+                    })
                 }
             },
             handler: deleteUser
@@ -229,7 +229,7 @@ function serializeTeam(team) {
 
 async function getAllUsers(request, h) {
     const { query, auth, url, server } = request;
-    let isAdmin = server.methods.isAdmin(request);
+    const isAdmin = server.methods.isAdmin(request);
 
     const userList = {
         list: [],
@@ -308,7 +308,7 @@ async function getAllUsers(request, h) {
 async function getUser(request, h) {
     const { params, url, auth } = request;
     const userId = params.id;
-    let isAdmin = request.server.methods.isAdmin(request);
+    const isAdmin = request.server.methods.isAdmin(request);
 
     await request.server.methods.userIsDeleted(userId);
 

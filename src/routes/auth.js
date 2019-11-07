@@ -81,7 +81,7 @@ module.exports = {
                     strategy: 'session'
                 },
                 validate: {
-                    payload: {
+                    payload: Joi.object({
                         email: Joi.string()
                             .email()
                             .required()
@@ -90,7 +90,7 @@ module.exports = {
                             .required()
                             .example('morgan-3000'),
                         keepSession: Joi.boolean().default(true)
-                    }
+                    })
                 }
             },
             handler: login
@@ -112,7 +112,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    query: {
+                    query: Joi.object({
                         limit: Joi.number()
                             .integer()
                             .default(100)
@@ -121,7 +121,7 @@ module.exports = {
                             .integer()
                             .default(0)
                             .description('Number of items to skip. Useful for pagination.')
-                    }
+                    })
                 }
             },
             handler: getAllTokens
@@ -152,12 +152,12 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.number()
                             .integer()
                             .required()
                             .description('ID of the token to be deleted.')
-                    }
+                    })
                 }
             },
             handler: deleteToken
@@ -173,7 +173,7 @@ module.exports = {
                     strategy: 'session'
                 },
                 validate: {
-                    payload: {
+                    payload: Joi.object({
                         email: Joi.string()
                             .email()
                             .required()
@@ -188,7 +188,7 @@ module.exports = {
                         language: Joi.string()
                             .default('en_US')
                             .description('Preferred language for the user interface.')
-                    }
+                    })
                 }
             },
             handler: signup
@@ -203,11 +203,11 @@ module.exports = {
                     mode: 'try'
                 },
                 validate: {
-                    params: {
+                    params: Joi.object({
                         token: Joi.string()
                             .required()
                             .description('User activation token')
-                    }
+                    })
                 }
             },
             handler: activateAccount
@@ -219,13 +219,13 @@ module.exports = {
             options: {
                 tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 validate: {
-                    payload: {
+                    payload: Joi.object({
                         email: Joi.string()
                             .email()
                             .required()
                             .example('strange@kamar-taj.com.np')
                             .description('Email address of the user.')
-                    }
+                    })
                 }
             },
             handler: resendActivation
@@ -240,7 +240,7 @@ module.exports = {
                     mode: 'try'
                 },
                 validate: {
-                    payload: {
+                    payload: Joi.object({
                         email: Joi.string()
                             .email()
                             .required()
@@ -251,7 +251,7 @@ module.exports = {
                             .description(
                                 'Admin users can specify this token otherwise a random token is generated.'
                             )
-                    }
+                    })
                 }
             },
             handler: resetPassword
@@ -266,7 +266,7 @@ module.exports = {
                     mode: 'try'
                 },
                 validate: {
-                    payload: {
+                    payload: Joi.object({
                         email: Joi.string()
                             .email()
                             .required()
@@ -281,7 +281,7 @@ module.exports = {
                         token: Joi.string()
                             .example('shamballa')
                             .description('Password reset token which is send as email to the user.')
-                    }
+                    })
                 }
             },
             handler: changePassword
@@ -597,7 +597,7 @@ async function activateAccount(request, h) {
 
     user = await user.update({ role: 'editor', activate_token: null });
 
-    let response = h.response().code(204);
+    const response = h.response().code(204);
 
     if (!request.auth.credentials) {
         const { sessionID } = request.server.methods.config('api');
@@ -619,7 +619,7 @@ async function resetPassword(request, h) {
         token = request.payload.token;
     }
 
-    let user = await User.findOne({
+    const user = await User.findOne({
         attributes: ['id', 'language', 'email'],
         where: { email: request.payload.email }
     });

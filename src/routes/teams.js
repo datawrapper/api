@@ -186,17 +186,17 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    query: {
+                    query: Joi.object({
                         search: Joi.string().description(
                             'Search for a team name or id including this term.'
                         ),
                         order: Joi.string()
                             .uppercase()
-                            .valid(['ASC', 'DESC'])
+                            .valid('ASC', 'DESC')
                             .default('ASC')
                             .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
-                            .valid(['name', 'createdAt'])
+                            .valid('name', 'createdAt')
                             .default('name')
                             .description('Attribute to order by'),
                         limit: Joi.number()
@@ -207,7 +207,7 @@ module.exports = {
                             .integer()
                             .default(0)
                             .description('Number of items to skip. Useful for pagination.')
-                    }
+                    })
                 }
             },
             handler: getAllTeams
@@ -219,11 +219,11 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.string()
                             .required()
                             .description('ID of the team to fetch.')
-                    }
+                    })
                 }
             },
             handler: getTeam
@@ -235,22 +235,22 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.string()
                             .required()
                             .description('ID of the team to fetch members for.')
-                    },
-                    query: {
+                    }),
+                    query: Joi.object({
                         search: Joi.string().description(
                             'Search for a team name or id including this term.'
                         ),
                         order: Joi.string()
                             .uppercase()
-                            .valid(['ASC', 'DESC'])
+                            .valid('ASC', 'DESC')
                             .default('ASC')
                             .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
-                            .valid(['name', 'createdAt'])
+                            .valid('name', 'createdAt')
                             .default('name')
                             .description('Attribute to order by'),
                         limit: Joi.number()
@@ -261,7 +261,7 @@ module.exports = {
                             .integer()
                             .default(0)
                             .description('Number of items to skip. Useful for pagination.')
-                    }
+                    })
                 }
             },
             handler: getTeamMembers
@@ -273,11 +273,11 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.string()
                             .required()
                             .description('ID of the team to delete.')
-                    }
+                    })
                 }
             },
             handler: deleteTeam
@@ -289,14 +289,14 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.string()
                             .required()
                             .description('ID of the team'),
                         userId: Joi.number()
                             .required()
                             .description('ID of the team member to remove from team.')
-                    }
+                    })
                 }
             },
             handler: deleteTeamMember
@@ -308,7 +308,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    payload: {
+                    payload: Joi.object({
                         id: Joi.string()
                             .optional()
                             .example('revengers'),
@@ -321,7 +321,7 @@ module.exports = {
                         defaultTheme: Joi.string()
                             .example('space')
                             .optional()
-                    }
+                    })
                 }
             },
             handler: createTeam
@@ -333,16 +333,16 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.string()
                             .required()
                             .description('Team ID')
-                    },
-                    payload: {
+                    }),
+                    payload: Joi.object({
                         name: Joi.string().example('New Revengers'),
                         defaultTheme: Joi.string().example('light'),
                         settings: Joi.object({}).unknown(true)
-                    }
+                    })
                 }
             },
             handler: editTeam
@@ -354,12 +354,12 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.string()
                             .required()
                             .description('Team ID (eg. guardians-of-the-galaxy)')
-                    },
-                    payload: {
+                    }),
+                    payload: Joi.object({
                         userId: Joi.number()
                             .integer()
                             .required()
@@ -367,7 +367,7 @@ module.exports = {
                         role: Joi.string()
                             .valid(ROLES)
                             .required()
-                    }
+                    })
                 }
             },
             handler: addTeamMember
@@ -407,7 +407,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.string()
                             .required()
                             .description('Team ID'),
@@ -415,12 +415,12 @@ module.exports = {
                             .integer()
                             .required()
                             .description('ID of the team member you want to change the status of.')
-                    },
-                    payload: {
+                    }),
+                    payload: Joi.object({
                         status: Joi.string()
-                            .valid(ROLES)
+                            .valid(...ROLES)
                             .required()
-                    }
+                    })
                 }
             },
             handler: changeMemberStatus
@@ -848,7 +848,7 @@ async function inviteTeamMember(request, h) {
         }
     }
 
-    let teamCount = await Team.count({
+    const teamCount = await Team.count({
         where: { id: params.id, deleted: { [Op.not]: true } }
     });
 
@@ -917,13 +917,13 @@ async function addTeamMember(request, h) {
 
     if (!isAdmin) return Boom.unauthorized();
 
-    let teamCount = await Team.count({
+    const teamCount = await Team.count({
         where: { id: params.id, deleted: { [Op.not]: true } }
     });
 
     if (!teamCount) return Boom.notFound();
 
-    let user = await User.findOne({
+    const user = await User.findOne({
         where: { id: payload.userId },
         attributes: ['id', 'email', 'language']
     });

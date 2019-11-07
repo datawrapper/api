@@ -1,6 +1,6 @@
 const { db } = require('@datawrapper/orm');
 
-let queries = {};
+const queries = {};
 
 function SQL(strings, ...values) {
     let str = '';
