@@ -13,7 +13,7 @@ test.before(async t => {
 });
 
 test('admin can fetch full team list', async t => {
-    let teams = await t.context.server.inject({
+    const teams = await t.context.server.inject({
         method: 'GET',
         url: '/v3/admin/teams',
         headers: { cookie: `DW-SESSION=${t.context.sessionAdmin}` }
@@ -23,7 +23,7 @@ test('admin can fetch full team list', async t => {
 });
 
 test('user can not fetch full team list', async t => {
-    let teams = await t.context.server.inject({
+    const teams = await t.context.server.inject({
         method: 'GET',
         url: '/v3/admin/teams',
         headers: { cookie: `DW-SESSION=${t.context.sessionUser}` }

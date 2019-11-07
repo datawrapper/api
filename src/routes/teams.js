@@ -460,69 +460,12 @@ async function getMemberRole(userId, teamId) {
 }
 
 async function getAllTeams(request, h) {
-    const { query, auth, url } = request;
-
-    const options = {
-        attributes: {
-            exclude: ['deleted']
-        },
-        include: [
-            {
-                model: User,
-                attributes: ['id'],
-                where: { id: auth.artifacts.id }
-            }
-        ],
-        where: {
-            deleted: {
-                [Op.not]: true
-            }
-        },
-        limit: query.limit,
-        offset: query.offset,
-        distinct: true
-    };
-
-    if (query.search) {
-        set(
-            options,
-            ['where', Op.or],
-            [
-                {
-                    name: { [Op.like]: `%${query.search}%` }
-                },
-                {
-                    id: { [Op.like]: `%${query.search}%` }
-                }
-            ]
-        );
-    }
-
-    const { rows, count } = await Team.findAndCountAll(options);
-
-    const chartList = {
-        list: rows.map(({ dataValues }) => {
-            const { users, ...data } = dataValues;
-            return camelizeKeys({
-                ...data,
-                memberCount: users.length,
-                url: `${url.pathname}/${dataValues.id}`
-            });
-        }),
-        total: count
-    };
-
-    if (query.limit + query.offset < count) {
-        const nextParams = new URLSearchParams({
-            ...query,
-            offset: query.limit + query.offset,
-            limit: query.limit
-        });
-
-        set(chartList, 'next', `${url.pathname}?${nextParams.toString()}`);
-    }
-
-    return chartList;
+    const res = await request.server.inject({
+        method: 'GET',
+        url: `/v3/admin/teams?userId=${request.auth.artifacts.id}&${request.url.search.slice(1)}`,
+        auth: request.auth
+    });
+    return h.response(res.result).code(res.statusCode);
 }
 
 async function getTeam(request, h) {

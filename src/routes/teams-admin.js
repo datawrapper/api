@@ -18,6 +18,7 @@ function register(server, options) {
             auth: 'admin',
             validate: {
                 query: {
+                    userId: Joi.number(),
                     search: Joi.string().description(
                         'Search for a team name or id including this term.'
                     ),
