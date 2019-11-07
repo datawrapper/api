@@ -161,6 +161,12 @@ async function init(options) {
 
 async function start() {
     await configure();
+
+    if (process.argv.includes('--check') || process.argv.includes('-c')) {
+        server.logger().info("\n\n[Check successful] The server shouldn't crash on startup");
+        process.exit(0);
+    }
+
     server.start();
 
     return server;
