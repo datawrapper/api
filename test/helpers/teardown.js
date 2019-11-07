@@ -3,15 +3,12 @@ const os = require('os');
 const fs = require('fs');
 const chalk = require('chalk');
 const ORM = require('@datawrapper/orm');
+const { requireConfig } = require('@datawrapper/shared/node/findConfig');
 
 const log = str => process.stdout.write(str + '\n');
 const cleanupFile = path.join(os.tmpdir(), 'cleanup.csv');
 
-const configPath = [path.join(process.cwd(), 'config.js'), '/etc/datawrapper/config.js'].reduce(
-    (path, test) => path || (fs.existsSync(test) ? test : undefined),
-    ''
-);
-const config = require(configPath);
+const config = requireConfig();
 
 async function main() {
     await ORM.init(config);

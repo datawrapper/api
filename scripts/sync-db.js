@@ -1,9 +1,9 @@
 #! /usr/bin/env node
 /* eslint no-console: "off" */
 const chalk = require('chalk');
-const path = require('path');
 const ORM = require('@datawrapper/orm');
-const config = require(path.join(process.cwd(), 'config'));
+const { requireConfig } = require('@datawrapper/shared/node/findConfig');
+const config = requireConfig();
 
 ORM.init(config).then(() => {
     // add missing tables without touching existing ones
