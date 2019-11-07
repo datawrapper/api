@@ -1,3 +1,4 @@
+const path = require('path');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
@@ -5,6 +6,7 @@ const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
 const nanoid = require('nanoid');
 const set = require('lodash/set');
 const assign = require('assign-deep');
+const mime = require('mime');
 const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
 const CodedError = require('@datawrapper/shared/CodedError');
 
@@ -28,11 +30,11 @@ module.exports = {
                         ),
                         order: Joi.string()
                             .uppercase()
-                            .valid(['ASC', 'DESC'])
+                            .valid('ASC', 'DESC')
                             .default('DESC')
                             .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
-                            .valid(['id', 'email', 'name', 'createdAt'])
+                            .valid('id', 'email', 'name', 'createdAt')
                             .default('createdAt')
                             .description('Attribute to order by'),
                         limit: Joi.number()
@@ -241,36 +243,43 @@ module.exports = {
 
         server.route({
             method: 'GET',
-            path: '/{id}/data',
+            path: '/{id}/assets/{asset}',
             options: {
                 tags: ['api'],
                 validate: {
-                    params: Joi.object().keys({
+                    params: Joi.object({
                         id: Joi.string()
                             .length(5)
+                            .required(),
+                        asset: Joi.string()
                             .required()
+                            .description('Full filename including extension.')
                     })
                 }
             },
-
-            handler: getChartData
+            handler: getChartAsset
         });
 
         server.route({
             method: 'PUT',
-            path: '/{id}/data',
+            path: '/{id}/assets/{asset}',
             options: {
                 tags: ['api'],
                 validate: {
-                    params: Joi.object().keys({
+                    params: Joi.object({
                         id: Joi.string()
                             .length(5)
+                            .required(),
+                        asset: Joi.string()
                             .required()
+                            .description('Full filename including extension.')
                     }),
-                    payload: Joi.string().description('CSV data to visualize in the chart.')
+                    payload: Joi.string().description(
+                        'An asset used by the chart such as CSV data or custom JSON map.'
+                    )
                 }
             },
-            handler: writeChartData
+            handler: writeChartAsset
         });
     }
 };
@@ -596,27 +605,34 @@ async function loadChart(request) {
     return chart;
 }
 
-async function getChartData(request, h) {
+async function getChartAsset(request, h) {
+    const { params } = request;
     const { events, event } = request.server.app;
     const chart = await loadChart(request);
 
-    const filename = `${chart.id}.csv`;
+    const filename = params.asset;
 
     try {
-        const eventResults = await events.emit(event.GET_CHART_DATA, { chart, filename });
-        const data = eventResults.find(e => e.status === 'success').data;
+        const eventResults = await events.emit(event.GET_CHART_ASSET, { chart, filename });
+        const contentStream = eventResults.find(e => e.status === 'success').data;
+
+        const contentType =
+            chart.type === 'locator-map' && path.extname(filename) === '.csv'
+                ? 'application/json'
+                : mime.getType(filename);
 
         return h
-            .response(data)
-            .header('Content-Type', 'text/csv')
+            .response(contentStream)
+            .header('Content-Type', contentType)
             .header('Content-Disposition', `attachment; filename=${filename}`);
     } catch (error) {
-        request.logger.error(error);
+        request.logger.error(error.message);
         return Boom.notFound();
     }
 }
 
-async function writeChartData(request, h) {
+async function writeChartAsset(request, h) {
+    const { params } = request;
     const { events, event } = request.server.app;
     const chart = await loadChart(request);
 
@@ -627,10 +643,10 @@ async function writeChartData(request, h) {
         return Boom.forbidden();
     }
 
-    const filename = `${chart.id}.csv`;
+    const filename = params.asset;
 
     try {
-        const eventResults = await events.emit(event.PUT_CHART_DATA, {
+        const eventResults = await events.emit(event.PUT_CHART_ASSET, {
             chart,
             data: request.payload,
             filename

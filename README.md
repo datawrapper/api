@@ -173,13 +173,15 @@ Plugins can be loaded from the local file system. This is very useful for plugin
 
 ```
 plugins
+├── chart-data-local
+│   └── api.js
 ├── email-local
 │   └── api.js
 └── hello-world
     └── api.js
 ```
 
-After cloning the repository for local development, there are 2 local plugins available as examples, `email-local` and `hello-world`.
+After cloning the repository for local development, there are 3 local plugins available as examples, `chart-data-local`, `email-local` and `hello-world`.
 
 #### `hello-world`
 
@@ -231,7 +233,8 @@ Plugin that adds `{GET | PUT} /charts/:id/data` endpoints that use the local fi
 
 plugins: {
     'chart-data-local': {
-        path: '<path-to-local-datawrapper>/charts/data'
+        data_path: '<path-to-local-datawrapper>/charts/data',
+        publish_path: '<path-to-local-datawrapper-charts>'
     }
 }
 ```
@@ -245,4 +248,4 @@ Will serve via HTTPS on port 443, e.g.
 
 Will be used by our own web app as well as third-party apps maintained by our customers.
 
-For a while we also need to support the old API endpoint via https://api.datawrapper.de/v2/ and https://api.datawrapper.de/ which will be proxied to the PHP app. Eventually the old endpoints will be retired and replaced with v3 versions.
+For a while we also need to support the old API endpoint via https://api.datawrapper.de/v2/ and https://api.datawrapper.de/ which will be proxied to the PHP app. Eventually the old endpoints will be deprecated and replaced with v3 versions.

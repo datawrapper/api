@@ -14,7 +14,7 @@ function uniq(arr) {
 }
 
 test.beforeEach(t => {
-    events.removeAllListeners(eventList.GET_CHART_DATA);
+    events.removeAllListeners(eventList.GET_CHART_ASSET);
 });
 
 test('events is instance of Node EventEmitter', t => {
@@ -32,15 +32,15 @@ test('eventList has no duplicate event names', t => {
 });
 
 test('emit', async t => {
-    events.on(eventList.GET_CHART_DATA, () => {
+    events.on(eventList.GET_CHART_ASSET, () => {
         return 'test';
     });
 
-    events.on(eventList.GET_CHART_DATA, () => {
+    events.on(eventList.GET_CHART_ASSET, () => {
         throw Error('Boom');
     });
 
-    const res = await events.emit(eventList.GET_CHART_DATA);
+    const res = await events.emit(eventList.GET_CHART_ASSET);
 
     t.log('listener return values are available to emit');
     t.is(res[0].status, 'success');
