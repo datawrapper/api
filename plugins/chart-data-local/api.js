@@ -1,7 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 const { promisify } = require('util');
-const readFile = promisify(fs.readFile);
 const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
 const stat = promisify(fs.stat);
@@ -12,20 +11,20 @@ module.exports = {
     register: (server, options) => {
         const { events, event } = server.app;
 
-        events.on(event.GET_CHART_DATA, async ({ chart, filename }) => {
+        events.on(event.GET_CHART_ASSET, async ({ chart, filename }) => {
             const filePath = path.join(
-                options.config.path,
+                options.config.data_path,
                 getDataPath(chart.dataValues.created_at),
                 filename
             );
 
-            const data = await readFile(filePath, { encoding: 'utf-8' });
-            return data;
+            const stream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+            return stream;
         });
 
-        events.on(event.PUT_CHART_DATA, async ({ chart, data, filename }) => {
+        events.on(event.PUT_CHART_ASSET, async ({ chart, data, filename }) => {
             const dataPath = path.join(
-                options.config.path,
+                options.config.data_path,
                 getDataPath(chart.dataValues.created_at)
             );
             const filePath = path.join(dataPath, filename);
