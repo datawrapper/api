@@ -29,6 +29,14 @@ You can start the server using:
 npm run api
 ```
 
+To check that the server won't crash on startup (faulty config or missing plugin) run:
+
+```sh
+npm run api -- --check
+// or
+node src/index.js --check
+```
+
 It is recommended to use the start script with a service manager like [PM2](https://pm2.io/runtime/) or `systemd` to guarantee best availability. They will also restart the API in case something crashes.
 
 To make sure the database is in sync after ORM updates, run:
