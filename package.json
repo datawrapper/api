@@ -16,7 +16,8 @@
     "main": "src/index.js",
     "bin": {
         "dw-api": "src/index.js",
-        "dw-sync": "scripts/sync-db.js"
+        "dw-sync": "scripts/sync-db.js",
+        "dw-update": "scripts/update.js"
     },
     "scripts": {
         "format": "prettier '**/*.js' --write",
