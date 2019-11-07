@@ -1,4 +1,5 @@
 const Joi = require('@hapi/joi');
+const Boom = require('@hapi/boom');
 const assign = require('assign-deep');
 const { Theme } = require('@datawrapper/orm/models');
 
@@ -11,6 +12,7 @@ module.exports = {
             path: '/{id}',
             options: {
                 tags: ['api'],
+                auth: { mode: 'try' },
                 validate: {
                     params: Joi.object({
                         id: Joi.string().required()
@@ -34,6 +36,8 @@ async function getTheme(request, h) {
     while (dataValues.extend) {
         const extendedTheme = await Theme.findByPk(dataValues.extend);
 
+        if (!extendedTheme) return Boom.notFound();
+
         if (!originalExtend) {
             originalExtend = extendedTheme.extend;
         }
@@ -47,8 +51,8 @@ async function getTheme(request, h) {
         }
 
         if (extendedTheme.less !== dataValues.less) {
-            dataValues.less = `${extendedTheme.less}
-${dataValues.less}
+            dataValues.less = `${extendedTheme.less || ''}
+${dataValues.less || ''}
 `;
         }
 
