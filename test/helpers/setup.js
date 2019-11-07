@@ -27,13 +27,13 @@ export async function setup(options) {
     }
 
     async function getUser(role = 'editor') {
-        let user = await models.User.create({
+        const user = await models.User.create({
             email: getCredentials().email,
             pwd: passwordHash,
             role
         });
 
-        let session = await models.Session.create({
+        const session = await models.Session.create({
             id: server.methods.generateToken(),
             data: {
                 'dw-user-id': user.id,
@@ -66,7 +66,7 @@ user;${user.id}
             team_role: role
         });
 
-        let usersToCleanup = [];
+        const usersToCleanup = [];
         async function addUser(role = 'owner') {
             const user = await getUser();
 

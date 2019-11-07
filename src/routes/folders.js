@@ -25,7 +25,7 @@ const routes = [
                 }
             ];
 
-            for (let team of teams) {
+            for (const team of teams) {
                 all.push({
                     type: 'team',
                     id: team.id,
@@ -49,12 +49,12 @@ const routes = [
             }
 
             async function getFolders(by, owner, parent) {
-                let arr = [];
+                const arr = [];
                 const folders = await Folder.findAll({
                     where: { [by]: owner, parent_id: parent || null }
                 });
 
-                for (let folder of folders) {
+                for (const folder of folders) {
                     arr.push({
                         id: folder.id,
                         name: folder.name,

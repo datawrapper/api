@@ -96,7 +96,7 @@ test('Should be possible to search in multiple fields', async t => {
 
     const searchQueries = ['title', 'intro', 'byline', 'source', 'source.com', 'notes'];
 
-    for (let query of searchQueries) {
+    for (const query of searchQueries) {
         chart = await t.context.server.inject({
             method: 'GET',
             url: `/v3/charts?search=${query}`,

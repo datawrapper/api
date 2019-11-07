@@ -7,7 +7,7 @@ module.exports = {
         const { events, event } = server.app;
         const account = await nodemailer.createTestAccount();
 
-        let transporter = nodemailer.createTransport({
+        const transporter = nodemailer.createTransport({
             host: account.smtp.host,
             port: account.smtp.port,
             secure: account.smtp.secure,
