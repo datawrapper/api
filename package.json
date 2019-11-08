@@ -44,7 +44,7 @@
         "chalk": "2.4.2",
         "hapi-auth-bearer-token": "6.2.1",
         "hapi-pino": "6.0.1",
-        "hapi-swagger": "10.0.1",
+        "hapi-swagger": "10.2.0",
         "humps": "2.0.1",
         "lodash": "4.17.14",
         "nanoid": "2.0.3",
