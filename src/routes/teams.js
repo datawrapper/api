@@ -556,7 +556,17 @@ async function getTeamMembers(request, h) {
                     }
                 }
             },
-            { model: Chart, attributes: ['id'] }
+            {
+                model: Chart,
+                attributes: ['id'],
+                required: false,
+                where: {
+                    organization_id: params.id,
+                    deleted: {
+                        [Op.not]: true
+                    }
+                }
+            }
         ],
         limit: query.limit,
         offset: query.offset,
