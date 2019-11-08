@@ -20,7 +20,7 @@ test.before(async t => {
 });
 
 test('user can fetch their teams', async t => {
-    let teams = await t.context.server.inject({
+    const teams = await t.context.server.inject({
         method: 'GET',
         url: '/v3/teams',
         auth: t.context.auth
@@ -33,7 +33,7 @@ test('user can fetch their teams', async t => {
 });
 
 test('user can fetch individual team', async t => {
-    let teams = await t.context.server.inject({
+    const teams = await t.context.server.inject({
         method: 'GET',
         url: `/v3/teams/${t.context.data.team.id}`,
         auth: t.context.auth
@@ -69,7 +69,7 @@ test('guest user can not fetch teams', async t => {
 
 test('user can not fetch teams they are not a part of', async t => {
     const data = await t.context.getUser();
-    let teams = await t.context.server.inject({
+    const teams = await t.context.server.inject({
         method: 'GET',
         url: `/v3/teams/${t.context.data.team.id}`,
         auth: {
@@ -83,7 +83,7 @@ test('user can not fetch teams they are not a part of', async t => {
 });
 
 test('user can fetch their team members', async t => {
-    let teams = await t.context.server.inject({
+    const teams = await t.context.server.inject({
         method: 'GET',
         url: `/v3/teams/${t.context.data.team.id}/members`,
         auth: t.context.auth
@@ -97,7 +97,7 @@ test('user can fetch their team members', async t => {
 
 test('user can not fetch team members of team they are not a part of', async t => {
     const data = await t.context.getUser();
-    let teams = await t.context.server.inject({
+    const teams = await t.context.server.inject({
         method: 'GET',
         url: `/v3/teams/${t.context.data.team.id}/members`,
         auth: {

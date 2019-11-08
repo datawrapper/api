@@ -1,17 +1,32 @@
 const Boom = require('@hapi/boom');
-const Joi = require('@hapi/joi');
 const { cookieTTL } = require('../utils');
-const internals = {};
+const { Session } = require('@datawrapper/orm/models');
+const getUser = require('./get-user');
 
-internals.schema = Joi.object().keys({
-    cookie: Joi.string(),
-    validate: Joi.func().required()
-});
+async function cookieValidation(request, session, h) {
+    let row = await Session.findByPk(session);
 
-internals.implementation = (server, options) => {
+    if (!row) {
+        return { isValid: false, message: Boom.unauthorized('Session not found', 'Session') };
+    }
+
+    row = await row.update({
+        data: {
+            ...row.data,
+            last_action_time: Math.floor(Date.now() / 1000)
+        }
+    });
+
+    return getUser(row.data['dw-user-id'], {
+        credentials: { session, data: row },
+        strategy: 'Session',
+        logger: request.server.logger()
+    });
+}
+
+function cookieAuth(server, options) {
     const api = server.methods.config('api');
     const opts = { cookie: api.sessionID, ...options };
-    Joi.assert(opts, internals.schema);
 
     server.state(opts.cookie, {
         ttl: cookieTTL(90),
@@ -47,7 +62,7 @@ internals.implementation = (server, options) => {
                 credentials,
                 artifacts,
                 message = Boom.unauthorized(null, 'Session')
-            } = await opts.validate(request, session, h);
+            } = await cookieValidation(request, session, h);
 
             if (isValid) {
                 h.state(opts.cookie, session);
@@ -59,12 +74,12 @@ internals.implementation = (server, options) => {
     };
 
     return scheme;
-};
+}
 
 const CookieAuth = {
     name: 'dw-cookie-auth',
     version: '1.0.0',
-    register: (server, options) => server.auth.scheme('cookie-auth', internals.implementation)
+    register: (server, options) => server.auth.scheme('cookie-auth', cookieAuth)
 };
 
 module.exports = CookieAuth;

@@ -32,6 +32,12 @@ module.exports = {
             }
         });
 
+        server.register(require('./teams-admin'), {
+            routes: {
+                prefix: '/admin/teams'
+            }
+        });
+
         server.register(require('./themes'), {
             routes: {
                 prefix: '/themes'
