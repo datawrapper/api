@@ -274,9 +274,12 @@ module.exports = {
                             .required()
                             .description('Full filename including extension.')
                     }),
-                    payload: Joi.string().description(
-                        'An asset used by the chart such as CSV data or custom JSON map.'
-                    )
+                    payload: [
+                        Joi.string().description(
+                            'An asset used by the chart such as CSV data or custom JSON map.'
+                        ),
+                        Joi.object().unknown()
+                    ]
                 }
             },
             handler: writeChartAsset
@@ -658,7 +661,10 @@ async function writeChartAsset(request, h) {
     try {
         const eventResults = await events.emit(event.PUT_CHART_ASSET, {
             chart,
-            data: request.payload,
+            data:
+                request.headers['content-type'] === 'application/json'
+                    ? JSON.stringify(request.payload)
+                    : request.payload,
             filename
         });
 
