@@ -278,8 +278,12 @@ module.exports = {
                         Joi.string().description(
                             'An asset used by the chart such as CSV data or custom JSON map.'
                         ),
-                        Joi.object().unknown()
+                        Joi.object()
                     ]
+                },
+                payload: {
+                    defaultContentType: 'text/csv',
+                    allow: ['text/csv', 'application/json']
                 }
             },
             handler: writeChartAsset
