@@ -17,10 +17,12 @@ const routes = [
                 {
                     type: 'user',
                     id: auth.artifacts.id,
-                    charts: (await Chart.findAll({
-                        attributes: ['id', 'title', 'type', 'theme', 'createdAt'],
-                        where: { author_id: auth.artifacts.id, in_folder: null }
-                    })).map(cleanChart),
+                    charts: (
+                        await Chart.findAll({
+                            attributes: ['id', 'title', 'type', 'theme', 'createdAt'],
+                            where: { author_id: auth.artifacts.id, in_folder: null }
+                        })
+                    ).map(cleanChart),
                     folders: await getFolders('user_id', auth.artifacts.id)
                 }
             ];
@@ -30,10 +32,12 @@ const routes = [
                     type: 'team',
                     id: team.id,
                     name: team.name,
-                    charts: (await Chart.findAll({
-                        attributes: ['id', 'title', 'type', 'theme', 'createdAt'],
-                        where: { organization_id: team.id, in_folder: null }
-                    })).map(cleanChart),
+                    charts: (
+                        await Chart.findAll({
+                            attributes: ['id', 'title', 'type', 'theme', 'createdAt'],
+                            where: { organization_id: team.id, in_folder: null }
+                        })
+                    ).map(cleanChart),
                     folders: await getFolders('org_id', team.id)
                 });
             }

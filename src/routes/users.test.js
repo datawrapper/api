@@ -189,7 +189,10 @@ test('Admin can sort users by creation date - Ascending', async t => {
 
     const sortedDates = sortBy(res.result.list.map(d => d.createdAt));
     t.is(res.statusCode, 200);
-    t.deepEqual(res.result.list.map(d => d.createdAt), sortedDates);
+    t.deepEqual(
+        res.result.list.map(d => d.createdAt),
+        sortedDates
+    );
 });
 
 test('Admin can sort users by creation date - Descending', async t => {
@@ -209,7 +212,10 @@ test('Admin can sort users by creation date - Descending', async t => {
     sortedDates.reverse();
 
     t.is(res.statusCode, 200);
-    t.deepEqual(res.result.list.map(d => d.createdAt), sortedDates);
+    t.deepEqual(
+        res.result.list.map(d => d.createdAt),
+        sortedDates
+    );
 });
 
 test('Admin can sort users by chart count - Ascending', async t => {
@@ -227,7 +233,10 @@ test('Admin can sort users by chart count - Ascending', async t => {
 
     const sortedChartCount = sortBy(res.result.list.map(d => d.chartCount));
     t.is(res.statusCode, 200);
-    t.deepEqual(res.result.list.map(d => d.chartCount), sortedChartCount);
+    t.deepEqual(
+        res.result.list.map(d => d.chartCount),
+        sortedChartCount
+    );
 });
 
 test('Admin can sort users by chart count - Descending', async t => {
@@ -247,7 +256,10 @@ test('Admin can sort users by chart count - Descending', async t => {
     sortedChartCount.reverse();
 
     t.is(res.statusCode, 200);
-    t.deepEqual(res.result.list.map(d => d.chartCount), sortedChartCount);
+    t.deepEqual(
+        res.result.list.map(d => d.chartCount),
+        sortedChartCount
+    );
 });
 
 test('Users endpoint searches in name field', async t => {
