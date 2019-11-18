@@ -10,6 +10,16 @@ const mime = require('mime');
 const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
 const CodedError = require('@datawrapper/shared/CodedError');
 
+const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
+
+const chartResponse = createResponseConfig({
+    schema: Joi.object({
+        id: Joi.string(),
+        title: Joi.string(),
+        metadata: Joi.object()
+    }).unknown()
+});
+
 module.exports = {
     name: 'chart-routes',
     version: '1.0.0',
@@ -19,6 +29,10 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                description: 'List charts',
+                notes: `Search and filter a list of your charts.
+                        The returned chart objects, do not include the full chart metadata.
+                        To get the full metadata use [/v3/charts/{id}](ref:getchartsid).`,
                 validate: {
                     query: Joi.object({
                         userId: Joi.any().description('ID of the user to fetch charts for.'),
@@ -46,7 +60,8 @@ module.exports = {
                             .default(0)
                             .description('Number of items to skip. Useful for pagination.')
                     })
-                }
+                },
+                response: listResponse
             },
             handler: getAllCharts
         });
@@ -56,6 +71,7 @@ module.exports = {
             path: '/{id}',
             options: {
                 tags: ['api'],
+                description: 'Fetch chart metadata',
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -63,7 +79,8 @@ module.exports = {
                             .required()
                             .description('5 character long chart ID.')
                     })
-                }
+                },
+                response: chartResponse
             },
             handler: getChart
         });
@@ -73,6 +90,10 @@ module.exports = {
             path: '/{id}',
             options: {
                 tags: ['api'],
+                description: 'Delete a chart',
+                notes: `This action is permanent. Be careful when using this endpoint.
+                        If this endpoint should be used in an application (CMS), it is recommended to
+                        ask the user for confirmation.`,
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -80,7 +101,8 @@ module.exports = {
                             .required()
                             .description('5 character long chart ID.')
                     })
-                }
+                },
+                response: noContentResponse
             },
             handler: deleteChart
         });
@@ -90,6 +112,7 @@ module.exports = {
             path: '/{id}',
             options: {
                 tags: ['api'],
+                description: 'Update a charts metadata',
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -133,7 +156,8 @@ module.exports = {
                             )
                             .unknown(true)
                     })
-                }
+                },
+                response: chartResponse
             },
             handler: editChart
         });
@@ -143,6 +167,7 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                description: 'Create new chart',
                 validate: {
                     payload: Joi.object({
                         title: Joi.string()
@@ -168,7 +193,8 @@ module.exports = {
                     })
                         .unknown(true)
                         .allow(null)
-                }
+                },
+                response: chartResponse
             },
             handler: createChart
         });
@@ -177,12 +203,6 @@ module.exports = {
             method: 'POST',
             path: '/{id}/export/{format}',
             options: {
-                description: 'It is recommended to use GET /charts/{id}/export/{format}',
-                plugins: {
-                    'hapi-swagger': {
-                        deprecated: true
-                    }
-                },
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -216,6 +236,14 @@ module.exports = {
             path: '/{id}/export/{format}',
             options: {
                 tags: ['api'],
+                description: 'Export chart',
+                notes: `Export your chart as image or document for use in print or presentations.
+                        Not all formats might be available to you, based on your account.`,
+                plugins: {
+                    'hapi-swagger': {
+                        produces: ['image/png', 'image/svg+xml', 'application/pdf']
+                    }
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -246,6 +274,14 @@ module.exports = {
             path: '/{id}/assets/{asset}',
             options: {
                 tags: ['api'],
+                description: 'Fetch chart data',
+                notes: `Request the data of a specific chart, which is usually a CSV.
+                        An example looks like this: \`/v3/charts/{id}/assets/{id}.csv.\``,
+                plugins: {
+                    'hapi-swagger': {
+                        produces: ['text/csv', 'application/json']
+                    }
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -265,6 +301,14 @@ module.exports = {
             path: '/{id}/assets/{asset}',
             options: {
                 tags: ['api'],
+                description: 'Upload chart data',
+                notes: `Upload data for a chart, which is usually a CSV.
+                        An example looks like this: \`/v3/charts/{id}/assets/{id}.csv.\``,
+                plugins: {
+                    'hapi-swagger': {
+                        consumes: ['text/csv', 'application/json']
+                    }
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -281,6 +325,7 @@ module.exports = {
                         Joi.object()
                     ]
                 },
+                response: noContentResponse,
                 payload: {
                     defaultContentType: 'text/csv',
                     allow: ['text/csv', 'application/json']

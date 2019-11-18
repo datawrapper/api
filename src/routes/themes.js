@@ -11,7 +11,6 @@ module.exports = {
             method: 'GET',
             path: '/{id}',
             options: {
-                tags: ['api'],
                 auth: { mode: 'try' },
                 validate: {
                     params: Joi.object({

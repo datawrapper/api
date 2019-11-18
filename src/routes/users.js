@@ -9,6 +9,15 @@ const { setUserData } = require('@datawrapper/orm/utils/userData');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
 const { queryUsers } = require('../utils/raw-queries');
 
+const { createResponseConfig, noContentResponse, listResponse } = require('../schemas/response.js');
+
+const userResponse = createResponseConfig({
+    schema: Joi.object({
+        id: Joi.number().integer(),
+        email: Joi.string()
+    }).unknown()
+});
+
 const { Op } = sequelize;
 const attributes = ['id', 'email', 'name', 'role', 'language'];
 
@@ -21,6 +30,7 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                description: 'List users',
                 validate: {
                     query: Joi.object({
                         teamId: Joi.string().description('Filter users by team.'),
@@ -43,7 +53,8 @@ module.exports = {
                             .default(0)
                             .description('Number of items to skip. Useful for pagination.')
                     })
-                }
+                },
+                response: listResponse
             },
             handler: getAllUsers
         });
@@ -53,13 +64,15 @@ module.exports = {
             path: '/{id}',
             options: {
                 tags: ['api'],
+                description: 'Fetch user information',
                 validate: {
                     params: Joi.object({
                         id: Joi.number()
                             .required()
                             .description('User ID')
                     })
-                }
+                },
+                response: userResponse
             },
             handler: getUser
         });
@@ -69,6 +82,7 @@ module.exports = {
             path: '/{id}',
             options: {
                 tags: ['api'],
+                description: 'Update user information',
                 validate: {
                     params: Joi.object({
                         id: Joi.number()
@@ -96,7 +110,8 @@ module.exports = {
                                 'Activate token, typically used to unset it when activating user.'
                             )
                     })
-                }
+                },
+                response: userResponse
             },
             handler: editUser
         });
@@ -105,7 +120,6 @@ module.exports = {
             method: 'POST',
             path: '/{id}/setup',
             options: {
-                tags: ['api'],
                 validate: {
                     params: Joi.object({
                         id: Joi.number()
@@ -122,7 +136,6 @@ module.exports = {
             path: '/',
             options: {
                 auth: false,
-                tags: ['api'],
                 validate: {
                     payload: Joi.object({
                         name: Joi.string()
@@ -156,6 +169,7 @@ module.exports = {
             path: '/{id}',
             options: {
                 tags: ['api'],
+                description: 'Delete user',
                 validate: {
                     params: Joi.object({
                         id: Joi.number()
@@ -169,7 +183,8 @@ module.exports = {
                             .example('james.barnes@shield.com')
                             .description('User email address to confirm deletion.')
                     })
-                }
+                },
+                response: noContentResponse
             },
             handler: deleteUser
         });
@@ -179,6 +194,7 @@ module.exports = {
             path: '/{id}/settings',
             options: {
                 tags: ['api'],
+                description: 'Update user settings',
                 validate: {
                     params: {
                         id: Joi.number()
@@ -191,7 +207,13 @@ module.exports = {
                             .example('teamxyz')
                             .description('The active team for the user')
                     }
-                }
+                },
+                response: createResponseConfig({
+                    schema: Joi.object({
+                        activeTeam: Joi.string(),
+                        updatedAt: Joi.date()
+                    }).unknown()
+                })
             },
             handler: editUserSettings
         });

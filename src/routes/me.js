@@ -1,6 +1,15 @@
 const Joi = require('@hapi/joi');
 const get = require('lodash/get');
 
+const { createResponseConfig, noContentResponse } = require('../schemas/response.js');
+
+const meResponse = createResponseConfig({
+    schema: Joi.object({
+        activeTeam: Joi.string(),
+        updatedAt: Joi.date()
+    }).unknown()
+});
+
 module.exports = {
     name: 'me-routes',
     version: '1.0.0',
@@ -9,7 +18,9 @@ module.exports = {
             method: 'GET',
             path: '/',
             options: {
-                tags: ['api']
+                tags: ['api'],
+                description: 'Fetch your account information',
+                response: meResponse
             },
             handler: getMe
         });
@@ -19,6 +30,7 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                description: 'Update your account information',
                 validate: {
                     payload: Joi.object({
                         name: Joi.string()
@@ -38,7 +50,8 @@ module.exports = {
                             .example('en_US')
                             .description('Your new language preference.')
                     })
-                }
+                },
+                response: meResponse
             },
             handler: updateMe
         });
@@ -48,6 +61,8 @@ module.exports = {
             path: '/settings',
             options: {
                 tags: ['api'],
+                description: 'Update your account settings',
+                notes: 'Use this endpoint to change your active team.',
                 validate: {
                     payload: {
                         activeTeam: Joi.string()
@@ -55,7 +70,13 @@ module.exports = {
                             .example('teamxyz')
                             .description('Your active team')
                     }
-                }
+                },
+                response: createResponseConfig({
+                    schema: Joi.object({
+                        activeTeam: Joi.string(),
+                        updatedAt: Joi.date()
+                    }).unknown()
+                })
             },
             handler: updateMySettings
         });
@@ -65,6 +86,11 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                description: 'Delete your account',
+                notes: `**Be careful!** This is a destructive action.
+                        By deleting your account you will loose access to all of your charts.
+                        If this endpoint should be used in an application (CMS), it is recommended to
+                        ask the user for confirmation.`,
                 validate: {
                     payload: Joi.object({
                         email: Joi.string()
@@ -72,7 +98,8 @@ module.exports = {
                             .example('zola@hydra.com')
                             .description('User email address to confirm deletion.')
                     })
-                }
+                },
+                response: noContentResponse
             },
             handler: deleteMe
         });

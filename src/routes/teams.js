@@ -14,6 +14,15 @@ const {
     TeamTheme
 } = require('@datawrapper/orm/models');
 
+const { createResponseConfig, noContentResponse, listResponse } = require('../schemas/response.js');
+
+const teamResponse = createResponseConfig({
+    schema: Joi.object({
+        id: Joi.string(),
+        name: Joi.string()
+    }).unknown()
+});
+
 const ROLES = ['owner', 'admin', 'member'];
 
 const routes = [
@@ -185,6 +194,8 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                description: 'List teams',
+                notes: 'Get a list of teams you are part of.',
                 validate: {
                     query: Joi.object({
                         search: Joi.string().description(
@@ -208,7 +219,8 @@ module.exports = {
                             .default(0)
                             .description('Number of items to skip. Useful for pagination.')
                     })
-                }
+                },
+                response: listResponse
             },
             handler: getAllTeams
         });
@@ -218,13 +230,15 @@ module.exports = {
             path: `/{id}`,
             options: {
                 tags: ['api'],
+                description: 'Fetch team information',
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
                             .required()
                             .description('ID of the team to fetch.')
                     })
-                }
+                },
+                response: teamResponse
             },
             handler: getTeam
         });
@@ -234,6 +248,9 @@ module.exports = {
             path: `/{id}/members`,
             options: {
                 tags: ['api'],
+                description: 'List team members',
+                notes:
+                    'Get a list of team members and some additional information like their team role.',
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -262,7 +279,8 @@ module.exports = {
                             .default(0)
                             .description('Number of items to skip. Useful for pagination.')
                     })
-                }
+                },
+                response: listResponse
             },
             handler: getTeamMembers
         });
@@ -272,13 +290,16 @@ module.exports = {
             path: `/{id}`,
             options: {
                 tags: ['api'],
+                description: 'Delete a team',
+                notes: `**Be careful!** This is a destructive action that can only be performed by team owners.`,
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
                             .required()
                             .description('ID of the team to delete.')
                     })
-                }
+                },
+                response: noContentResponse
             },
             handler: deleteTeam
         });
@@ -288,6 +309,7 @@ module.exports = {
             path: `/{id}/members/{userId}`,
             options: {
                 tags: ['api'],
+                description: 'Remove a team member',
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -297,7 +319,8 @@ module.exports = {
                             .required()
                             .description('ID of the team member to remove from team.')
                     })
-                }
+                },
+                response: noContentResponse
             },
             handler: deleteTeamMember
         });
@@ -307,6 +330,7 @@ module.exports = {
             path: `/`,
             options: {
                 tags: ['api'],
+                description: 'Create a team',
                 validate: {
                     payload: Joi.object({
                         id: Joi.string()
@@ -322,7 +346,8 @@ module.exports = {
                             .example('space')
                             .optional()
                     })
-                }
+                },
+                response: teamResponse
             },
             handler: createTeam
         });
@@ -332,6 +357,7 @@ module.exports = {
             path: `/{id}`,
             options: {
                 tags: ['api'],
+                description: 'Update a team',
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -343,7 +369,8 @@ module.exports = {
                         defaultTheme: Joi.string().example('light'),
                         settings: Joi.object({}).unknown(true)
                     })
-                }
+                },
+                response: teamResponse
             },
             handler: editTeam
         });
@@ -352,7 +379,6 @@ module.exports = {
             method: 'POST',
             path: `/{id}/members`,
             options: {
-                tags: ['api'],
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -368,7 +394,10 @@ module.exports = {
                             .valid(ROLES)
                             .required()
                     })
-                }
+                },
+                response: createResponseConfig({
+                    status: { '201': Joi.any().empty() }
+                })
             },
             handler: addTeamMember
         });
@@ -378,6 +407,7 @@ module.exports = {
             path: `/{id}/invites`,
             options: {
                 tags: ['api'],
+                description: 'Invite a person',
                 validate: {
                     params: {
                         id: Joi.string()
@@ -393,7 +423,10 @@ module.exports = {
                             .valid(ROLES)
                             .required()
                     }
-                }
+                },
+                response: createResponseConfig({
+                    status: { '201': Joi.any().empty() }
+                })
             },
             /**
              * handles POST /v3/teams/:id/invites
@@ -406,6 +439,7 @@ module.exports = {
             path: `/{id}/members/{userId}/status`,
             options: {
                 tags: ['api'],
+                description: 'Set team member status',
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -421,7 +455,8 @@ module.exports = {
                             .valid(...ROLES)
                             .required()
                     })
-                }
+                },
+                response: noContentResponse
             },
             handler: changeMemberStatus
         });
@@ -431,7 +466,6 @@ module.exports = {
                 method: route.method,
                 path: route.path,
                 options: {
-                    tags: ['api'],
                     validate: {
                         params: route.params,
                         query: route.query,
