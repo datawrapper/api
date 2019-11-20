@@ -42,7 +42,7 @@ const OpenAPI = {
         },
         sortPaths: 'path-method',
         jsonPath: '/',
-        basePath: '/v3/',
+        basePath: '/',
         documentationPage: process.env.NODE_ENV === 'development',
         swaggerUI: process.env.NODE_ENV === 'development',
         deReference: true
