@@ -7,9 +7,6 @@ module.exports = {
         server.route({
             method: 'GET',
             path: '/',
-            options: {
-                tags: ['api']
-            },
             handler: async function getAllProducts(request, h) {
                 request.server.methods.isAdmin(request, { throwError: true });
 

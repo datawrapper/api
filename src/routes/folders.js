@@ -2,10 +2,15 @@ const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Chart, User, Folder, Team } = require('@datawrapper/orm/models');
 
+const { listResponse } = require('../schemas/response');
+
 const routes = [
     {
         method: 'GET',
         path: '/',
+        description: 'List folders',
+        notes: 'Get a list of folders and their associated charts.',
+        response: listResponse,
         handler: async function getAllFolders(request, h) {
             const { auth } = request;
 
@@ -81,6 +86,7 @@ const routes = [
     {
         method: 'POST',
         path: '/',
+        description: 'Create a folder',
         payload: Joi.object({
             organizationId: Joi.string()
                 .optional()
@@ -155,11 +161,13 @@ module.exports = {
                 path: route.path,
                 options: {
                     tags: ['api'],
+                    description: route.description,
                     validate: {
                         params: route.params,
                         query: route.query,
                         payload: route.payload
-                    }
+                    },
+                    response: route.response
                 },
                 handler: route.handler
             });

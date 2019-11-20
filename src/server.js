@@ -40,6 +40,7 @@ const OpenAPI = {
                       }
                     : undefined
         },
+        sortPaths: 'path-method',
         jsonPath: '/',
         basePath: '/v3/',
         documentationPage: process.env.NODE_ENV === 'development',

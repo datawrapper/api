@@ -8,6 +8,7 @@ const { User, Session, AuthToken, Chart } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const get = require('lodash/get');
 const { cookieTTL } = require('../utils');
+const { listResponse, noContentResponse, createResponseConfig } = require('../schemas/response.js');
 
 const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
 
@@ -75,7 +76,6 @@ module.exports = {
             method: 'POST',
             path: '/login',
             options: {
-                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try',
                     strategy: 'session'
@@ -100,7 +100,6 @@ module.exports = {
             method: 'POST',
             path: '/logout',
             options: {
-                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: 'session'
             },
             handler: logout
@@ -111,6 +110,8 @@ module.exports = {
             path: '/tokens',
             options: {
                 tags: ['api'],
+                description: 'List API tokens',
+                notes: 'Response will not include full tokens for security reasons.',
                 validate: {
                     query: Joi.object({
                         limit: Joi.number()
@@ -122,7 +123,8 @@ module.exports = {
                             .default(0)
                             .description('Number of items to skip. Useful for pagination.')
                     })
-                }
+                },
+                response: listResponse
             },
             handler: getAllTokens
         });
@@ -132,6 +134,10 @@ module.exports = {
             path: '/tokens',
             options: {
                 tags: ['api'],
+                description: 'Create API token',
+                notes: `This endpoint will create a new API Token and show it in the response body.
+                     It is possible to create a comment with every token to have a reference where it is used.
+                     Make sure to save the token somewhere, since you won't be able to see it again.`,
                 validate: {
                     payload: Joi.object({
                         comment: Joi.string()
@@ -141,7 +147,15 @@ module.exports = {
                                 'The comment can be everything. Tip: Use something to remember where this specific token is used.'
                             )
                     })
-                }
+                },
+                response: createResponseConfig({
+                    schema: Joi.object({
+                        id: Joi.number().integer(),
+                        comment: Joi.string(),
+                        token: Joi.string(),
+                        createdAt: Joi.date()
+                    }).unknown()
+                })
             },
             handler: createToken
         });
@@ -151,6 +165,9 @@ module.exports = {
             path: '/tokens/{id}',
             options: {
                 tags: ['api'],
+                description: 'Delete API token',
+                notes:
+                    'Delete an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
                 validate: {
                     params: Joi.object({
                         id: Joi.number()
@@ -158,7 +175,8 @@ module.exports = {
                             .required()
                             .description('ID of the token to be deleted.')
                     })
-                }
+                },
+                response: noContentResponse
             },
             handler: deleteToken
         });
@@ -167,7 +185,6 @@ module.exports = {
             method: 'POST',
             path: '/signup',
             options: {
-                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try',
                     strategy: 'session'
@@ -198,7 +215,6 @@ module.exports = {
             method: 'POST',
             path: '/activate/{token}',
             options: {
-                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try'
                 },
@@ -217,7 +233,6 @@ module.exports = {
             method: 'POST',
             path: '/resend-activation',
             options: {
-                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 validate: {
                     payload: Joi.object({
                         email: Joi.string()
@@ -235,7 +250,6 @@ module.exports = {
             method: 'POST',
             path: '/reset-password',
             options: {
-                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try'
                 },
@@ -261,7 +275,6 @@ module.exports = {
             method: 'POST',
             path: '/change-password',
             options: {
-                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try'
                 },
@@ -291,7 +304,6 @@ module.exports = {
             method: 'POST',
             path: '/session',
             options: {
-                tags: process.env.NODE_ENV === 'development' ? ['api'] : undefined,
                 auth: {
                     mode: 'try'
                 }
