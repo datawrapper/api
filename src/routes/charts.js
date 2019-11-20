@@ -23,320 +23,410 @@ const chartResponse = createResponseConfig({
 module.exports = {
     name: 'chart-routes',
     version: '1.0.0',
-    register: (server, options) => {
-        server.route({
-            method: 'GET',
-            path: '/',
-            options: {
-                tags: ['api'],
-                description: 'List charts',
-                notes: `Search and filter a list of your charts.
+    register: register
+};
+
+function register(server, options) {
+    server.route({
+        method: 'GET',
+        path: '/',
+        options: {
+            tags: ['api'],
+            description: 'List charts',
+            notes: `Search and filter a list of your charts.
                         The returned chart objects, do not include the full chart metadata.
                         To get the full metadata use [/v3/charts/{id}](ref:getchartsid).`,
-                validate: {
-                    query: Joi.object({
-                        userId: Joi.any().description('ID of the user to fetch charts for.'),
-                        published: Joi.boolean().description(
-                            'Flag to filter results by publish status'
-                        ),
-                        search: Joi.string().description(
-                            'Search for charts with a specific title.'
-                        ),
-                        order: Joi.string()
-                            .uppercase()
-                            .valid('ASC', 'DESC')
-                            .default('DESC')
-                            .description('Result order (ascending or descending)'),
-                        orderBy: Joi.string()
-                            .valid('id', 'email', 'name', 'createdAt')
-                            .default('createdAt')
-                            .description('Attribute to order by'),
-                        limit: Joi.number()
-                            .integer()
-                            .default(100)
-                            .description('Maximum items to fetch. Useful for pagination.'),
-                        offset: Joi.number()
-                            .integer()
-                            .default(0)
-                            .description('Number of items to skip. Useful for pagination.')
-                    })
-                },
-                response: listResponse
+            validate: {
+                query: Joi.object({
+                    userId: Joi.any().description('ID of the user to fetch charts for.'),
+                    published: Joi.boolean().description(
+                        'Flag to filter results by publish status'
+                    ),
+                    search: Joi.string().description('Search for charts with a specific title.'),
+                    order: Joi.string()
+                        .uppercase()
+                        .valid('ASC', 'DESC')
+                        .default('DESC')
+                        .description('Result order (ascending or descending)'),
+                    orderBy: Joi.string()
+                        .valid('id', 'email', 'name', 'createdAt')
+                        .default('createdAt')
+                        .description('Attribute to order by'),
+                    limit: Joi.number()
+                        .integer()
+                        .default(100)
+                        .description('Maximum items to fetch. Useful for pagination.'),
+                    offset: Joi.number()
+                        .integer()
+                        .default(0)
+                        .description('Number of items to skip. Useful for pagination.')
+                })
             },
-            handler: getAllCharts
-        });
+            response: listResponse
+        },
+        handler: getAllCharts
+    });
 
-        server.route({
-            method: 'GET',
-            path: '/{id}',
-            options: {
-                tags: ['api'],
-                description: 'Fetch chart metadata',
-                validate: {
-                    params: Joi.object({
-                        id: Joi.string()
-                            .length(5)
-                            .required()
-                            .description('5 character long chart ID.')
-                    })
-                },
-                response: chartResponse
+    server.route({
+        method: 'GET',
+        path: '/{id}',
+        options: {
+            tags: ['api'],
+            description: 'Fetch chart metadata',
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                        .description('5 character long chart ID.')
+                })
             },
-            handler: getChart
-        });
+            response: chartResponse
+        },
+        handler: getChart
+    });
 
-        server.route({
-            method: 'DELETE',
-            path: '/{id}',
-            options: {
-                tags: ['api'],
-                description: 'Delete a chart',
-                notes: `This action is permanent. Be careful when using this endpoint.
+    server.route({
+        method: 'DELETE',
+        path: '/{id}',
+        options: {
+            tags: ['api'],
+            description: 'Delete a chart',
+            notes: `This action is permanent. Be careful when using this endpoint.
                         If this endpoint should be used in an application (CMS), it is recommended to
                         ask the user for confirmation.`,
-                validate: {
-                    params: Joi.object({
-                        id: Joi.string()
-                            .length(5)
-                            .required()
-                            .description('5 character long chart ID.')
-                    })
-                },
-                response: noContentResponse
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                        .description('5 character long chart ID.')
+                })
             },
-            handler: deleteChart
-        });
+            response: noContentResponse
+        },
+        handler: deleteChart
+    });
 
-        server.route({
-            method: 'PATCH',
-            path: '/{id}',
-            options: {
-                tags: ['api'],
-                description: 'Update chart metadata',
-                validate: {
-                    params: Joi.object({
-                        id: Joi.string()
-                            .length(5)
-                            .required()
-                            .description('5 character long chart ID.')
-                    }),
-                    payload: Joi.object({
-                        title: Joi.string()
-                            .example('My cool chart')
-                            .allow('')
-                            .description('Title of your chart. This will be the chart headline.'),
-                        theme: Joi.string()
-                            .example('datawrapper')
-                            .description('Chart theme to use.'),
-                        type: Joi.string()
-                            .example('d3-lines')
-                            .description(
-                                'Type of the chart ([Reference](https://developer.datawrapper.de/v3.0/docs/chart-types))'
-                            ),
-                        lastEditStep: Joi.number()
-                            .integer()
-                            .example(1)
-                            .description(
-                                'Used in the app to determine where the user last edited the chart.'
-                            ),
-                        language: Joi.string().description('Chart language.'),
-                        folderId: Joi.number()
-                            .allow(null)
-                            .optional(),
-                        organizationId: Joi.string()
-                            .allow(null)
-                            .optional(),
-                        metadata: Joi.object({
-                            data: Joi.object({
-                                transpose: Joi.boolean()
-                            }).unknown(true)
-                        })
-                            .description(
-                                'Metadata that saves all chart specific settings and options.'
-                            )
-                            .unknown(true)
-                    })
-                },
-                response: chartResponse
-            },
-            handler: editChart
-        });
-
-        server.route({
-            method: 'POST',
-            path: '/',
-            options: {
-                tags: ['api'],
-                description: 'Create new chart',
-                validate: {
-                    payload: Joi.object({
-                        title: Joi.string()
-                            .example('My cool chart')
-                            .description('Title of your chart. This will be the chart headline.'),
-                        theme: Joi.string()
-                            .example('datawrapper')
-                            .description('Chart theme to use.'),
-                        type: Joi.string()
-                            .example('d3-lines')
-                            .description(
-                                'Type of the chart, like line chart, bar chart, ... Type keys can be found [here].'
-                            ),
-                        metadata: Joi.object({
-                            data: Joi.object({
-                                transpose: Joi.boolean()
-                            }).unknown(true)
-                        })
-                            .description(
-                                'Metadata that saves all chart specific settings and options.'
-                            )
-                            .unknown(true)
-                    })
-                        .unknown(true)
-                        .allow(null)
-                },
-                response: chartResponse
-            },
-            handler: createChart
-        });
-
-        server.route({
-            method: 'POST',
-            path: '/{id}/export/{format}',
-            options: {
-                validate: {
-                    params: Joi.object({
-                        id: Joi.string()
-                            .length(5)
-                            .required()
-                            .description('5 character long chart ID.'),
-                        format: Joi.string()
-                            .required()
-                            .description('Export format (PDF, PNG, SVG)')
-                    }),
-                    payload: Joi.object({
-                        unit: Joi.string().default('px'),
-                        mode: Joi.string().default('rgb'),
-                        width: Joi.number().default(600),
-                        height: Joi.any(),
-                        plain: Joi.boolean().default(false),
-                        scale: Joi.number().default(1),
-                        zoom: Joi.number().default(2),
-                        border: Joi.object().keys({
-                            width: Joi.number(),
-                            color: Joi.string().default('auto')
-                        })
-                    })
-                }
-            },
-            handler: exportChart
-        });
-
-        server.route({
-            method: 'GET',
-            path: '/{id}/export/{format}',
-            options: {
-                tags: ['api'],
-                description: 'Export chart',
-                notes: `Export your chart as image or document for use in print or presentations.
-                        Not all formats might be available to you, based on your account.`,
-                plugins: {
-                    'hapi-swagger': {
-                        produces: ['image/png', 'image/svg+xml', 'application/pdf']
-                    }
-                },
-                validate: {
-                    params: Joi.object({
-                        id: Joi.string()
-                            .length(5)
-                            .required()
-                            .description('5 character long chart ID.'),
-                        format: Joi.string()
-                            .required()
-                            .description('Export format (pdf, png, svg)')
-                    }),
-                    query: Joi.object({
-                        unit: Joi.string().default('px'),
-                        mode: Joi.string()
-                            .allow('rgb', 'cmyk')
-                            .default('rgb'),
-                        width: Joi.number().default(600),
-                        height: Joi.any(),
-                        plain: Joi.boolean().default(false),
-                        scale: Joi.number().default(1),
-                        borderWidth: Joi.number(),
-                        borderColor: Joi.string()
-                    })
-                }
-            },
-            handler: handleChartExport
-        });
-
-        server.route({
-            method: 'GET',
-            path: '/{id}/assets/{asset}',
-            options: {
-                tags: ['api'],
-                description: 'Fetch chart data',
-                notes: `Request the data of a specific chart, which is usually a CSV.
-                        An example looks like this: \`/v3/charts/{id}/assets/{id}.csv.\``,
-                plugins: {
-                    'hapi-swagger': {
-                        produces: ['text/csv', 'application/json']
-                    }
-                },
-                validate: {
-                    params: Joi.object({
-                        id: Joi.string()
-                            .length(5)
-                            .required(),
-                        asset: Joi.string()
-                            .required()
-                            .description('Full filename including extension.')
-                    })
-                }
-            },
-            handler: getChartAsset
-        });
-
-        server.route({
-            method: 'PUT',
-            path: '/{id}/assets/{asset}',
-            options: {
-                tags: ['api'],
-                description: 'Upload chart data',
-                notes: `Upload data for a chart, which is usually a CSV.
-                        An example looks like this: \`/v3/charts/{id}/assets/{id}.csv.\``,
-                plugins: {
-                    'hapi-swagger': {
-                        consumes: ['text/csv', 'application/json']
-                    }
-                },
-                validate: {
-                    params: Joi.object({
-                        id: Joi.string()
-                            .length(5)
-                            .required(),
-                        asset: Joi.string()
-                            .required()
-                            .description('Full filename including extension.')
-                    }),
-                    payload: [
-                        Joi.string().description(
-                            'An asset used by the chart such as CSV data or custom JSON map.'
+    server.route({
+        method: 'PATCH',
+        path: '/{id}',
+        options: {
+            tags: ['api'],
+            description: 'Update chart metadata',
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                        .description('5 character long chart ID.')
+                }),
+                payload: Joi.object({
+                    title: Joi.string()
+                        .example('My cool chart')
+                        .allow('')
+                        .description('Title of your chart. This will be the chart headline.'),
+                    theme: Joi.string()
+                        .example('datawrapper')
+                        .description('Chart theme to use.'),
+                    type: Joi.string()
+                        .example('d3-lines')
+                        .description(
+                            'Type of the chart ([Reference](https://developer.datawrapper.de/v3.0/docs/chart-types))'
                         ),
-                        Joi.object()
-                    ]
-                },
-                response: noContentResponse,
-                payload: {
-                    defaultContentType: 'text/csv',
-                    allow: ['text/csv', 'application/json']
+                    lastEditStep: Joi.number()
+                        .integer()
+                        .example(1)
+                        .description(
+                            'Used in the app to determine where the user last edited the chart.'
+                        ),
+                    language: Joi.string().description('Chart language.'),
+                    folderId: Joi.number()
+                        .allow(null)
+                        .optional(),
+                    organizationId: Joi.string()
+                        .allow(null)
+                        .optional(),
+                    metadata: Joi.object({
+                        data: Joi.object({
+                            transpose: Joi.boolean()
+                        }).unknown(true)
+                    })
+                        .description('Metadata that saves all chart specific settings and options.')
+                        .unknown(true)
+                })
+            },
+            response: chartResponse
+        },
+        handler: editChart
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/',
+        options: {
+            tags: ['api'],
+            description: 'Create new chart',
+            validate: {
+                payload: Joi.object({
+                    title: Joi.string()
+                        .example('My cool chart')
+                        .description('Title of your chart. This will be the chart headline.'),
+                    theme: Joi.string()
+                        .example('datawrapper')
+                        .description('Chart theme to use.'),
+                    type: Joi.string()
+                        .example('d3-lines')
+                        .description(
+                            'Type of the chart, like line chart, bar chart, ... Type keys can be found [here].'
+                        ),
+                    metadata: Joi.object({
+                        data: Joi.object({
+                            transpose: Joi.boolean()
+                        }).unknown(true)
+                    })
+                        .description('Metadata that saves all chart specific settings and options.')
+                        .unknown(true)
+                })
+                    .unknown(true)
+                    .allow(null)
+            },
+            response: chartResponse
+        },
+        handler: createChart
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/{id}/export/{format}',
+        options: {
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                        .description('5 character long chart ID.'),
+                    format: Joi.string()
+                        .required()
+                        .description('Export format (PDF, PNG, SVG)')
+                }),
+                payload: Joi.object({
+                    unit: Joi.string().default('px'),
+                    mode: Joi.string().default('rgb'),
+                    width: Joi.number().default(600),
+                    height: Joi.any(),
+                    plain: Joi.boolean().default(false),
+                    scale: Joi.number().default(1),
+                    zoom: Joi.number().default(2),
+                    border: Joi.object().keys({
+                        width: Joi.number(),
+                        color: Joi.string().default('auto')
+                    })
+                })
+            }
+        },
+        handler: exportChart
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/{id}/export/{format}',
+        options: {
+            tags: ['api'],
+            description: 'Export chart',
+            notes: `Export your chart as image or document for use in print or presentations.
+                        Not all formats might be available to you, based on your account.`,
+            plugins: {
+                'hapi-swagger': {
+                    produces: ['image/png', 'image/svg+xml', 'application/pdf']
                 }
             },
-            handler: writeChartAsset
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                        .description('5 character long chart ID.'),
+                    format: Joi.string()
+                        .required()
+                        .description('Export format (pdf, png, svg)')
+                }),
+                query: Joi.object({
+                    unit: Joi.string().default('px'),
+                    mode: Joi.string()
+                        .allow('rgb', 'cmyk')
+                        .default('rgb'),
+                    width: Joi.number().default(600),
+                    height: Joi.any(),
+                    plain: Joi.boolean().default(false),
+                    scale: Joi.number().default(1),
+                    borderWidth: Joi.number(),
+                    borderColor: Joi.string()
+                })
+            }
+        },
+        handler: handleChartExport
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/{id}/assets/{asset}',
+        options: {
+            tags: ['api'],
+            description: 'Fetch chart asset',
+            notes: `Request an asset associated with a chart.`,
+            plugins: {
+                'hapi-swagger': {
+                    produces: ['text/csv', 'application/json']
+                }
+            },
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required(),
+                    asset: Joi.string()
+                        .required()
+                        .description('Full filename including extension.')
+                })
+            }
+        },
+        handler: getChartAsset
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/{id}/data',
+        options: {
+            tags: ['api'],
+            description: 'Fetch chart data',
+            notes: `Request the data of a chart, which is usually a CSV.`,
+            plugins: {
+                'hapi-swagger': {
+                    produces: ['text/csv', 'application/json']
+                }
+            },
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                })
+            }
+        },
+        handler: getChartData
+    });
+
+    async function getChartData(request, h) {
+        const { params } = request;
+
+        let filename = `${params.id}.csv`;
+
+        const res = await request.server.inject({
+            method: 'GET',
+            url: `/v3/charts/${params.id}/assets/${filename}`,
+            auth: request.auth
         });
+
+        let contentType = 'text/csv';
+
+        try {
+            JSON.parse(res.result);
+            contentType = 'application/json';
+            filename = `${params.id}.json`;
+        } catch (error) {}
+
+        return h
+            .response(res.result)
+            .header('Content-Type', contentType)
+            .header('Content-Disposition', filename);
     }
-};
+
+    server.route({
+        method: 'PUT',
+        path: '/{id}/assets/{asset}',
+        options: {
+            tags: ['api'],
+            description: 'Upload chart data',
+            notes: `Upload data for a chart, which is usually a CSV.
+                        An example looks like this: \`/v3/charts/{id}/assets/{id}.csv.\``,
+            plugins: {
+                'hapi-swagger': {
+                    consumes: ['text/csv', 'application/json']
+                }
+            },
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required(),
+                    asset: Joi.string()
+                        .required()
+                        .description('Full filename including extension.')
+                }),
+                payload: [
+                    Joi.string().description(
+                        'An asset used by the chart such as CSV data or custom JSON map.'
+                    ),
+                    Joi.object()
+                ]
+            },
+            response: noContentResponse,
+            payload: {
+                defaultContentType: 'text/csv',
+                allow: ['text/csv', 'application/json']
+            }
+        },
+        handler: writeChartAsset
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/{id}/data',
+        options: {
+            tags: ['api'],
+            description: 'Upload chart data',
+            notes: `Upload data for a chart or map.`,
+            plugins: {
+                'hapi-swagger': {
+                    consumes: ['text/csv', 'application/json']
+                }
+            },
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                }),
+                payload: [
+                    Joi.string().description(
+                        'An asset used by the chart such as CSV data or custom JSON map.'
+                    ),
+                    Joi.object()
+                ]
+            },
+            response: noContentResponse,
+            payload: {
+                defaultContentType: 'text/csv',
+                allow: ['text/csv', 'application/json']
+            }
+        },
+        handler: writeChartData
+    });
+
+    async function writeChartData(request, h) {
+        const { params } = request;
+
+        await request.server.inject({
+            method: 'PUT',
+            url: `/v3/charts/${params.id}/assets/${params.id}.csv`,
+            auth: request.auth,
+            payload: request.payload
+        });
+
+        return h.response().code(204);
+    }
+}
 
 function prepareChart(chart) {
     const { user, ...dataValues } = chart.dataValues;
@@ -649,7 +739,7 @@ async function loadChart(request) {
     const { id } = request.params;
 
     const chart = await Chart.findByPk(id, {
-        attributes: ['id', 'author_id', 'created_at', 'guest_session']
+        attributes: ['id', 'author_id', 'created_at', 'type', 'guest_session']
     });
 
     if (!chart) {
