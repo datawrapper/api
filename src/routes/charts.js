@@ -331,9 +331,11 @@ function register(server, options) {
         let contentType = 'text/csv';
 
         try {
-            JSON.parse(res.result);
-            contentType = 'application/json';
-            filename = `${params.id}.json`;
+            const tmp = JSON.parse(res.result);
+            if (typeof tmp !== 'string') {
+                contentType = 'application/json';
+                filename = `${params.id}.json`;
+            }
         } catch (error) {}
 
         return h
