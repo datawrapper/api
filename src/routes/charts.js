@@ -112,7 +112,7 @@ module.exports = {
             path: '/{id}',
             options: {
                 tags: ['api'],
-                description: 'Update a charts metadata',
+                description: 'Update chart metadata',
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -131,7 +131,7 @@ module.exports = {
                         type: Joi.string()
                             .example('d3-lines')
                             .description(
-                                'Type of the chart, like line chart, bar chart, ... Type keys can be found [here].'
+                                'Type of the chart ([Reference](https://developer.datawrapper.de/v3.0/docs/chart-types))'
                             ),
                         lastEditStep: Joi.number()
                             .integer()
@@ -256,7 +256,9 @@ module.exports = {
                     }),
                     query: Joi.object({
                         unit: Joi.string().default('px'),
-                        mode: Joi.string().default('rgb'),
+                        mode: Joi.string()
+                            .allow('rgb', 'cmyk')
+                            .default('rgb'),
                         width: Joi.number().default(600),
                         height: Joi.any(),
                         plain: Joi.boolean().default(false),
