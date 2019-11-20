@@ -5,8 +5,10 @@ const { createResponseConfig, noContentResponse } = require('../schemas/response
 
 const meResponse = createResponseConfig({
     schema: Joi.object({
-        activeTeam: Joi.string(),
-        updatedAt: Joi.date()
+        id: Joi.number(),
+        email: Joi.string(),
+        name: Joi.string(),
+        language: Joi.string()
     }).unknown()
 });
 
