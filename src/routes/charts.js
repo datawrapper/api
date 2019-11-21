@@ -569,18 +569,37 @@ async function getChart(request, h) {
 }
 
 async function createChart(request, h) {
-    const { url, auth } = request;
+    const { url, auth, payload, server } = request;
+    const user = auth.artifacts;
+    const isAdmin = server.methods.isAdmin(request);
+
+    if (payload && payload.inFolder) {
+        // check if folder belongs to user to team
+        const folder = await Folder.findOne({ where: { id: payload.inFolder } });
+
+        if (
+            !folder ||
+            (!isAdmin &&
+                folder.user_id !== auth.artifacts.id &&
+                !(await user.hasTeam(folder.org_id)))
+        ) {
+            payload.inFolder = undefined;
+            request.logger.info('Invalid folder id. User does not have access to this folder');
+        } else {
+            payload.organizationId = folder.org_id ? folder.org_id : null;
+        }
+    }
 
     const id = await findChartId();
     const chart = await Chart.create({
         title: '',
         theme: 'default',
         type: 'd3-bars',
-        language: auth.artifacts.language,
-        ...decamelizeKeys(request.payload),
-        metadata: request.payload ? request.payload.metadata : { data: {} },
-        author_id: auth.artifacts.id,
-        guest_session: auth.artifacts.role === 'guest' ? auth.credentials.session : undefined,
+        language: user.language,
+        ...decamelizeKeys(payload),
+        metadata: payload && payload.metadata ? payload.metadata : { data: {} },
+        author_id: user.id,
+        guest_session: user.role === 'guest' ? auth.credentials.session : undefined,
         id
     });
 
