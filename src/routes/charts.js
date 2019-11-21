@@ -141,7 +141,7 @@ function register(server, options) {
                             'Used in the app to determine where the user last edited the chart.'
                         ),
                     language: Joi.string().description('Chart language.'),
-                    inFolder: Joi.number()
+                    folderId: Joi.number()
                         .allow(null)
                         .optional(),
                     organizationId: Joi.string()
@@ -431,10 +431,11 @@ function register(server, options) {
 }
 
 function prepareChart(chart) {
-    const { user, ...dataValues } = chart.dataValues;
+    const { user, in_folder, ...dataValues } = chart.dataValues;
 
     return {
         ...camelizeKeys(dataValues),
+        folderId: in_folder,
         metadata: dataValues.metadata,
         author: user ? { name: user.name, email: user.email } : undefined,
         guestSession: undefined
@@ -572,10 +573,9 @@ async function createChart(request, h) {
     const { url, auth, payload, server } = request;
     const user = auth.artifacts;
     const isAdmin = server.methods.isAdmin(request);
-
-    if (payload && payload.inFolder) {
+    if (payload && payload.folderId) {
         // check if folder belongs to user to team
-        const folder = await Folder.findOne({ where: { id: payload.inFolder } });
+        const folder = await Folder.findOne({ where: { id: payload.folderId } });
 
         if (
             !folder ||
@@ -583,9 +583,11 @@ async function createChart(request, h) {
                 folder.user_id !== auth.artifacts.id &&
                 !(await user.hasTeam(folder.org_id)))
         ) {
-            payload.inFolder = undefined;
+            payload.folderId = undefined;
             request.logger.info('Invalid folder id. User does not have access to this folder');
         } else {
+            payload.inFolder = payload.folderId;
+            payload.folderId = undefined;
             payload.organizationId = folder.org_id ? folder.org_id : null;
         }
     }
@@ -635,9 +637,9 @@ async function editChart(request, h) {
         return Boom.unauthorized('User does not have access to the specified team.');
     }
 
-    if (payload.inFolder) {
+    if (payload.folderId) {
         // check if folder belongs to user to team
-        const folder = await Folder.findOne({ where: { id: payload.inFolder } });
+        const folder = await Folder.findOne({ where: { id: payload.folderId } });
 
         if (
             !folder ||
@@ -645,11 +647,12 @@ async function editChart(request, h) {
                 folder.user_id !== auth.artifacts.id &&
                 !(await user.hasTeam(folder.org_id)))
         ) {
-            return Boom.unauthorized(
+            throw Boom.unauthorized(
                 'User does not have access to the specified folder, or it does not exist.'
             );
         }
-
+        payload.inFolder = payload.folderId;
+        payload.folderId = undefined;
         payload.organizationId = folder.org_id ? folder.org_id : null;
     }
 
