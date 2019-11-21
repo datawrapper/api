@@ -141,7 +141,7 @@ function register(server, options) {
                             'Used in the app to determine where the user last edited the chart.'
                         ),
                     language: Joi.string().description('Chart language.'),
-                    folderId: Joi.number()
+                    inFolder: Joi.number()
                         .allow(null)
                         .optional(),
                     organizationId: Joi.string()
@@ -154,7 +154,7 @@ function register(server, options) {
                     })
                         .description('Metadata that saves all chart specific settings and options.')
                         .unknown(true)
-                })
+                }).unknown()
             },
             response: chartResponse
         },
@@ -616,9 +616,9 @@ async function editChart(request, h) {
         return Boom.unauthorized('User does not have access to the specified team.');
     }
 
-    if (payload.folderId) {
+    if (payload.inFolder) {
         // check if folder belongs to user to team
-        const folder = await Folder.findOne({ where: { id: payload.folderId } });
+        const folder = await Folder.findOne({ where: { id: payload.inFolder } });
 
         if (
             !folder ||
@@ -633,9 +633,6 @@ async function editChart(request, h) {
 
         payload.organizationId = folder.org_id ? folder.org_id : null;
     }
-
-    payload.inFolder = payload.folderId;
-    delete payload.folderId;
 
     const newData = assign(prepareChart(chart), payload);
 
