@@ -1,6 +1,7 @@
 # @datawrapper/api
 
-This repository contains the new Node.js API that is the backbone of Datawrapper 2.0.
+This repository contains the Node.js API. It is used to build datawrapper.de, automations and other integrations.
+To learn more about, how to use it, go to https://developer.datawrapper.de/docs.
 
 ## Table of contents
 
@@ -47,7 +48,7 @@ npm run sync
 
 ## Local development
 
-Contributions to the API are always welcome. To develop new features or add some documentation, clone the repository and get going.
+To develop new features or add some documentation, clone the repository and get going.
 
 ```sh
 > git clone git@github.com:datawrapper/api.git dw-api
@@ -118,9 +119,6 @@ Key | Example Value | Description
 `api.sessionID` | `"DW-SESSION"` | Name for session cookie.
 `api.https` | `true` | Flag if the API is served over `https`. This will most likely be `false` in development.
 `api.hashRounds` | `15` | Number of hashing rounds for password hashing with `bcrypt`. This value should be configured according to the hardware, the server is running on. As a guideline, the `/auth/login` endpoint should take about 2s for a response.
-`api.enableMigration` | `true` | The old API saved password hashes as `sha256` which is not up to current standards. This flag will enable on the fly hash migration to `bcrypt` when a user with old hash logs in.
-`api.authSalt` | `"SALT"` | This key is deprecated and only used for legacy hash comparison.
-`api.secretAuthSalt` | `"SECRET_SALT"` | This key is deprecated and only used for legacy hash comparison.
 
 ### `orm`
 
@@ -234,26 +232,14 @@ With this plugin, sending a password reset request will log some data and a URL 
 
 #### `chart-data-local`
 
-Plugin that adds `{GET | PUT} /charts/:id/data` endpoints that use the local file system to store csv data. This is useful for local development, where it isn't necessary to write data to S3 or other storage providers.
+Plugin that adds functionality to store csv data on the local file system. This is useful for local development, where it isn't necessary to write data to S3 or other storage providers.
 
 ```js
 // Configuration
 
 plugins: {
     'chart-data-local': {
-        data_path: '<path-to-local-datawrapper>/charts/data',
-        publish_path: '<path-to-local-datawrapper-charts>'
+        data_path: '<path-to-local-datawrapper>/charts/data'
     }
 }
 ```
-
-## REST API with JSON
-
-Will serve via HTTPS on port 443, e.g.
-
-    GET https://api.datawrapper.de/v3/charts/12345
-    PUT https://api.datawrapper.de/v3/charts/12345/data
-
-Will be used by our own web app as well as third-party apps maintained by our customers.
-
-For a while we also need to support the old API endpoint via https://api.datawrapper.de/v2/ and https://api.datawrapper.de/ which will be proxied to the PHP app. Eventually the old endpoints will be deprecated and replaced with v3 versions.
