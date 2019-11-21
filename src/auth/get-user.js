@@ -12,7 +12,7 @@ module.exports = async function getUser(userId, { credentials, strategy, logger 
 
     if (!user && credentials.session) {
         user = new Proxy(
-            { role: 'guest' },
+            { role: 'guest', id: undefined, language: 'en-US' },
             {
                 get: (obj, prop) => {
                     if (prop in obj) {

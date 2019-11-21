@@ -154,7 +154,7 @@ function register(server, options) {
                     })
                         .description('Metadata that saves all chart specific settings and options.')
                         .unknown(true)
-                })
+                }).unknown()
             },
             response: chartResponse
         },
@@ -431,10 +431,11 @@ function register(server, options) {
 }
 
 function prepareChart(chart) {
-    const { user, ...dataValues } = chart.dataValues;
+    const { user, in_folder, ...dataValues } = chart.dataValues;
 
     return {
         ...camelizeKeys(dataValues),
+        folderId: in_folder,
         metadata: dataValues.metadata,
         author: user ? { name: user.name, email: user.email } : undefined,
         guestSession: undefined
@@ -569,18 +570,38 @@ async function getChart(request, h) {
 }
 
 async function createChart(request, h) {
-    const { url, auth } = request;
+    const { url, auth, payload, server } = request;
+    const user = auth.artifacts;
+    const isAdmin = server.methods.isAdmin(request);
+    if (payload && payload.folderId) {
+        // check if folder belongs to user to team
+        const folder = await Folder.findOne({ where: { id: payload.folderId } });
+
+        if (
+            !folder ||
+            (!isAdmin &&
+                folder.user_id !== auth.artifacts.id &&
+                !(await user.hasTeam(folder.org_id)))
+        ) {
+            payload.folderId = undefined;
+            request.logger.info('Invalid folder id. User does not have access to this folder');
+        } else {
+            payload.inFolder = payload.folderId;
+            payload.folderId = undefined;
+            payload.organizationId = folder.org_id ? folder.org_id : null;
+        }
+    }
 
     const id = await findChartId();
     const chart = await Chart.create({
         title: '',
         theme: 'default',
         type: 'd3-bars',
-        language: auth.artifacts.language,
-        ...decamelizeKeys(request.payload),
-        metadata: request.payload ? request.payload.metadata : { data: {} },
-        author_id: auth.artifacts.id,
-        guest_session: auth.artifacts.role === 'guest' ? auth.credentials.session : undefined,
+        language: user.language,
+        ...decamelizeKeys(payload),
+        metadata: payload && payload.metadata ? payload.metadata : { data: {} },
+        author_id: user.id,
+        guest_session: user.role === 'guest' ? auth.credentials.session : undefined,
         id
     });
 
@@ -626,16 +647,14 @@ async function editChart(request, h) {
                 folder.user_id !== auth.artifacts.id &&
                 !(await user.hasTeam(folder.org_id)))
         ) {
-            return Boom.unauthorized(
+            throw Boom.unauthorized(
                 'User does not have access to the specified folder, or it does not exist.'
             );
         }
-
+        payload.inFolder = payload.folderId;
+        payload.folderId = undefined;
         payload.organizationId = folder.org_id ? folder.org_id : null;
     }
-
-    payload.inFolder = payload.folderId;
-    delete payload.folderId;
 
     const newData = assign(prepareChart(chart), payload);
 
