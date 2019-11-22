@@ -7,7 +7,7 @@ const meResponse = createResponseConfig({
     schema: Joi.object({
         id: Joi.number(),
         email: Joi.string(),
-        name: Joi.string(),
+        name: Joi.string().allow(null),
         language: Joi.string()
     }).unknown()
 });

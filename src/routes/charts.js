@@ -672,7 +672,8 @@ async function exportChart(request, h) {
     const user = auth.artifacts;
 
     const userPlugins = await user.getUserPluginCache();
-    if (params.format !== 'png' && !(userPlugins && userPlugins.plugins.includes('export-pdf'))) {
+    const plugins = userPlugins && userPlugins.plugins ? userPlugins.plugins.split(',') : [];
+    if (params.format !== 'png' && !plugins.includes('export-pdf')) {
         return Boom.forbidden();
     }
 
