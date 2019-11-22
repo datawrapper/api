@@ -669,14 +669,19 @@ async function editChart(request, h) {
 async function exportChart(request, h) {
     const { payload, params, auth, logger, server } = request;
     const { events, event } = server.app;
+    const user = auth.artifacts;
 
-    if (auth.artifacts.role === 'guest') return Boom.forbidden();
+    const userPlugins = await user.getUserPluginCache();
+    const plugins = userPlugins && userPlugins.plugins ? userPlugins.plugins.split(',') : [];
+    if (params.format !== 'png' && !plugins.includes('export-pdf')) {
+        return Boom.forbidden();
+    }
 
     Object.assign(payload, params);
     try {
         const results = await events.emit(event.CHART_EXPORT, {
             data: payload,
-            userId: auth.artifacts.id,
+            userId: user.id,
             logger
         });
 
@@ -692,11 +697,7 @@ async function exportChart(request, h) {
             throw error;
         }
 
-        await request.server.methods.logAction(
-            auth.artifacts.id,
-            `chart/export/${params.format}`,
-            params.id
-        );
+        await request.server.methods.logAction(user.id, `chart/export/${params.format}`, params.id);
 
         const { stream, type } = successfulResult.data;
         return h.response(stream).header('Content-Type', type);
