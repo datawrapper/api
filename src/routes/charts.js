@@ -7,7 +7,7 @@ const nanoid = require('nanoid');
 const set = require('lodash/set');
 const assign = require('assign-deep');
 const mime = require('mime');
-const { Chart, ChartPublic, User, Folder, UserPluginCache } = require('@datawrapper/orm/models');
+const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
 const CodedError = require('@datawrapper/shared/CodedError');
 
 const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
@@ -671,7 +671,7 @@ async function exportChart(request, h) {
     const { events, event } = server.app;
     const user = auth.artifacts;
 
-    const userPlugins = await UserPluginCache.findByPk(user.id);
+    const userPlugins = await user.getUserPluginCache();
     if (params.format !== 'png' && !(userPlugins && userPlugins.plugins.includes('export-pdf'))) {
         return Boom.forbidden();
     }
