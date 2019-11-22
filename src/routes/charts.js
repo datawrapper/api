@@ -779,7 +779,16 @@ async function getChartAsset(request, h) {
 
     try {
         const eventResults = await events.emit(event.GET_CHART_ASSET, { chart, filename });
-        const contentStream = eventResults.find(e => e.status === 'success').data;
+        const successResult = eventResults.find(e => e.status === 'success');
+
+        if (!successResult) {
+            const errorResult = eventResults.find(e => e.status === 'error');
+            throw errorResult
+                ? errorResult.error
+                : new Error(`${event.GET_CHART_ASSET} event failed`);
+        }
+
+        const contentStream = successResult.data;
 
         const contentType =
             chart.type === 'locator-map' && path.extname(filename) === '.csv'

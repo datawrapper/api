@@ -11,12 +11,27 @@ module.exports = {
     register: (server, options) => {
         const { events, event } = server.app;
 
+        async function isFile(path) {
+            try {
+                const fileStats = await stat(path);
+                return fileStats.isFile(path);
+            } catch (error) {
+                return false;
+            }
+        }
+
         events.on(event.GET_CHART_ASSET, async ({ chart, filename }) => {
             const filePath = path.join(
                 options.config.data_path,
                 getDataPath(chart.dataValues.created_at),
                 filename
             );
+
+            const fileExists = await isFile(filePath);
+
+            if (!fileExists) {
+                throw new Error('ASSET_NOT_FOUND');
+            }
 
             const stream = fs.createReadStream(filePath, { encoding: 'utf-8' });
             return stream;
@@ -29,11 +44,8 @@ module.exports = {
             );
             const filePath = path.join(dataPath, filename);
 
-            let fileExists = false;
-            try {
-                const fileStats = await stat(filePath);
-                fileExists = fileStats.isFile(filePath);
-            } catch (error) {
+            const fileExists = await isFile(filePath);
+            if (!fileExists) {
                 await mkdir(dataPath, { recursive: true });
             }
 
