@@ -436,7 +436,8 @@ function register(server, options) {
 
     if (
         localChartAssetRoot === undefined &&
-        (!events.eventNames().includes[event.GET_CHART_ASSET] || !!events.eventNames().includes[event.PUT_CHART_ASSET])
+        (!events.eventNames().includes(event.GET_CHART_ASSET) ||
+            !!events.eventNames().includes(event.PUT_CHART_ASSET))
     ) {
         server
             .logger()
@@ -446,7 +447,7 @@ function register(server, options) {
         process.exit(1);
     }
 
-    if (!events.eventNames().includes[event.GET_CHART_ASSET]) {
+    if (!events.eventNames().includes(event.GET_CHART_ASSET)) {
         events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
             return fs.createReadStream(
                 path.join(localChartAssetRoot, getDataPath(chart.dataValues.created_at), filename)
@@ -454,7 +455,7 @@ function register(server, options) {
         });
     }
 
-    if (!events.eventNames().includes[event.PUT_CHART_ASSET]) {
+    if (!events.eventNames().includes(event.PUT_CHART_ASSET)) {
         events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
             const outPath = path.join(
                 localChartAssetRoot,
