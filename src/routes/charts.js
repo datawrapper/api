@@ -440,7 +440,7 @@ function register(server, options) {
         });
     }
 
-    if (!events._events.PUT_CHART_ASSET) {
+    if (!events.eventNames().includes[event.PUT_CHART_ASSET]) {
         events.on(event.PUT_CHART_ASSET, function({ chart, data, filename }) {
             return new Promise((resolve, reject) => {
                 const outPath = path.join(
