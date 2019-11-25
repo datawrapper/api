@@ -1,5 +1,7 @@
 module.exports = {
-    general: {},
+    general: {
+        localChartAssetRoot: '/tmp/data'
+    },
     frontend: {
         domain: 'localhost',
         https: false
