@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
@@ -9,6 +10,9 @@ const assign = require('assign-deep');
 const mime = require('mime');
 const { Chart, ChartPublic, User, Folder, Plugin } = require('@datawrapper/orm/models');
 const CodedError = require('@datawrapper/shared/CodedError');
+const { promisify } = require('util');
+const mkdirAsync = promisify(fs.mkdir);
+const writeFileAsync = promisify(fs.writeFile);
 
 const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
 
@@ -425,8 +429,43 @@ function register(server, options) {
             auth: request.auth,
             payload: request.payload
         });
+    }
 
-        return h.response().code(204);
+    const { events, event } = server.app;
+    const { localChartAssetRoot } = server.methods.config('general');
+
+    if (
+        localChartAssetRoot === undefined &&
+        (!events.eventNames().includes(event.GET_CHART_ASSET) ||
+            !!events.eventNames().includes(event.PUT_CHART_ASSET))
+    ) {
+        server
+            .logger()
+            .error(
+                '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
+            );
+        process.exit(1);
+    }
+
+    if (!events.eventNames().includes(event.GET_CHART_ASSET)) {
+        events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
+            return fs.createReadStream(
+                path.join(localChartAssetRoot, getDataPath(chart.dataValues.created_at), filename)
+            );
+        });
+    }
+
+    if (!events.eventNames().includes(event.PUT_CHART_ASSET)) {
+        events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
+            const outPath = path.join(
+                localChartAssetRoot,
+                getDataPath(chart.dataValues.created_at)
+            );
+
+            await mkdirAsync(outPath, { recursive: true });
+            await writeFileAsync(path.join(outPath, filename), data);
+            return { code: 200 };
+        });
     }
 }
 
@@ -852,4 +891,10 @@ async function writeChartAsset(request, h) {
         request.logger.error(error);
         return Boom.notFound();
     }
+}
+
+function getDataPath(date) {
+    const year = date.getUTCFullYear();
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    return `${year}${month}`;
 }
