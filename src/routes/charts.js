@@ -427,12 +427,14 @@ function register(server, options) {
     async function writeChartData(request, h) {
         const { params } = request;
 
-        await request.server.inject({
+        const res = await request.server.inject({
             method: 'PUT',
             url: `/v3/charts/${params.id}/assets/${params.id}.csv`,
             auth: request.auth,
             payload: request.payload
         });
+
+        return h.response(res).code(res.statusCode);
     }
 
     const { events, event } = server.app;
