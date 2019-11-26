@@ -918,6 +918,13 @@ async function inviteTeamMember(request, h) {
         return Boom.badRequest('User is already member of team.');
     }
 
+    const maxTeamInvites = await server.app.events.emit(server.app.event.MAX_TEAM_INVITES, {
+        user,
+        team: await Team.findByPk(params.id)
+    });
+
+    console.log({maxTeamInvites});
+
     const data = {
         user_id: user.id,
         organization_id: params.id,
