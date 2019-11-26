@@ -3,7 +3,7 @@ const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const nanoid = require('nanoid');
-const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
+const { decamelize, camelize } = require('humps');
 const {
     Chart,
     Team,
@@ -547,11 +547,14 @@ async function getTeam(request, h) {
 
     const { users, ...data } = team.dataValues;
 
-    return camelizeKeys({
-        ...data,
-        memberCount: users.length,
-        url: url.pathname
-    });
+    return convertKeys(
+        {
+            ...data,
+            memberCount: users.length,
+            url: url.pathname
+        },
+        camelize
+    );
 }
 
 async function getTeamMembers(request, h) {
@@ -646,10 +649,6 @@ async function editTeam(request, h) {
 
     let data = payload;
 
-    if (data.settings) {
-        data.settings = JSON.stringify(data.settings);
-    }
-
     let team = await Team.findOne({
         where: { id: params.id, deleted: { [Op.not]: true } },
         attributes: { exclude: ['deleted'] }
@@ -657,7 +656,7 @@ async function editTeam(request, h) {
 
     if (!team) return Boom.notFound();
 
-    team = await team.update(decamelizeKeys(data));
+    team = await team.update(convertKeys(data, decamelize));
 
     data = team.dataValues;
 
@@ -666,7 +665,7 @@ async function editTeam(request, h) {
     }
 
     data.updatedAt = new Date().toISOString();
-    return camelizeKeys(data);
+    return convertKeys(data, camelize);
 }
 
 async function deleteTeam(request, h) {
@@ -1010,4 +1009,12 @@ async function changeMemberStatus(request, h) {
     });
 
     return h.response().code(204);
+}
+
+function convertKeys(input, method) {
+    const output = {};
+    for (const k in input) {
+        output[method(k)] = input[k];
+    }
+    return output;
 }
