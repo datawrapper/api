@@ -72,7 +72,7 @@ module.exports = {
     name: 'auth-routes',
     version: '1.0.0',
     register: (server, options) => {
-        server.route({
+        /* server.route({
             method: 'POST',
             path: '/login',
             options: {
@@ -94,7 +94,7 @@ module.exports = {
                 }
             },
             handler: login
-        });
+        }); */
 
         server.route({
             method: 'POST',
@@ -181,7 +181,7 @@ module.exports = {
             handler: deleteToken
         });
 
-        server.route({
+        /* server.route({
             method: 'POST',
             path: '/signup',
             options: {
@@ -209,7 +209,7 @@ module.exports = {
                 }
             },
             handler: signup
-        });
+        }); */
 
         server.route({
             method: 'POST',
