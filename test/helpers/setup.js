@@ -9,7 +9,7 @@ const appendFile = promisify(fs.appendFile);
 
 const cleanupFile = path.join(os.tmpdir(), 'cleanup.csv');
 
-const passwordHash = '$2b$15$UdsGvrTLEk5DPRmRoHE4O..tzDpkWkAdKjBoKUjERXKoYHqTIRis6';
+const PASSWORD_HASH = '$2b$15$UdsGvrTLEk5DPRmRoHE4O..tzDpkWkAdKjBoKUjERXKoYHqTIRis6';
 
 function getCredentials() {
     return {
@@ -26,10 +26,10 @@ export async function setup(options) {
         await appendFile(cleanupFile, `${name};${id}\n`, { encoding: 'utf-8' });
     }
 
-    async function getUser(role = 'editor') {
+    async function getUser(role = 'editor', pwd = PASSWORD_HASH) {
         const user = await models.User.create({
             email: getCredentials().email,
-            pwd: passwordHash,
+            pwd,
             role
         });
 
