@@ -434,7 +434,7 @@ function register(server, options) {
             payload: request.payload
         });
 
-        return h.response(res).code(res.statusCode);
+        return h.response(res.result).code(res.statusCode);
     }
 
     const { events, event } = server.app;
