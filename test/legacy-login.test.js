@@ -3,12 +3,12 @@ import { setup } from './helpers/setup';
 
 const USER_PASSWORD = 'legacy';
 /**
- * USER_PASSWORD -> legacyHash('legacy', DEFAULT_SALT) ->
+ * USER_PASSWORD -> legacyHash(USER_PASSWORD, DEFAULT_SALT) ->
  * CLIENT_HAST
  */
 const CLIENT_HASH = '9574e9327ce73d61c8f5ffdc710e5c21cb07fcb3bef9ce4d892b88e6ad0ee107';
 /**
- * USER_PASSWORD -> legacyHash('legacy', DEFAULT_SALT) ->
+ * USER_PASSWORD -> legacyHash(USER_PASSWORD, DEFAULT_SALT) ->
  * output -> legacyHash(output, SECRET_AUTH_SALT) ->
  * LEGACY_HASH
  */
