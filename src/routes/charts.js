@@ -332,6 +332,10 @@ function register(server, options) {
             auth: request.auth
         });
 
+        if (res.result.error) {
+            return new Boom.Boom(res.result.message, res.result);
+        }
+
         let contentType = 'text/csv';
 
         try {
