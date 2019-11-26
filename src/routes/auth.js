@@ -20,7 +20,7 @@ const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
  * @param {string} secret - salt to hash the value with
  * @returns {string}
  */
-function legacyHash(pwhash, secret) {
+function legacyHash(pwhash, secret = DEFAULT_SALT) {
     const hmac = crypto.createHmac('sha256', secret);
     hmac.update(pwhash);
     return hmac.digest('hex');
@@ -45,7 +45,7 @@ function legacyLogin(password, passwordHash, authSalt, secretAuthSalt) {
 
     if (serverHash === passwordHash) return true;
 
-    const clientHash = legacyHash(password, authSalt || DEFAULT_SALT);
+    const clientHash = legacyHash(password, authSalt);
     serverHash = secretAuthSalt ? legacyHash(clientHash, secretAuthSalt) : clientHash;
     return serverHash === passwordHash;
 }
@@ -579,7 +579,7 @@ async function signup(request, h) {
         session = await createSession(generateToken(), res.result.id);
     }
 
-    const { activate_token, ...data } = res.result;
+    const { activateToken, ...data } = res.result;
 
     const { https, domain } = config('frontend');
 
@@ -590,7 +590,7 @@ async function signup(request, h) {
         data: {
             activation_link: `${
                 https ? 'https' : 'http'
-            }://${domain}/account/activate/${activate_token}`
+            }://${domain}/account/activate/${activateToken}`
         }
     });
 
