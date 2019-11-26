@@ -332,6 +332,10 @@ function register(server, options) {
             auth: request.auth
         });
 
+        if (res.result.error) {
+            return new Boom.Boom(res.result.message, res.result);
+        }
+
         let contentType = 'text/csv';
 
         try {
@@ -433,12 +437,11 @@ function register(server, options) {
 
     const { events, event } = server.app;
     const { localChartAssetRoot } = server.methods.config('general');
+    const hasRegisteredDataPlugins =
+        events.eventNames().includes(event.GET_CHART_ASSET) &&
+        events.eventNames().includes(event.PUT_CHART_ASSET);
 
-    if (
-        localChartAssetRoot === undefined &&
-        (!events.eventNames().includes(event.GET_CHART_ASSET) ||
-            !!events.eventNames().includes(event.PUT_CHART_ASSET))
-    ) {
+    if (localChartAssetRoot === undefined && !hasRegisteredDataPlugins) {
         server
             .logger()
             .error(
@@ -447,15 +450,13 @@ function register(server, options) {
         process.exit(1);
     }
 
-    if (!events.eventNames().includes(event.GET_CHART_ASSET)) {
+    if (!hasRegisteredDataPlugins) {
         events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
             return fs.createReadStream(
                 path.join(localChartAssetRoot, getDataPath(chart.dataValues.created_at), filename)
             );
         });
-    }
 
-    if (!events.eventNames().includes(event.PUT_CHART_ASSET)) {
         events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
             const outPath = path.join(
                 localChartAssetRoot,
