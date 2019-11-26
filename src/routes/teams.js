@@ -646,10 +646,6 @@ async function editTeam(request, h) {
 
     let data = payload;
 
-    if (data.settings) {
-        data.settings = JSON.stringify(data.settings);
-    }
-
     let team = await Team.findOne({
         where: { id: params.id, deleted: { [Op.not]: true } },
         attributes: { exclude: ['deleted'] }
