@@ -878,7 +878,7 @@ async function inviteTeamMember(request, h) {
     if (!isAdmin) {
         const memberRole = await getMemberRole(user.id, params.id);
 
-        if (memberRole === ROLES[2]) {
+        if (memberRole === ROLES[2] || user.role === 'pending') {
             return Boom.unauthorized();
         }
     }
