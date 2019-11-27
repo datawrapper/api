@@ -46,7 +46,7 @@ const eventList = {
     GET_CHART_ASSET: 'GET_CHART_ASSET',
     PUT_CHART_ASSET: 'PUT_CHART_ASSET',
     SEND_EMAIL: 'SEND_EMAIL',
-    MAX_TEAM_INVITES: 'MAX_INVITES'
+    MAX_TEAM_INVITES: 'MAX_TEAM_INVITES'
 };
 
 module.exports = { ApiEventEmitter, eventList };

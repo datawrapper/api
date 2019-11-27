@@ -883,6 +883,21 @@ async function inviteTeamMember(request, h) {
         }
     }
 
+    const maxTeamInvites = await getMaxTeamInvites({
+        server,
+        user,
+        team: await Team.findByPk(params.id)
+    });
+
+    if (maxTeamInvites !== false) {
+        const pendingInvites = await getPendingTeamInvites({ user });
+        if (pendingInvites > maxTeamInvites) {
+            return Boom.notAcceptable(
+                `You already invited ${maxTeamInvites} user into teams. You can invite more users when invitations have been accepted.`
+            );
+        }
+    }
+
     let inviteeWasCreated = false;
 
     const teamCount = await Team.count({
@@ -922,18 +937,12 @@ async function inviteTeamMember(request, h) {
         return Boom.badRequest('User is already member of team.');
     }
 
-    const maxTeamInvites = await server.app.events.emit(server.app.event.MAX_TEAM_INVITES, {
-        user,
-        team: await Team.findByPk(params.id)
-    });
-
-    console.log({maxTeamInvites});
-
     const data = {
         user_id: invitee.id,
         organization_id: params.id,
         team_role: payload.role,
-        invite_token: token
+        invite_token: token,
+        invited_by: user.id
     };
 
     const team = await UserTeam.create(data);
@@ -1030,4 +1039,27 @@ function convertKeys(input, method) {
         output[method(k)] = input[k];
     }
     return output;
+}
+
+async function getMaxTeamInvites({ user, team, server }) {
+    const maxTeamInvitesRes = await server.app.events.emit(server.app.event.MAX_TEAM_INVITES, {
+        user
+    });
+    const maxTeamInvites = maxTeamInvitesRes
+        .filter(d => d.status === 'success')
+        .map(({ data }) => data.maxInvites)
+        .sort()
+        .slice(-1)[0];
+    return maxTeamInvites !== undefined ? maxTeamInvites : false;
+}
+
+async function getPendingTeamInvites({ user }) {
+    return UserTeam.count({
+        where: {
+            invited_by: user.id,
+            invite_token: {
+                [Op.not]: ''
+            }
+        }
+    });
 }
