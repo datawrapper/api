@@ -13,6 +13,7 @@ const {
     Product,
     TeamTheme
 } = require('@datawrapper/orm/models');
+const { logAction } = require('@datawrapper/orm/utils/action');
 
 const { createResponseConfig, noContentResponse, listResponse } = require('../schemas/response.js');
 
@@ -950,6 +951,8 @@ async function inviteTeamMember(request, h) {
             }/${data.invite_token}`
         }
     });
+
+    await logAction(user, 'team/invite', { team: params.id, invited: invitee.id });
 
     return h.response().code(201);
 }
