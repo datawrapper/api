@@ -871,15 +871,18 @@ async function inviteTeamMember(request, h) {
     const { auth, params, payload, server } = request;
 
     const isAdmin = server.methods.isAdmin(request);
-    let userWasCreated = false;
+
+    const user = auth.artifacts;
 
     if (!isAdmin) {
-        const memberRole = await getMemberRole(auth.artifacts.id, params.id);
+        const memberRole = await getMemberRole(user.id, params.id);
 
         if (memberRole === ROLES[2]) {
             return Boom.unauthorized();
         }
     }
+
+    let inviteeWasCreated = false;
 
     const teamCount = await Team.count({
         where: { id: params.id, deleted: { [Op.not]: true } }
@@ -887,29 +890,29 @@ async function inviteTeamMember(request, h) {
 
     if (!teamCount) return Boom.notFound();
 
-    let user = await User.findOne({
+    let invitee = await User.findOne({
         where: { email: payload.email },
         attributes: ['id', 'email', 'language']
     });
 
     const token = server.methods.generateToken();
 
-    if (!user) {
+    if (!invitee) {
         const passwordToken = server.methods.generateToken();
         const hash = await request.server.methods.hashPassword(passwordToken);
-        user = await User.create({
+        invitee = await User.create({
             email: payload.email,
             activate_token: token,
             role: 'pending',
             pwd: hash,
             name: null
         });
-        userWasCreated = true;
+        inviteeWasCreated = true;
     }
 
     const isMember = !!(await UserTeam.findOne({
         where: {
-            user_id: user.id,
+            user_id: invitee.id,
             organization_id: params.id
         }
     }));
@@ -926,7 +929,7 @@ async function inviteTeamMember(request, h) {
     console.log({maxTeamInvites});
 
     const data = {
-        user_id: user.id,
+        user_id: invitee.id,
         organization_id: params.id,
         team_role: payload.role,
         invite_token: token
@@ -937,13 +940,13 @@ async function inviteTeamMember(request, h) {
     const { https, domain } = server.methods.config('frontend');
     await server.app.events.emit(server.app.event.SEND_EMAIL, {
         type: 'team-invite',
-        to: user.email,
-        language: user.language,
+        to: invitee.email,
+        language: invitee.language,
         data: {
             team_admin: auth.artifacts.email,
             team_name: team.name,
             activation_link: `${https ? 'https' : 'http'}://${domain}/${
-                userWasCreated ? 'datawrapper-invite' : 'organization-invite'
+                inviteeWasCreated ? 'datawrapper-invite' : 'organization-invite'
             }/${data.invite_token}`
         }
     });
