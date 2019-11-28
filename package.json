@@ -34,7 +34,7 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/orm": "3.5.1",
+        "@datawrapper/orm": "^3.7.0",
         "@datawrapper/schemas": "1.2.0",
         "@datawrapper/shared": "0.19.3",
         "@hapi/boom": "8.0.1",
