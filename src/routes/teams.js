@@ -1050,7 +1050,7 @@ async function getMaxTeamInvites({ user, team, server }) {
         .filter(d => d.status === 'success')
         .map(({ data }) => data.maxInvites)
         .sort()
-        .slice(-1)[0];
+        .pop();
     return maxTeamInvites !== undefined ? maxTeamInvites : false;
 }
 
