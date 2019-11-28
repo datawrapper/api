@@ -885,8 +885,7 @@ async function inviteTeamMember(request, h) {
 
     const maxTeamInvites = await getMaxTeamInvites({
         server,
-        user,
-        team: await Team.findByPk(params.id)
+        teamId: params.id
     });
 
     if (maxTeamInvites !== false) {
@@ -1042,9 +1041,9 @@ function convertKeys(input, method) {
     return output;
 }
 
-async function getMaxTeamInvites({ user, team, server }) {
+async function getMaxTeamInvites({ teamId, server }) {
     const maxTeamInvitesRes = await server.app.events.emit(server.app.event.MAX_TEAM_INVITES, {
-        user
+        teamId
     });
     const maxTeamInvites = maxTeamInvitesRes
         .filter(d => d.status === 'success')
