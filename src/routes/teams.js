@@ -883,10 +883,12 @@ async function inviteTeamMember(request, h) {
         }
     }
 
-    const maxTeamInvites = await getMaxTeamInvites({
-        server,
-        teamId: params.id
-    });
+    const maxTeamInvites = isAdmin
+        ? false
+        : await getMaxTeamInvites({
+              server,
+              teamId: params.id
+          });
 
     if (maxTeamInvites !== false) {
         const pendingInvites = await getPendingTeamInvites({ user });
