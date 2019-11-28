@@ -960,7 +960,7 @@ async function inviteTeamMember(request, h) {
         }
     });
 
-    await logAction(user, 'team/invite', { team: params.id, invited: invitee.id });
+    await logAction(user.id, 'team/invite', { team: params.id, invited: invitee.id });
 
     return h.response().code(201);
 }
