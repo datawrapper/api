@@ -890,7 +890,7 @@ async function inviteTeamMember(request, h) {
 
     if (maxTeamInvites !== false) {
         const pendingInvites = await getPendingTeamInvites({ user });
-        if (pendingInvites > maxTeamInvites) {
+        if (pendingInvites >= maxTeamInvites) {
             return Boom.notAcceptable(
                 `You already invited ${maxTeamInvites} user into teams. You can invite more users when invitations have been accepted.`
             );
