@@ -967,7 +967,7 @@ async function inviteTeamMember(request, h) {
 }
 
 async function addTeamMember(request, h) {
-    const { params, payload, server } = request;
+    const { auth, params, payload, server } = request;
     const isAdmin = server.methods.isAdmin(request);
 
     if (!isAdmin) return Boom.unauthorized();
@@ -999,7 +999,8 @@ async function addTeamMember(request, h) {
     const data = {
         user_id: user.id,
         organization_id: params.id,
-        team_role: payload.role
+        team_role: payload.role,
+        invited_by: auth.artifacts.id
     };
 
     await UserTeam.create(data);
