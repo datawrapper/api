@@ -330,3 +330,108 @@ test('admins can add new members to a team', async t => {
 
     t.is(team.statusCode, 201);
 });
+
+test('members can leave teams but can not remove other members', async t => {
+    const { team, addUser } = t.context.data;
+    const { user, session } = await addUser('member');
+    const { user: user2 } = await addUser('member');
+
+    /* try to remove different member */
+    let res = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/teams/${team.id}/members/${user2.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: session,
+            artifacts: user
+        }
+    });
+
+    t.is(res.statusCode, 401);
+
+    /* check if user 2 is still in team */
+    let row = await t.context.models.UserTeam.findByPk(user2.id);
+    t.is(row.dataValues.organization_id, team.id);
+    t.log('member could not remove a different team member');
+
+    /* leave team */
+    res = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/teams/${team.id}/members/${user.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: session,
+            artifacts: user
+        }
+    });
+
+    /* check if api call was successful */
+    t.is(res.statusCode, 204);
+
+    /* check if association got deleted */
+    row = await t.context.models.UserTeam.findByPk(user.id);
+    t.is(row, null);
+    t.log('member could leave team');
+});
+
+test('admins can remove members, themselves but not owners', async t => {
+    const { team, addUser } = t.context.data;
+    const { user: admin, session } = await addUser('admin');
+    const { user: member } = await addUser('member');
+    const { user: owner } = await addUser('owner');
+
+    let res = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/teams/${team.id}/members/${member.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: session,
+            artifacts: admin
+        }
+    });
+
+    /* check if api call was successful */
+    t.is(res.statusCode, 204);
+
+    /* check if association got deleted */
+    let row = await t.context.models.UserTeam.findByPk(member.id);
+    t.is(row, null);
+    t.log('admin could remove member');
+
+    res = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/teams/${team.id}/members/${owner.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: session,
+            artifacts: admin
+        }
+    });
+
+    /* check if api call was successful */
+    t.is(res.statusCode, 401);
+
+    /* check if association got deleted */
+    row = await t.context.models.UserTeam.findByPk(owner.id);
+    t.is(row.dataValues.organization_id, team.id);
+    t.log('admin could not remove owner');
+
+    /* leave team */
+    res = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/teams/${team.id}/members/${admin.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: session,
+            artifacts: admin
+        }
+    });
+
+    /* check if api call was successful */
+    t.is(res.statusCode, 204);
+
+    /* check if association got deleted */
+    row = await t.context.models.UserTeam.findByPk(admin.id);
+    t.is(row, null);
+    t.log('admin could leave team');
+});
