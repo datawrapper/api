@@ -733,17 +733,18 @@ async function deleteTeam(request, h) {
 }
 
 /**
- * handles DELETE /v3/team/:id/members/:id requests
+ * handles DELETE /v3/team/:id/members/:userId requests
  */
 async function deleteTeamMember(request, h) {
     const { auth, params, server } = request;
 
     const isAdmin = server.methods.isAdmin(request);
+    const user = auth.artifacts;
 
     if (!isAdmin) {
-        const memberRole = await getMemberRole(auth.artifacts.id, params.id);
+        const memberRole = await getMemberRole(user.id, params.id);
 
-        if (memberRole === ROLES[2]) {
+        if (memberRole === ROLES[2] && user.id !== params.userId) {
             return Boom.unauthorized();
         }
     }
