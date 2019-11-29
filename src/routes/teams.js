@@ -813,11 +813,11 @@ async function deleteTeamMember(request, h) {
 
     if (!row) return Boom.notFound();
 
-    if (ROLES[row.dataValues.team_role] === 'owner' && !isAdmin) {
+    if (ROLES[row.dataValues.team_role] === 'owner') {
         return Boom.unauthorized('Can not delete team owner.');
     }
 
-    if (!owner && !isAdmin) {
+    if (!owner) {
         const chartCount = await Chart.count({
             where: {
                 author_id: params.userId,
@@ -995,6 +995,20 @@ async function inviteTeamMember(request, h) {
         invited_by: user.id
     };
 
+    if (payload.role === ROLES[0]) {
+        await UserTeam.update(
+            {
+                team_role: ROLES[1]
+            },
+            {
+                where: {
+                    team_role: ROLES[0],
+                    organization_id: params.id
+                }
+            }
+        );
+    }
+
     await UserTeam.create(data);
     const team = await Team.findByPk(data.organization_id);
 
@@ -1137,6 +1151,20 @@ async function addTeamMember(request, h) {
         invited_by: auth.artifacts.id
     };
 
+    if (payload.role === ROLES[0]) {
+        await UserTeam.update(
+            {
+                team_role: ROLES[1]
+            },
+            {
+                where: {
+                    team_role: ROLES[0],
+                    organization_id: params.id
+                }
+            }
+        );
+    }
+
     await UserTeam.create(data);
     return h.response().code(201);
 }
@@ -1160,6 +1188,20 @@ async function changeMemberStatus(request, h) {
             organization_id: params.id
         }
     });
+
+    if (payload.role === ROLES[0]) {
+        await UserTeam.update(
+            {
+                team_role: ROLES[1]
+            },
+            {
+                where: {
+                    team_role: ROLES[0],
+                    organization_id: params.id
+                }
+            }
+        );
+    }
 
     await userTeam.update({
         team_role: payload.status
