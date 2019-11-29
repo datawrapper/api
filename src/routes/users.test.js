@@ -23,7 +23,7 @@ test.before(async t => {
     t.context.getTeamWithUser = getTeamWithUser;
 });
 
-test('It should be possible to create a user, login and logout', async t => {
+test.skip('It should be possible to create a user, login and logout', async t => {
     const credentials = {
         email: `test-${nanoid(5)}@ava.de`,
         password: 'strong-secure-password'

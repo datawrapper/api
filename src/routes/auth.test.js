@@ -23,7 +23,7 @@ test.before(async t => {
     t.context.addToCleanup = addToCleanup;
 });
 
-test('Login and logout work with correct credentials', async t => {
+test.skip('Login and logout work with correct credentials', async t => {
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
@@ -51,7 +51,7 @@ test('Login and logout work with correct credentials', async t => {
     t.false(res.headers['set-cookie'].includes(session));
 });
 
-test('Login fails with incorrect credentials', async t => {
+test.skip('Login fails with incorrect credentials', async t => {
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
@@ -64,7 +64,7 @@ test('Login fails with incorrect credentials', async t => {
     t.is(res.statusCode, 401);
 });
 
-test("Login set's correct cookie", async t => {
+test.skip("Login set's correct cookie", async t => {
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',

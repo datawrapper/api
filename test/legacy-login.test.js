@@ -52,7 +52,7 @@ test.after.always(async t => {
     t.log('Sessions cleaned up:', deletedSessions);
 });
 
-test('Client hashed password', async t => {
+test.skip('Client hashed password', async t => {
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
@@ -66,7 +66,7 @@ test('Client hashed password', async t => {
     t.is(res.statusCode, 200);
 });
 
-test('Non hashed password', async t => {
+test.skip('Non hashed password', async t => {
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
@@ -80,7 +80,7 @@ test('Non hashed password', async t => {
     t.is(res.statusCode, 200);
 });
 
-test('Migrate client hashed password to new hash', async t => {
+test.skip('Migrate client hashed password to new hash', async t => {
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
@@ -106,7 +106,7 @@ test('Migrate client hashed password to new hash', async t => {
     t.is(res.statusCode, 200);
 });
 
-test('Migrate password to new hash', async t => {
+test.skip('Migrate password to new hash', async t => {
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
