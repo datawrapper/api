@@ -38,7 +38,8 @@ async function main() {
         }
     });
 
-    const [, , sessions, themes] = await Promise.all([
+    const [actions, , , sessions, themes] = await Promise.all([
+        models.Action.destroy({ where: { id: { [Op.not]: null } } }),
         models.Chart.destroy({ where: { author_id: { [Op.in]: list.user } } }),
         models.UserTeam.destroy({ where: { organization_id: { [Op.in]: list.team } } }),
         models.Session.destroy({ where: { session_id: { [Op.in]: list.session } } }),
@@ -46,6 +47,7 @@ async function main() {
         models.UserData.destroy({ where: { user_id: { [Op.in]: list.user } } })
     ]);
 
+    log(chalk.magenta(`🧹 Cleaned ${actions} actions`));
     log(chalk.magenta(`🧹 Cleaned ${sessions} sessions`));
     log(chalk.magenta(`🧹 Cleaned ${themes} themes`));
 

@@ -358,6 +358,7 @@ async function handleSession(request, h) {
         });
 }
 
+// eslint-disable-next-line
 async function login(request, h) {
     const { email, password, keepSession } = request.payload;
     const user = await User.findOne({
@@ -536,6 +537,7 @@ async function deleteToken(request, h) {
     return h.response().code(204);
 }
 
+// eslint-disable-next-line
 async function signup(request, h) {
     let session;
 
