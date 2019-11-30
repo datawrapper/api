@@ -25,7 +25,10 @@ const teamResponse = createResponseConfig({
     }).unknown()
 });
 
-const ROLES = ['owner', 'admin', 'member'];
+const ROLE_OWNER = 'owner';
+const ROLE_ADMIN = 'admin';
+const ROLE_MEMBER = 'member';
+const ROLES = [ROLE_OWNER, ROLE_ADMIN, ROLE_MEMBER];
 
 const routes = [
     {
@@ -623,7 +626,7 @@ async function getTeamMembers(request, h) {
     if (!server.methods.isAdmin(request)) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
-        if (memberRole === ROLES[2]) {
+        if (memberRole === ROLE_MEMBER) {
             return Boom.unauthorized();
         }
     }
@@ -675,7 +678,7 @@ async function getTeamMembers(request, h) {
                 email: user.email,
                 charts: user.charts.length,
                 isAdmin: user.role === 'admin' || user.role === 'sysadmin',
-                role: ROLES[user_team.dataValues.team_role],
+                role: user_team.team_role,
                 token,
                 isNewUser: token ? user.activate_token === token : undefined,
                 url: `/v3/users/${user.id}`
@@ -691,7 +694,7 @@ async function editTeam(request, h) {
     if (!server.methods.isAdmin(request)) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
-        if (memberRole === ROLES[2]) {
+        if (memberRole === ROLE_MEMBER) {
             return Boom.unauthorized();
         }
     }
@@ -723,7 +726,7 @@ async function deleteTeam(request, h) {
     if (!server.methods.isAdmin(request)) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
-        if (memberRole !== ROLES[0]) {
+        if (memberRole !== ROLE_OWNER) {
             return Boom.unauthorized();
         }
     }
@@ -792,7 +795,7 @@ async function deleteTeamMember(request, h) {
     if (!isAdmin) {
         const memberRole = await getMemberRole(user.id, params.id);
 
-        if (memberRole === ROLES[2] && user.id !== params.userId) {
+        if (memberRole === ROLE_MEMBER && user.id !== params.userId) {
             return Boom.unauthorized();
         }
     }
@@ -806,7 +809,7 @@ async function deleteTeamMember(request, h) {
 
     const owner = await UserTeam.findOne({
         where: {
-            team_role: ROLES[0],
+            team_role: ROLE_OWNER,
             organization_id: params.id
         }
     });
@@ -925,7 +928,7 @@ async function inviteTeamMember(request, h) {
     if (!isAdmin) {
         const memberRole = await getMemberRole(user.id, params.id);
 
-        if (memberRole === ROLES[2] || user.role === 'pending') {
+        if (memberRole === ROLE_MEMBER || user.role === 'pending') {
             return Boom.unauthorized();
         }
     }
@@ -995,14 +998,14 @@ async function inviteTeamMember(request, h) {
         invited_by: user.id
     };
 
-    if (payload.role === ROLES[0]) {
+    if (payload.role === ROLE_OWNER) {
         await UserTeam.update(
             {
-                team_role: ROLES[1]
+                team_role: ROLE_ADMIN
             },
             {
                 where: {
-                    team_role: ROLES[0],
+                    team_role: ROLE_OWNER,
                     organization_id: params.id
                 }
             }
@@ -1151,14 +1154,14 @@ async function addTeamMember(request, h) {
         invited_by: auth.artifacts.id
     };
 
-    if (payload.role === ROLES[0]) {
+    if (payload.role === ROLE_OWNER) {
         await UserTeam.update(
             {
-                team_role: ROLES[1]
+                team_role: ROLE_ADMIN
             },
             {
                 where: {
-                    team_role: ROLES[0],
+                    team_role: ROLE_OWNER,
                     organization_id: params.id
                 }
             }
@@ -1177,7 +1180,7 @@ async function changeMemberStatus(request, h) {
     if (!isAdmin) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
-        if (memberRole === ROLES[2]) {
+        if (memberRole === ROLE_MEMBER) {
             return Boom.unauthorized();
         }
     }
@@ -1189,14 +1192,14 @@ async function changeMemberStatus(request, h) {
         }
     });
 
-    if (payload.role === ROLES[0]) {
+    if (payload.role === ROLE_OWNER) {
         await UserTeam.update(
             {
-                team_role: ROLES[1]
+                team_role: ROLE_ADMIN
             },
             {
                 where: {
-                    team_role: ROLES[0],
+                    team_role: ROLE_OWNER,
                     organization_id: params.id
                 }
             }
