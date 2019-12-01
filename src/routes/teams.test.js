@@ -126,6 +126,7 @@ test('owner can remove team members', async t => {
         url: `/v3/teams/${t.context.data.team.id}/members`,
         auth: t.context.auth
     });
+    t.is(member.statusCode, 200);
 
     let hasUser = !!member.result.list.find(m => m.id === user.id);
 
