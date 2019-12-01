@@ -178,9 +178,10 @@ test('admins can create teams', async t => {
         }
     });
 
+    t.is(team.statusCode, 201);
+
     await t.context.addToCleanup('team', team.result.id);
 
-    t.is(team.statusCode, 201);
     t.is(team.result.name, 'Test');
     t.truthy(team.result.createdAt);
 });
