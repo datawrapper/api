@@ -463,6 +463,7 @@ module.exports = {
             path: `/{id}/invites/{token}`,
             options: {
                 tags: ['api'],
+                auth: false,
                 description: 'Reject a team invitation',
                 validate: {
                     params: {
