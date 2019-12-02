@@ -49,6 +49,10 @@ jobs:
                   <<: *registry
 
             - run:
+                name: Lint code
+                command: npm run lint
+
+            - run:
                   name: Run tests
                   environment:
                       DW_CONFIG_PATH: ./test/_config.ci.js
@@ -64,15 +68,6 @@ jobs:
             - store_artifacts:
                   path: ~/reports
 
-    lint:
-        <<: *defaults
-        steps:
-            - checkout
-            - restore_cache:
-                  <<: *cache
-
-            - run: npm run lint
-
 workflows:
     version: 2
     install, test and lint:
@@ -84,13 +79,6 @@ workflows:
 
             - test:
                   context: Testing DB
-                  filters:
-                      tags:
-                          only: /^v.*/
-                  requires:
-                      - install
-
-            - lint:
                   filters:
                       tags:
                           only: /^v.*/
