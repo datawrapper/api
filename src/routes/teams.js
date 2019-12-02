@@ -3,6 +3,7 @@ const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const nanoid = require('nanoid');
+const crypto = require('crypto');
 const { decamelize, camelize } = require('humps');
 const {
     Chart,
@@ -1092,6 +1093,12 @@ async function rejectTeamInvitation(request, h) {
     if (user) {
         // also remove user who never activated the account
         await user.destroy();
+
+        // and log a hashed version of the email for
+        // future spam detection
+        const hmac = crypto.createHash('sha256');
+        hmac.update(user.email);
+        logAction(userTeam.invited_by, 'team/invite/reject', hmac.digest('hex'));
     }
 
     return h.response().code(204);
