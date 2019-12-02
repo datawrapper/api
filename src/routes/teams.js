@@ -1057,6 +1057,8 @@ async function acceptTeamInvitation(request, h) {
         invite_token: ''
     });
 
+    logAction(userTeam.invited_by, 'team/invite/accept', params.id);
+
     return h.response().code(201);
 }
 
