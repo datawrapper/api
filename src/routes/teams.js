@@ -459,6 +459,29 @@ module.exports = {
         });
 
         server.route({
+            method: 'DELETE',
+            path: `/{id}/invites/{token}`,
+            options: {
+                tags: ['api'],
+                description: 'Reject a team invitation',
+                validate: {
+                    params: {
+                        id: Joi.string()
+                            .required()
+                            .description('Team ID (eg. guardians-of-the-galaxy)'),
+                        token: Joi.string()
+                            .required()
+                            .description('A valid team invitation token')
+                    }
+                },
+                response: createResponseConfig({
+                    status: { '204': Joi.any().empty() }
+                })
+            },
+            handler: rejectTeamInvitation
+        });
+
+        server.route({
             method: 'PUT',
             path: `/{id}/members/{userId}/status`,
             options: {
@@ -1034,6 +1057,29 @@ async function acceptTeamInvitation(request, h) {
     }
 
     return h.response().code(201);
+}
+
+/**
+ * handles DELETE /v3/teams/:id/invites/:token
+ */
+async function rejectTeamInvitation(request, h) {
+    const { auth, params } = request;
+
+    const user = auth.artifacts;
+
+    const res = await UserTeam.destroy({
+        where: {
+            user_id: user.id,
+            organization_id: params.id,
+            invite_token: params.token
+        }
+    });
+
+    if (!res) {
+        return Boom.unauthorized();
+    }
+
+    return h.response().code(204);
 }
 
 async function addTeamMember(request, h) {
