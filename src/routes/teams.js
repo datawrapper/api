@@ -1207,7 +1207,7 @@ async function changeMemberStatus(request, h) {
         }
     });
 
-    if (payload.status === ROLE_OWNER) {
+    if (payload.status === ROLE_OWNER && userTeam.invite_token === '') {
         await UserTeam.update(
             {
                 team_role: ROLE_ADMIN
