@@ -641,10 +641,7 @@ async function getTeamMembers(request, h) {
                 model: Team,
                 attributes: ['id'],
                 where: {
-                    id: params.id,
-                    deleted: {
-                        [Op.not]: true
-                    }
+                    id: params.id
                 }
             },
             {
@@ -655,6 +652,9 @@ async function getTeamMembers(request, h) {
                     organization_id: params.id,
                     deleted: {
                         [Op.not]: true
+                    },
+                    last_edit_step: {
+                        [Op.gt]: 1
                     }
                 }
             }
