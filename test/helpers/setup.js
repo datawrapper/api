@@ -9,6 +9,7 @@ const appendFile = promisify(fs.appendFile);
 
 const cleanupFile = path.join(os.tmpdir(), 'cleanup.csv');
 
+/* bcrypt hash for string "test-password" */
 const PASSWORD_HASH = '$2b$15$UdsGvrTLEk5DPRmRoHE4O..tzDpkWkAdKjBoKUjERXKoYHqTIRis6';
 
 function getCredentials() {
@@ -96,5 +97,5 @@ user;${user.id}
         return theme;
     }
 
-    return { server, models, getUser, getTeamWithUser, addToCleanup, createTheme };
+    return { server, models, getUser, getTeamWithUser, addToCleanup, createTheme, getCredentials };
 }
