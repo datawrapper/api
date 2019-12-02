@@ -1083,19 +1083,15 @@ async function rejectTeamInvitation(request, h) {
     // remove invitation
     await userTeam.destroy();
 
-    const user = await User.findOne({
-        where: {
-            id: userTeam.user_id,
-            activate_token: params.token
-        }
-    });
+    const user = await User.findByPk(userTeam.user_id);
 
     if (user) {
         // also remove user who never activated the account
-        await user.destroy();
+        if (user.activate_token === params.token) {
+            await user.destroy();
+        }
 
-        // and log a hashed version of the email for
-        // future spam detection
+        // and log email hash for future spam detection
         const hmac = crypto.createHash('sha256');
         hmac.update(user.email);
         logAction(userTeam.invited_by, 'team/invite/reject', hmac.digest('hex'));
