@@ -1009,6 +1009,7 @@ async function inviteTeamMember(request, h) {
     const team = await Team.findByPk(data.organization_id);
 
     const { https, domain } = server.methods.config('frontend');
+    const appUrl = `${https ? 'https' : 'http'}://${domain}`;
     await server.app.events.emit(server.app.event.SEND_EMAIL, {
         type: 'team-invite',
         to: invitee.email,
@@ -1016,9 +1017,10 @@ async function inviteTeamMember(request, h) {
         data: {
             team_admin: auth.artifacts.email,
             team_name: team.name,
-            activation_link: `${https ? 'https' : 'http'}://${domain}/${
-                inviteeWasCreated ? 'datawrapper-invite' : 'organization-invite'
-            }/${data.invite_token}`
+            activation_link: inviteeWasCreated
+                ? `${appUrl}/datawrapper-invite/${data.invite_token}`
+                : `${appUrl}/team/${team.id}/invite/${data.invite_token}/accept`,
+            rejection_link: `${appUrl}/team/${team.id}/invite/${data.invite_token}/reject`
         }
     });
 
