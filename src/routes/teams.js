@@ -3,6 +3,7 @@ const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
 const nanoid = require('nanoid');
+const crypto = require('crypto');
 const { decamelize, camelize } = require('humps');
 const {
     Chart,
@@ -433,6 +434,53 @@ module.exports = {
              * handles POST /v3/teams/:id/invites
              */
             handler: inviteTeamMember
+        });
+
+        server.route({
+            method: 'POST',
+            path: '/{id}/invites/{token}',
+            options: {
+                tags: ['api'],
+                description: 'Accept a team invitation',
+                validate: {
+                    params: {
+                        id: Joi.string()
+                            .required()
+                            .description('Team ID (eg. guardians-of-the-galaxy)'),
+                        token: Joi.string()
+                            .required()
+                            .description('A valid team invitation token')
+                    }
+                },
+                response: createResponseConfig({
+                    status: { '201': Joi.any().empty() }
+                })
+            },
+            handler: acceptTeamInvitation
+        });
+
+        server.route({
+            method: 'DELETE',
+            path: `/{id}/invites/{token}`,
+            options: {
+                tags: ['api'],
+                auth: false,
+                description: 'Reject a team invitation',
+                validate: {
+                    params: {
+                        id: Joi.string()
+                            .required()
+                            .description('Team ID (eg. guardians-of-the-galaxy)'),
+                        token: Joi.string()
+                            .required()
+                            .description('A valid team invitation token')
+                    }
+                },
+                response: createResponseConfig({
+                    status: { '204': Joi.any().empty() }
+                })
+            },
+            handler: rejectTeamInvitation
         });
 
         server.route({
@@ -967,6 +1015,89 @@ async function inviteTeamMember(request, h) {
     await logAction(user.id, 'team/invite', { team: params.id, invited: invitee.id });
 
     return h.response().code(201);
+}
+
+/**
+ * handles POST /v3/teams/:id/invites/:token
+ */
+async function acceptTeamInvitation(request, h) {
+    const { auth, params } = request;
+
+    const user = auth.artifacts;
+
+    const userTeam = await UserTeam.findOne({
+        where: {
+            user_id: user.id,
+            organization_id: params.id,
+            invite_token: params.token
+        }
+    });
+
+    if (!userTeam) {
+        return Boom.notFound();
+    }
+
+    if (userTeam.team_role === 'owner') {
+        // we're invited as owner, turn former owner
+        // into team admin
+        await UserTeam.update(
+            {
+                team_role: 'admin'
+            },
+            {
+                where: {
+                    user_id: {
+                        [Op.not]: user.id
+                    },
+                    team_role: 'owner'
+                }
+            }
+        );
+    }
+    await userTeam.update({
+        invite_token: ''
+    });
+
+    logAction(userTeam.invited_by, 'team/invite/accept', params.id);
+
+    return h.response().code(201);
+}
+
+/**
+ * handles DELETE /v3/teams/:id/invites/:token
+ */
+async function rejectTeamInvitation(request, h) {
+    const { params } = request;
+
+    const userTeam = await UserTeam.findOne({
+        where: {
+            organization_id: params.id,
+            invite_token: params.token
+        }
+    });
+
+    if (!userTeam) {
+        return Boom.notFound();
+    }
+
+    // remove invitation
+    await userTeam.destroy();
+
+    const user = await User.findByPk(userTeam.user_id);
+
+    if (user) {
+        // also remove user who never activated the account
+        if (user.activate_token === params.token) {
+            await user.destroy();
+        }
+
+        // and log email hash for future spam detection
+        const hmac = crypto.createHash('sha256');
+        hmac.update(user.email);
+        logAction(userTeam.invited_by, 'team/invite/reject', hmac.digest('hex'));
+    }
+
+    return h.response().code(204);
 }
 
 async function addTeamMember(request, h) {
