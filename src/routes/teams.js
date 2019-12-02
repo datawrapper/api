@@ -572,9 +572,6 @@ async function getTeam(request, h) {
     }
 
     const options = {
-        attributes: {
-            exclude: ['deleted']
-        },
         include: [
             {
                 model: User,
@@ -582,10 +579,7 @@ async function getTeam(request, h) {
             }
         ],
         where: {
-            id: params.id,
-            deleted: {
-                [Op.not]: true
-            }
+            id: params.id
         }
     };
 
@@ -703,10 +697,7 @@ async function editTeam(request, h) {
 
     let data = payload;
 
-    let team = await Team.findOne({
-        where: { id: params.id, deleted: { [Op.not]: true } },
-        attributes: { exclude: ['deleted'] }
-    });
+    let team = await Team.findByPk(params.id);
 
     if (!team) return Boom.notFound();
 
@@ -970,7 +961,7 @@ async function inviteTeamMember(request, h) {
     let inviteeWasCreated = false;
 
     const teamCount = await Team.count({
-        where: { id: params.id, deleted: { [Op.not]: true } }
+        where: { id: params.id }
     });
 
     if (!teamCount) return Boom.notFound();
@@ -1130,7 +1121,7 @@ async function addTeamMember(request, h) {
     if (!isAdmin) return Boom.unauthorized();
 
     const teamCount = await Team.count({
-        where: { id: params.id, deleted: { [Op.not]: true } }
+        where: { id: params.id }
     });
 
     if (!teamCount) return Boom.notFound();
