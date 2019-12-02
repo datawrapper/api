@@ -10,6 +10,7 @@ const {
     Team,
     User,
     UserTeam,
+    Folder,
     TeamProduct,
     Product,
     TeamTheme,
@@ -732,52 +733,42 @@ async function deleteTeam(request, h) {
         }
     }
 
-    const updates = await Team.update(
-        {
-            deleted: true
-        },
-        {
-            where: {
-                id: params.id,
-                deleted: {
-                    [Op.not]: true
-                }
-            }
-        }
-    );
-
-    await UserTeam.destroy({
+    const query = {
         where: {
             organization_id: params.id
         }
-    });
+    };
 
-    await TeamProduct.destroy({
+    await Promise.all([
+        // remove all relations to this team
+        UserTeam.destroy(query),
+        TeamProduct.destroy(query),
+        TeamTheme.destroy(query),
+        // move charts back to their owners
+        Chart.update(
+            {
+                organization_id: null,
+                in_folder: null
+            },
+            query
+        )
+    ]);
+
+    // remove team folders
+    await Folder.destroy({
         where: {
-            organization_id: params.id
+            org_id: params.id
         }
     });
 
-    await TeamTheme.destroy({
+    const destroyedRows = await Team.destroy({
         where: {
-            organization_id: params.id
+            id: params.id
         }
     });
-
-    await Chart.update(
-        {
-            organization_id: null,
-            in_folder: null
-        },
-        {
-            where: {
-                organization_id: params.id
-            }
-        }
-    );
 
     /* no rows got updated, which means the team is already deleted or doesn't exist */
-    if (!updates[0]) {
+    if (!destroyedRows) {
         return Boom.notFound();
     }
 
