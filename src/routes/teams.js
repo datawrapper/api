@@ -10,6 +10,7 @@ const {
     Team,
     User,
     UserTeam,
+    Folder,
     TeamProduct,
     Product,
     TeamTheme,
@@ -571,9 +572,6 @@ async function getTeam(request, h) {
     }
 
     const options = {
-        attributes: {
-            exclude: ['deleted']
-        },
         include: [
             {
                 model: User,
@@ -581,10 +579,7 @@ async function getTeam(request, h) {
             }
         ],
         where: {
-            id: params.id,
-            deleted: {
-                [Op.not]: true
-            }
+            id: params.id
         }
     };
 
@@ -640,10 +635,7 @@ async function getTeamMembers(request, h) {
                 model: Team,
                 attributes: ['id'],
                 where: {
-                    id: params.id,
-                    deleted: {
-                        [Op.not]: true
-                    }
+                    id: params.id
                 }
             },
             {
@@ -654,6 +646,9 @@ async function getTeamMembers(request, h) {
                     organization_id: params.id,
                     deleted: {
                         [Op.not]: true
+                    },
+                    last_edit_step: {
+                        [Op.gt]: 1
                     }
                 }
             }
@@ -702,10 +697,7 @@ async function editTeam(request, h) {
 
     let data = payload;
 
-    let team = await Team.findOne({
-        where: { id: params.id, deleted: { [Op.not]: true } },
-        attributes: { exclude: ['deleted'] }
-    });
+    let team = await Team.findByPk(params.id);
 
     if (!team) return Boom.notFound();
 
@@ -732,52 +724,42 @@ async function deleteTeam(request, h) {
         }
     }
 
-    const updates = await Team.update(
-        {
-            deleted: true
-        },
-        {
-            where: {
-                id: params.id,
-                deleted: {
-                    [Op.not]: true
-                }
-            }
-        }
-    );
-
-    await UserTeam.destroy({
+    const query = {
         where: {
             organization_id: params.id
         }
-    });
+    };
 
-    await TeamProduct.destroy({
+    await Promise.all([
+        // remove all relations to this team
+        UserTeam.destroy(query),
+        TeamProduct.destroy(query),
+        TeamTheme.destroy(query),
+        // move charts back to their owners
+        Chart.update(
+            {
+                organization_id: null,
+                in_folder: null
+            },
+            query
+        )
+    ]);
+
+    // remove team folders
+    await Folder.destroy({
         where: {
-            organization_id: params.id
+            org_id: params.id
         }
     });
 
-    await TeamTheme.destroy({
+    const destroyedRows = await Team.destroy({
         where: {
-            organization_id: params.id
+            id: params.id
         }
     });
-
-    await Chart.update(
-        {
-            organization_id: null,
-            in_folder: null
-        },
-        {
-            where: {
-                organization_id: params.id
-            }
-        }
-    );
 
     /* no rows got updated, which means the team is already deleted or doesn't exist */
-    if (!updates[0]) {
+    if (!destroyedRows) {
         return Boom.notFound();
     }
 
@@ -979,7 +961,7 @@ async function inviteTeamMember(request, h) {
     let inviteeWasCreated = false;
 
     const teamCount = await Team.count({
-        where: { id: params.id, deleted: { [Op.not]: true } }
+        where: { id: params.id }
     });
 
     if (!teamCount) return Boom.notFound();
@@ -1027,6 +1009,7 @@ async function inviteTeamMember(request, h) {
     const team = await Team.findByPk(data.organization_id);
 
     const { https, domain } = server.methods.config('frontend');
+    const appUrl = `${https ? 'https' : 'http'}://${domain}`;
     await server.app.events.emit(server.app.event.SEND_EMAIL, {
         type: 'team-invite',
         to: invitee.email,
@@ -1034,9 +1017,10 @@ async function inviteTeamMember(request, h) {
         data: {
             team_admin: auth.artifacts.email,
             team_name: team.name,
-            activation_link: `${https ? 'https' : 'http'}://${domain}/${
-                inviteeWasCreated ? 'datawrapper-invite' : 'organization-invite'
-            }/${data.invite_token}`
+            activation_link: inviteeWasCreated
+                ? `${appUrl}/datawrapper-invite/${data.invite_token}`
+                : `${appUrl}/team/${team.id}/invite/${data.invite_token}/accept`,
+            rejection_link: `${appUrl}/team/${team.id}/invite/${data.invite_token}/reject`
         }
     });
 
@@ -1139,7 +1123,7 @@ async function addTeamMember(request, h) {
     if (!isAdmin) return Boom.unauthorized();
 
     const teamCount = await Team.count({
-        where: { id: params.id, deleted: { [Op.not]: true } }
+        where: { id: params.id }
     });
 
     if (!teamCount) return Boom.notFound();
