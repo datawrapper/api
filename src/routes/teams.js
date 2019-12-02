@@ -532,18 +532,18 @@ module.exports = {
 };
 
 async function getMemberRole(userId, teamId) {
-    const team = await UserTeam.findOne({
+    const userTeamRow = await UserTeam.findOne({
         where: {
             user_id: userId,
             organization_id: teamId
         }
     });
 
-    if (!team) {
+    if (!userTeamRow) {
         throw Boom.unauthorized();
     }
 
-    return ROLES[team.dataValues.team_role];
+    return userTeamRow.team_role;
 }
 
 async function getAllTeams(request, h) {
@@ -679,7 +679,7 @@ async function getTeamMembers(request, h) {
                 email: user.email,
                 charts: user.charts.length,
                 isAdmin: user.role === 'admin' || user.role === 'sysadmin',
-                role: ROLES[user_team.dataValues.team_role],
+                role: user_team.team_role,
                 token,
                 isNewUser: token ? user.activate_token === token : undefined,
                 url: `/v3/users/${user.id}`
@@ -817,7 +817,7 @@ async function deleteTeamMember(request, h) {
 
     if (!row) return Boom.notFound();
 
-    if (ROLES[row.dataValues.team_role] === 'owner') {
+    if (row.team_role === ROLE_OWNER) {
         return Boom.unauthorized('Can not delete team owner.');
     }
 
