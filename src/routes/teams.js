@@ -12,7 +12,8 @@ const {
     UserTeam,
     TeamProduct,
     Product,
-    TeamTheme
+    TeamTheme,
+    UserPluginCache
 } = require('@datawrapper/orm/models');
 const { logAction } = require('@datawrapper/orm/utils/action');
 
@@ -25,7 +26,10 @@ const teamResponse = createResponseConfig({
     }).unknown()
 });
 
-const ROLES = ['owner', 'admin', 'member'];
+const ROLE_OWNER = 'owner';
+const ROLE_ADMIN = 'admin';
+const ROLE_MEMBER = 'member';
+const ROLES = [ROLE_OWNER, ROLE_ADMIN, ROLE_MEMBER];
 
 const routes = [
     {
@@ -528,18 +532,18 @@ module.exports = {
 };
 
 async function getMemberRole(userId, teamId) {
-    const team = await UserTeam.findOne({
+    const userTeamRow = await UserTeam.findOne({
         where: {
             user_id: userId,
             organization_id: teamId
         }
     });
 
-    if (!team) {
+    if (!userTeamRow) {
         throw Boom.unauthorized();
     }
 
-    return ROLES[team.dataValues.team_role];
+    return userTeamRow.team_role;
 }
 
 async function getAllTeams(request, h) {
@@ -623,7 +627,7 @@ async function getTeamMembers(request, h) {
     if (!server.methods.isAdmin(request)) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
-        if (memberRole === ROLES[2]) {
+        if (memberRole === ROLE_MEMBER) {
             return Boom.unauthorized();
         }
     }
@@ -675,7 +679,7 @@ async function getTeamMembers(request, h) {
                 email: user.email,
                 charts: user.charts.length,
                 isAdmin: user.role === 'admin' || user.role === 'sysadmin',
-                role: ROLES[user_team.dataValues.team_role],
+                role: user_team.team_role,
                 token,
                 isNewUser: token ? user.activate_token === token : undefined,
                 url: `/v3/users/${user.id}`
@@ -691,7 +695,7 @@ async function editTeam(request, h) {
     if (!server.methods.isAdmin(request)) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
-        if (memberRole === ROLES[2]) {
+        if (memberRole === ROLE_MEMBER) {
             return Boom.unauthorized();
         }
     }
@@ -723,7 +727,7 @@ async function deleteTeam(request, h) {
     if (!server.methods.isAdmin(request)) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
-        if (memberRole !== ROLES[0]) {
+        if (memberRole !== ROLE_OWNER) {
             return Boom.unauthorized();
         }
     }
@@ -792,7 +796,7 @@ async function deleteTeamMember(request, h) {
     if (!isAdmin) {
         const memberRole = await getMemberRole(user.id, params.id);
 
-        if (memberRole === ROLES[2] && user.id !== params.userId) {
+        if (memberRole === ROLE_MEMBER && user.id !== params.userId) {
             return Boom.unauthorized();
         }
     }
@@ -806,18 +810,18 @@ async function deleteTeamMember(request, h) {
 
     const owner = await UserTeam.findOne({
         where: {
-            team_role: ROLES[0],
+            team_role: ROLE_OWNER,
             organization_id: params.id
         }
     });
 
     if (!row) return Boom.notFound();
 
-    if (ROLES[row.dataValues.team_role] === 'owner' && !isAdmin) {
+    if (row.team_role === ROLE_OWNER) {
         return Boom.unauthorized('Can not delete team owner.');
     }
 
-    if (!owner && !isAdmin) {
+    if (!owner) {
         const chartCount = await Chart.count({
             where: {
                 author_id: params.userId,
@@ -845,6 +849,8 @@ async function deleteTeamMember(request, h) {
     );
 
     await row.destroy();
+
+    await clearPluginCache(params.userId);
 
     return h.response().code(204);
 }
@@ -912,6 +918,22 @@ async function createTeam(request, h) {
     }
 }
 
+function canInviteUsers({ userRole, memberRole, inviteeRole }) {
+    if (userRole === 'pending') {
+        // only activated users may invite users
+        return false;
+    }
+    if (memberRole !== ROLE_ADMIN && memberRole !== ROLE_OWNER) {
+        // only team admins and team owners may invite users
+        return false;
+    }
+    if (memberRole !== ROLE_OWNER && inviteeRole === ROLE_OWNER) {
+        // only a team owner may invite a new owner
+        return false;
+    }
+    return true;
+}
+
 /**
  * handles POST /v3/teams/:id/invites
  */
@@ -925,7 +947,13 @@ async function inviteTeamMember(request, h) {
     if (!isAdmin) {
         const memberRole = await getMemberRole(user.id, params.id);
 
-        if (memberRole === ROLES[2] || user.role === 'pending') {
+        if (
+            !canInviteUsers({
+                userRole: user.role,
+                memberRole,
+                inviteeRole: payload.role
+            })
+        ) {
             return Boom.unauthorized();
         }
     }
@@ -1058,6 +1086,10 @@ async function acceptTeamInvitation(request, h) {
         invite_token: ''
     });
 
+    // clear user plugin cache as user might have
+    // access to new products now
+    await clearPluginCache(user.id);
+
     logAction(userTeam.invited_by, 'team/invite/accept', params.id);
 
     return h.response().code(201);
@@ -1137,8 +1169,38 @@ async function addTeamMember(request, h) {
         invited_by: auth.artifacts.id
     };
 
+    if (payload.role === ROLE_OWNER) {
+        await UserTeam.update(
+            {
+                team_role: ROLE_ADMIN
+            },
+            {
+                where: {
+                    team_role: ROLE_OWNER,
+                    organization_id: params.id
+                }
+            }
+        );
+    }
+
+    // clear user plugin cache as user might have
+    // access to new products now
+    await clearPluginCache(user.id);
+
     await UserTeam.create(data);
     return h.response().code(201);
+}
+
+function canChangeMemberStatus({ memberRole, userRole }) {
+    if (memberRole === ROLE_MEMBER) {
+        // only admins and owners may change member status
+        return false;
+    }
+    if (memberRole !== ROLE_OWNER && userRole === ROLE_OWNER) {
+        // only team owners may set a new team owner
+        return false;
+    }
+    return true;
 }
 
 async function changeMemberStatus(request, h) {
@@ -1149,7 +1211,7 @@ async function changeMemberStatus(request, h) {
     if (!isAdmin) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
-        if (memberRole === ROLES[2]) {
+        if (!canChangeMemberStatus({ memberRole, userRole: payload.role })) {
             return Boom.unauthorized();
         }
     }
@@ -1160,6 +1222,20 @@ async function changeMemberStatus(request, h) {
             organization_id: params.id
         }
     });
+
+    if (payload.role === ROLE_OWNER) {
+        await UserTeam.update(
+            {
+                team_role: ROLE_ADMIN
+            },
+            {
+                where: {
+                    team_role: ROLE_OWNER,
+                    organization_id: params.id
+                }
+            }
+        );
+    }
 
     await userTeam.update({
         team_role: payload.status
@@ -1195,6 +1271,14 @@ async function getPendingTeamInvites({ user }) {
             invite_token: {
                 [Op.not]: ''
             }
+        }
+    });
+}
+
+async function clearPluginCache(userId) {
+    return UserPluginCache.destroy({
+        where: {
+            user_id: userId
         }
     });
 }
