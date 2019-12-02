@@ -436,6 +436,29 @@ module.exports = {
         });
 
         server.route({
+            method: 'POST',
+            path: '/{id}/invites/{token}',
+            options: {
+                tags: ['api'],
+                description: 'Accept a team invitation',
+                validate: {
+                    params: {
+                        id: Joi.string()
+                            .required()
+                            .description('Team ID (eg. guardians-of-the-galaxy)'),
+                        token: Joi.string()
+                            .required()
+                            .description('A valid team invitation token')
+                    }
+                },
+                response: createResponseConfig({
+                    status: { '201': Joi.any().empty() }
+                })
+            },
+            handler: acceptTeamInvitation
+        });
+
+        server.route({
             method: 'PUT',
             path: `/{id}/members/{userId}/status`,
             options: {
@@ -965,6 +988,50 @@ async function inviteTeamMember(request, h) {
     });
 
     await logAction(user.id, 'team/invite', { team: params.id, invited: invitee.id });
+
+    return h.response().code(201);
+}
+
+/**
+ * handles POST /v3/teams/:id/invites/:token
+ */
+async function acceptTeamInvitation(request, h) {
+    const { auth, params } = request;
+
+    const user = auth.artifacts;
+
+    const userTeam = await UserTeam.findOne({
+        where: {
+            user_id: user.id,
+            organization_id: params.id,
+            invite_token: params.token
+        }
+    });
+
+    if (userTeam) {
+        if (userTeam.team_role === 'owner') {
+            // we're invited as owner, turn former owner
+            // into team admin
+            await UserTeam.update(
+                {
+                    team_role: 'admin'
+                },
+                {
+                    where: {
+                        user_id: {
+                            [Op.not]: user.id
+                        },
+                        team_role: 'owner'
+                    }
+                }
+            );
+        }
+        await userTeam.update({
+            invite_token: ''
+        });
+    } else {
+        return Boom.unauthorized();
+    }
 
     return h.response().code(201);
 }
