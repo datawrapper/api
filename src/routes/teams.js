@@ -1180,6 +1180,17 @@ async function addTeamMember(request, h) {
     return h.response().code(201);
 }
 
+function canChangeMemberStatus({ memberRole, userRole }) {
+    if (memberRole === ROLE_MEMBER) {
+        // only admins and owners may change member status
+        return false;
+    }
+    if (memberRole !== ROLE_OWNER && userRole === ROLE_OWNER) {
+        // only team owners may set a new team owner
+        return false;
+    }
+    return true;
+}
 async function changeMemberStatus(request, h) {
     const { auth, params, payload, server } = request;
 
@@ -1188,7 +1199,7 @@ async function changeMemberStatus(request, h) {
     if (!isAdmin) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
-        if (memberRole === ROLE_MEMBER) {
+        if (!canChangeMemberStatus({ memberRole, userRole: payload.role })) {
             return Boom.unauthorized();
         }
     }
