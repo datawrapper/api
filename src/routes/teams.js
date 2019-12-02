@@ -1211,7 +1211,7 @@ async function changeMemberStatus(request, h) {
     if (!isAdmin) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
-        if (!canChangeMemberStatus({ memberRole, userRole: payload.role })) {
+        if (!canChangeMemberStatus({ memberRole, userRole: payload.status })) {
             return Boom.unauthorized();
         }
     }
@@ -1223,7 +1223,7 @@ async function changeMemberStatus(request, h) {
         }
     });
 
-    if (payload.role === ROLE_OWNER) {
+    if (payload.status === ROLE_OWNER) {
         await UserTeam.update(
             {
                 team_role: ROLE_ADMIN
