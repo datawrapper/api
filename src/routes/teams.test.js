@@ -377,7 +377,7 @@ test('owners can not get removed', async t => {
 });
 
 test('admins can create teams', async t => {
-    const admin = await t.context.models.User.findByPk(1);
+    const { user: admin } = await t.context.getUser('admin');
     const auth = { strategy: 'simple', credentials: { session: '' }, artifacts: admin };
 
     const team = await t.context.server.inject({

@@ -10,7 +10,7 @@ module.exports = {
         domain: 'localhost',
         sessionID: 'DW-SESSION',
         enableMigration: true,
-        hashRounds: 15,
+        hashRounds: 5,
         secretAuthSalt: process.env.SECRET_AUTH_SALT,
         cors: ['*']
     },

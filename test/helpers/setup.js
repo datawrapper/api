@@ -10,7 +10,7 @@ const appendFile = promisify(fs.appendFile);
 const cleanupFile = path.join(os.tmpdir(), 'cleanup.csv');
 
 /* bcrypt hash for string "test-password" */
-const PASSWORD_HASH = '$2b$15$UdsGvrTLEk5DPRmRoHE4O..tzDpkWkAdKjBoKUjERXKoYHqTIRis6';
+const PASSWORD_HASH = '$2a$05$6B584QgS5SOXi1m.jM/H9eV.2tCaqNc5atHnWfYlFe5riXVW9z7ja';
 
 function getCredentials() {
     return {
@@ -28,8 +28,10 @@ export async function setup(options) {
     }
 
     async function getUser(role = 'editor', pwd = PASSWORD_HASH) {
+        const credentials = getCredentials();
         const user = await models.User.create({
-            email: getCredentials().email,
+            name: `name-${credentials.email.split('@').shift()}`,
+            email: credentials.email,
             pwd,
             role
         });
@@ -43,13 +45,18 @@ export async function setup(options) {
             }
         });
 
-        const data = `session;${session.id}
-user;${user.id}
-`;
+        const { token } = await models.AuthToken.newToken({
+            user_id: user.id,
+            comment: 'API TEST'
+        });
 
-        await appendFile(cleanupFile, data, { encoding: 'utf-8' });
+        await Promise.all([
+            addToCleanup('token', token),
+            addToCleanup('session', session.id),
+            addToCleanup('user', user.id)
+        ]);
 
-        return { user, session };
+        return { user, session, token };
     }
 
     async function getTeamWithUser(role = 'owner') {

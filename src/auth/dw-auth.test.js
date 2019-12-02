@@ -1,25 +1,29 @@
 import test from 'ava';
 
-import { init } from '../server';
+import { setup } from '../../test/helpers/setup';
 
 test.before(async t => {
-    t.context.server = await init({ usePlugins: false });
+    const { server, getUser } = await setup({ usePlugins: false });
+
+    t.context.user = await getUser();
+    t.context.server = server;
 });
 
 test('Should accept valid token', async t => {
+    const { user, token } = t.context.user;
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/me',
         headers: {
-            authorization: 'Bearer Agamotto'
+            authorization: `Bearer ${token}`
         }
     });
 
     const { auth } = res.request;
 
     t.true(auth.isAuthenticated);
-    t.deepEqual(auth.credentials, { token: 'Agamotto' });
-    t.is(auth.artifacts.id, 1);
+    t.deepEqual(auth.credentials, { token: token });
+    t.is(auth.artifacts.id, user.id);
 });
 
 test('Should reject invalid token', async t => {
@@ -39,20 +43,21 @@ test('Should reject invalid token', async t => {
 });
 
 test('Should accept valid session cookie', async t => {
+    const { user, session } = t.context.user;
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/me',
         headers: {
-            cookie: 'DW-SESSION=Danvers'
+            cookie: `DW-SESSION=${session.id}`
         }
     });
 
     const { auth } = res.request;
 
     t.true(auth.isAuthenticated);
-    t.is(auth.credentials.session, 'Danvers');
+    t.is(auth.credentials.session, session.id);
     t.truthy(auth.credentials.data);
-    t.is(auth.artifacts.id, 1);
+    t.is(auth.artifacts.id, user.id);
 });
 
 test('Should reject invalid session cookie', async t => {
@@ -72,12 +77,13 @@ test('Should reject invalid session cookie', async t => {
 });
 
 test('Invalid token is ignored when session cookie is valid', async t => {
+    const { session } = t.context.user;
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/me',
         headers: {
             authorization: 'Bearer Strange',
-            cookie: 'DW-SESSION=Danvers'
+            cookie: `DW-SESSION=${session.id}`
         }
     });
 
@@ -86,11 +92,12 @@ test('Invalid token is ignored when session cookie is valid', async t => {
 });
 
 test('Invalid session cookie is ignored when token is valid', async t => {
+    const { token } = t.context.user;
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/me',
         headers: {
-            authorization: 'Bearer Agamotto',
+            authorization: `Bearer ${token}`,
             cookie: 'DW-SESSION=Chewie'
         }
     });

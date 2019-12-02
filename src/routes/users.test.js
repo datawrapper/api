@@ -1,33 +1,26 @@
 import test from 'ava';
-import nanoid from 'nanoid';
 import sortBy from 'lodash/sortBy';
 
 import { setup } from '../../test/helpers/setup';
 
 test.before(async t => {
-    const { server, models, getUser, getTeamWithUser } = await setup({ usePlugins: false });
+    const { server, models, getUser, getTeamWithUser, getCredentials, addToCleanup } = await setup({
+        usePlugins: false
+    });
     t.context.server = server;
 
-    const { User, Product, UserProduct } = models;
-    t.context.User = User;
-    t.context.Product = Product;
-    t.context.UserProduct = UserProduct;
-    t.context.deleteUserFromDB = async email => {
-        await User.destroy({
-            where: { email },
-            attributes: ['id']
-        });
-    };
+    t.context.user = await getUser();
+    t.context.admin = await getUser('admin');
+    t.context.models = models;
 
     t.context.getUser = getUser;
     t.context.getTeamWithUser = getTeamWithUser;
+    t.context.getCredentials = getCredentials;
+    t.context.addToCleanup = addToCleanup;
 });
 
 test('It should be possible to create a user, login and logout', async t => {
-    const credentials = {
-        email: `test-${nanoid(5)}@ava.de`,
-        password: 'strong-secure-password'
-    };
+    const credentials = t.context.getCredentials();
 
     /* create user with email and some data */
     let res = await t.context.server.inject({
@@ -37,6 +30,7 @@ test('It should be possible to create a user, login and logout', async t => {
     });
 
     t.log('User created', res.result.email);
+    await t.context.addToCleanup('user', res.result.id);
 
     t.is(res.statusCode, 201);
     t.is(res.result.email, credentials.email);
@@ -71,18 +65,10 @@ test('It should be possible to create a user, login and logout', async t => {
     t.is(res.statusCode, 205);
     t.false(res.headers['set-cookie'].join().includes(cookieString));
     t.is(res.headers[('clear-site-data', '"cookies", "storage", "executionContexts"')]);
-
-    /* start - replace with DELETE endpoint in the future */
-    await t.context.deleteUserFromDB(credentials.email);
-    t.log('Deleted', credentials.email);
-    /* end */
 });
 
 test('New user passwords should be saved as bcrypt hash', async t => {
-    const credentials = {
-        email: `test-${nanoid(5)}@ava.de`,
-        password: 'strong-secure-password'
-    };
+    const credentials = t.context.getCredentials();
 
     /* create user with email and some data */
     const { result } = await t.context.server.inject({
@@ -93,17 +79,16 @@ test('New user passwords should be saved as bcrypt hash', async t => {
 
     t.log('User created', result.email);
 
-    const user = await t.context.User.findByPk(result.id, { attributes: ['pwd'] });
+    const user = await t.context.models.User.findByPk(result.id, { attributes: ['pwd'] });
 
     t.is(user.pwd.slice(0, 2), '$2');
 
-    await t.context.deleteUserFromDB(credentials.email);
-    t.log('Deleted', credentials.email);
+    await t.context.addToCleanup('user', result.id);
 });
 
 test('GET /users/:id - should include teams when fetched as admin', async t => {
     /* create admin user to fetch different user with team */
-    const { user, session } = await t.context.getUser('admin');
+    const { session } = t.context.admin;
 
     /* create a team with user to fetch */
     const team = await t.context.getTeamWithUser();
@@ -111,10 +96,8 @@ test('GET /users/:id - should include teams when fetched as admin', async t => {
     const res = await t.context.server.inject({
         method: 'GET',
         url: `/v3/users/${team.user.id}`,
-        auth: {
-            strategy: 'session',
-            credentials: session,
-            artifacts: user
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
         }
     });
 
@@ -125,14 +108,12 @@ test('GET /users/:id - should include teams when fetched as admin', async t => {
 });
 
 test('Users endpoints should return 404 if no user was found', async t => {
-    const { user, session } = await t.context.getUser('admin');
+    const { session } = t.context.admin;
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/users/12345678',
-        auth: {
-            strategy: 'session',
-            credentials: session,
-            artifacts: user
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
         }
     });
 
@@ -140,12 +121,14 @@ test('Users endpoints should return 404 if no user was found', async t => {
 });
 
 test('Users endpoints should return products for admins', async t => {
-    const [admin, { user }] = await Promise.all([t.context.getUser('admin'), t.context.getUser()]);
-    const product = await t.context.Product.create({
+    const admin = t.context.admin;
+    const { user } = t.context.user;
+
+    const product = await t.context.models.Product.create({
         name: 'test-product'
     });
 
-    const userProduct = await t.context.UserProduct.create({
+    const userProduct = await t.context.models.UserProduct.create({
         userId: user.id,
         productId: product.id
     });
@@ -153,10 +136,8 @@ test('Users endpoints should return products for admins', async t => {
     const res = await t.context.server.inject({
         method: 'GET',
         url: `/v3/users/${user.id}`,
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${admin.session.id}`
         }
     });
 
@@ -175,15 +156,13 @@ test('Users endpoints should return products for admins', async t => {
 });
 
 test('Admin can sort users by creation date - Ascending', async t => {
-    const admin = await t.context.getUser('admin');
+    const { session } = t.context.admin;
 
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/users?orderBy=createdAt&order=ASC',
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
         }
     });
 
@@ -196,15 +175,13 @@ test('Admin can sort users by creation date - Ascending', async t => {
 });
 
 test('Admin can sort users by creation date - Descending', async t => {
-    const admin = await t.context.getUser('admin');
+    const { session } = t.context.admin;
 
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/users?orderBy=createdAt&order=DESC',
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
         }
     });
 
@@ -219,15 +196,13 @@ test('Admin can sort users by creation date - Descending', async t => {
 });
 
 test('Admin can sort users by chart count - Ascending', async t => {
-    const admin = await t.context.getUser('admin');
+    const { session } = t.context.admin;
 
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/users?orderBy=chartCount&order=ASC',
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
         }
     });
 
@@ -240,15 +215,13 @@ test('Admin can sort users by chart count - Ascending', async t => {
 });
 
 test('Admin can sort users by chart count - Descending', async t => {
-    const admin = await t.context.getUser('admin');
+    const { session } = await t.context.getUser('admin');
 
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/users?orderBy=chartCount&order=DESC',
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
         }
     });
 
@@ -263,16 +236,14 @@ test('Admin can sort users by chart count - Descending', async t => {
 });
 
 test('Users endpoint searches in name field', async t => {
-    const search = 'editor';
-    const admin = await t.context.getUser('admin');
+    const search = 'name-test';
+    const { session } = t.context.admin;
 
     const res = await t.context.server.inject({
         method: 'GET',
         url: `/v3/users?search=${search}`,
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
         }
     });
 
@@ -284,16 +255,14 @@ test('Users endpoint searches in name field', async t => {
 });
 
 test('Users endpoint searches in email field', async t => {
-    const search = '@datawrapper';
-    const admin = await t.context.getUser('admin');
+    const search = '@ava';
+    const { session } = t.context.admin;
 
     const res = await t.context.server.inject({
         method: 'GET',
         url: `/v3/users?search=${search}`,
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
         }
     });
 
@@ -311,10 +280,8 @@ test('/v3/users/:id/setup creates token, token can later be emptied', async t =>
     let res = await t.context.server.inject({
         method: 'POST',
         url: `/v3/users/${user.id}/setup`,
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${admin.session.id}`
         }
     });
 
@@ -325,10 +292,8 @@ test('/v3/users/:id/setup creates token, token can later be emptied', async t =>
     res = await t.context.server.inject({
         method: 'PATCH',
         url: `/v3/users/${user.id}`,
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${admin.session.id}`
         },
         payload: {
             activateToken: null
@@ -340,16 +305,14 @@ test('/v3/users/:id/setup creates token, token can later be emptied', async t =>
 });
 
 test('Admin can set activeTeam for users', async t => {
-    const admin = await t.context.getUser('admin');
+    const admin = t.context.admin;
     const { team, user } = await t.context.getTeamWithUser();
 
     const res1 = await t.context.server.inject({
         method: 'PATCH',
         url: `/v3/users/${user.id}/settings`,
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${admin.session.id}`
         },
         payload: {
             activeTeam: team.id
@@ -362,10 +325,8 @@ test('Admin can set activeTeam for users', async t => {
     const res2 = await t.context.server.inject({
         method: 'PATCH',
         url: `/v3/users/${user.id}/settings`,
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${admin.session.id}`
         },
         payload: {
             activeTeam: null
@@ -378,10 +339,8 @@ test('Admin can set activeTeam for users', async t => {
     const res3 = await t.context.server.inject({
         method: 'PATCH',
         url: `/v3/users/${user.id}/settings`,
-        auth: {
-            strategy: 'session',
-            credentials: admin.session,
-            artifacts: admin.user
+        headers: {
+            cookie: `DW-SESSION=${admin.session.id}`
         },
         payload: {
             activeTeam: 'missing-team'
@@ -392,15 +351,13 @@ test('Admin can set activeTeam for users', async t => {
 });
 
 test('User can set and unset activeTeam herself', async t => {
-    const { team, user, session } = await t.context.getTeamWithUser();
+    const { team, session } = await t.context.getTeamWithUser();
 
     const res1 = await t.context.server.inject({
         method: 'PATCH',
         url: '/v3/me/settings',
-        auth: {
-            strategy: 'session',
-            credentials: session,
-            artifacts: user
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
         },
         payload: {
             activeTeam: team.id
@@ -413,10 +370,8 @@ test('User can set and unset activeTeam herself', async t => {
     const res2 = await t.context.server.inject({
         method: 'PATCH',
         url: '/v3/me/settings',
-        auth: {
-            strategy: 'session',
-            credentials: session,
-            artifacts: user
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
         },
         payload: {
             activeTeam: null
