@@ -12,7 +12,8 @@ const {
     UserTeam,
     TeamProduct,
     Product,
-    TeamTheme
+    TeamTheme,
+    UserPluginCache
 } = require('@datawrapper/orm/models');
 const { logAction } = require('@datawrapper/orm/utils/action');
 
@@ -849,6 +850,8 @@ async function deleteTeamMember(request, h) {
 
     await row.destroy();
 
+    await clearPluginCache(params.userId);
+
     return h.response().code(204);
 }
 
@@ -1083,6 +1086,10 @@ async function acceptTeamInvitation(request, h) {
         invite_token: ''
     });
 
+    // clear user plugin cache as user might have
+    // access to new products now
+    await clearPluginCache(user.id);
+
     logAction(userTeam.invited_by, 'team/invite/accept', params.id);
 
     return h.response().code(201);
@@ -1176,6 +1183,10 @@ async function addTeamMember(request, h) {
         );
     }
 
+    // clear user plugin cache as user might have
+    // access to new products now
+    await clearPluginCache(user.id);
+
     await UserTeam.create(data);
     return h.response().code(201);
 }
@@ -1191,6 +1202,7 @@ function canChangeMemberStatus({ memberRole, userRole }) {
     }
     return true;
 }
+
 async function changeMemberStatus(request, h) {
     const { auth, params, payload, server } = request;
 
@@ -1259,6 +1271,14 @@ async function getPendingTeamInvites({ user }) {
             invite_token: {
                 [Op.not]: ''
             }
+        }
+    });
+}
+
+async function clearPluginCache(userId) {
+    return UserPluginCache.destroy({
+        where: {
+            user_id: userId
         }
     });
 }
