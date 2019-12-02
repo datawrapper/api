@@ -14,16 +14,21 @@ function parseSetCookie(string) {
 }
 
 test.before(async t => {
-    const { server, getUser, addToCleanup } = await setup({ usePlugins: false });
+    const { server, models, getUser, getCredentials, addToCleanup } = await setup({
+        usePlugins: false
+    });
 
     t.context.server = server;
 
     const { user } = await getUser();
     t.context.user = user;
+    t.context.models = models;
+    t.context.getUser = getUser;
+    t.context.getCredentials = getCredentials;
     t.context.addToCleanup = addToCleanup;
 });
 
-test.skip('Login and logout work with correct credentials', async t => {
+test('Login and logout work with correct credentials', async t => {
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
@@ -51,7 +56,7 @@ test.skip('Login and logout work with correct credentials', async t => {
     t.false(res.headers['set-cookie'].includes(session));
 });
 
-test.skip('Login fails with incorrect credentials', async t => {
+test('Login fails with incorrect credentials', async t => {
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
@@ -64,7 +69,7 @@ test.skip('Login fails with incorrect credentials', async t => {
     t.is(res.statusCode, 401);
 });
 
-test.skip("Login set's correct cookie", async t => {
+test("Login set's correct cookie", async t => {
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
@@ -190,4 +195,106 @@ test('Can create guest sessions', async t => {
             cookie: `DW-SESSION=${sessionToken}`
         }
     });
+});
+
+test('Guest charts are associated after signup', async t => {
+    /* Get guest session */
+    let res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/session'
+    });
+
+    t.is(res.statusCode, 200);
+
+    const session = res.result['DW-SESSION'];
+
+    /* Create chart as guest */
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        headers: {
+            cookie: `DW-SESSION=${session}`
+        },
+        payload: {
+            title: 'Test guest chart'
+        }
+    });
+
+    const chartId = res.result.id;
+    t.log('Chart ID:', chartId);
+    t.is(res.result.title, 'Test guest chart');
+    t.is(res.result.authorId, undefined);
+
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/signup',
+        headers: {
+            cookie: `DW-SESSION=${session}`
+        },
+        payload: t.context.getCredentials()
+    });
+
+    const authorId = res.result.id;
+    t.log('Author ID:', authorId);
+    await t.context.addToCleanup('user', authorId);
+
+    const charts = await t.context.models.Chart.findAll({
+        where: {
+            author_id: authorId
+        }
+    });
+
+    t.is(charts.length, 1);
+    t.is(charts[0].id, chartId);
+});
+
+test('Guest charts are associated after login', async t => {
+    /* Get guest session */
+    let res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/session'
+    });
+
+    t.is(res.statusCode, 200);
+    const session = res.result['DW-SESSION'];
+
+    /* Create chart as guest */
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        headers: {
+            cookie: `DW-SESSION=${session}`
+        },
+        payload: {
+            title: 'Test guest chart'
+        }
+    });
+
+    const chartId = res.result.id;
+    t.log('Chart ID:', chartId);
+    t.is(res.result.title, 'Test guest chart');
+    t.is(res.result.authorId, undefined);
+
+    const { user } = await t.context.getUser();
+
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/login',
+        headers: {
+            cookie: `DW-SESSION=${session}`
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    const charts = await t.context.models.Chart.findAll({
+        where: {
+            author_id: user.id
+        }
+    });
+
+    t.is(charts.length, 1);
+    t.is(charts[0].id, chartId);
 });

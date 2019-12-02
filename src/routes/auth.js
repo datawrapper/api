@@ -20,7 +20,7 @@ const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
  * @param {string} secret - salt to hash the value with
  * @returns {string}
  */
-function legacyHash(pwhash, secret) {
+function legacyHash(pwhash, secret = DEFAULT_SALT) {
     const hmac = crypto.createHmac('sha256', secret);
     hmac.update(pwhash);
     return hmac.digest('hex');
@@ -45,7 +45,7 @@ function legacyLogin(password, passwordHash, authSalt, secretAuthSalt) {
 
     if (serverHash === passwordHash) return true;
 
-    const clientHash = legacyHash(password, authSalt || DEFAULT_SALT);
+    const clientHash = legacyHash(password, authSalt);
     serverHash = secretAuthSalt ? legacyHash(clientHash, secretAuthSalt) : clientHash;
     return serverHash === passwordHash;
 }
@@ -72,7 +72,7 @@ module.exports = {
     name: 'auth-routes',
     version: '1.0.0',
     register: (server, options) => {
-        /* server.route({
+        server.route({
             method: 'POST',
             path: '/login',
             options: {
@@ -94,7 +94,7 @@ module.exports = {
                 }
             },
             handler: login
-        }); */
+        });
 
         server.route({
             method: 'POST',
@@ -181,7 +181,7 @@ module.exports = {
             handler: deleteToken
         });
 
-        /* server.route({
+        server.route({
             method: 'POST',
             path: '/signup',
             options: {
@@ -209,7 +209,7 @@ module.exports = {
                 }
             },
             handler: signup
-        }); */
+        });
 
         server.route({
             method: 'POST',
@@ -325,6 +325,9 @@ async function createSession(id, userId, keepSession = true) {
 }
 
 async function associateChartsWithUser(sessionId, userId) {
+    /* Sequelize returns [0] when no row was updated */
+    if (!sessionId) return [0];
+
     return Chart.update(
         {
             author_id: userId,
@@ -332,6 +335,7 @@ async function associateChartsWithUser(sessionId, userId) {
         },
         {
             where: {
+                author_id: null,
                 guest_session: sessionId
             }
         }
@@ -358,7 +362,6 @@ async function handleSession(request, h) {
         });
 }
 
-// eslint-disable-next-line
 async function login(request, h) {
     const { email, password, keepSession } = request.payload;
     const user = await User.findOne({
@@ -537,7 +540,6 @@ async function deleteToken(request, h) {
     return h.response().code(204);
 }
 
-// eslint-disable-next-line
 async function signup(request, h) {
     let session;
 
@@ -579,7 +581,7 @@ async function signup(request, h) {
         session = await createSession(generateToken(), res.result.id);
     }
 
-    const { activate_token, ...data } = res.result;
+    const { activateToken, ...data } = res.result;
 
     const { https, domain } = config('frontend');
 
@@ -590,7 +592,7 @@ async function signup(request, h) {
         data: {
             activation_link: `${
                 https ? 'https' : 'http'
-            }://${domain}/account/activate/${activate_token}`
+            }://${domain}/account/activate/${activateToken}`
         }
     });
 

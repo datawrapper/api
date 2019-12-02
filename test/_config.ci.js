@@ -11,7 +11,6 @@ module.exports = {
         sessionID: 'DW-SESSION',
         enableMigration: true,
         hashRounds: 15,
-        authSalt: process.env.AUTH_SALT,
         secretAuthSalt: process.env.SECRET_AUTH_SALT,
         cors: ['*']
     },
