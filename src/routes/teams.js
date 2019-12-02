@@ -1034,7 +1034,7 @@ async function acceptTeamInvitation(request, h) {
     });
 
     if (!userTeam) {
-        return Boom.unauthorized();
+        return Boom.notFound();
     }
 
     if (userTeam.team_role === 'owner') {
@@ -1077,7 +1077,7 @@ async function rejectTeamInvitation(request, h) {
     });
 
     if (!userTeam) {
-        return Boom.unauthorized();
+        return Boom.notFound();
     }
 
     // remove invitation
