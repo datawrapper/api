@@ -1032,30 +1032,30 @@ async function acceptTeamInvitation(request, h) {
         }
     });
 
-    if (userTeam) {
-        if (userTeam.team_role === 'owner') {
-            // we're invited as owner, turn former owner
-            // into team admin
-            await UserTeam.update(
-                {
-                    team_role: 'admin'
-                },
-                {
-                    where: {
-                        user_id: {
-                            [Op.not]: user.id
-                        },
-                        team_role: 'owner'
-                    }
-                }
-            );
-        }
-        await userTeam.update({
-            invite_token: ''
-        });
-    } else {
+    if (!userTeam) {
         return Boom.unauthorized();
     }
+
+    if (userTeam.team_role === 'owner') {
+        // we're invited as owner, turn former owner
+        // into team admin
+        await UserTeam.update(
+            {
+                team_role: 'admin'
+            },
+            {
+                where: {
+                    user_id: {
+                        [Op.not]: user.id
+                    },
+                    team_role: 'owner'
+                }
+            }
+        );
+    }
+    await userTeam.update({
+        invite_token: ''
+    });
 
     return h.response().code(201);
 }
