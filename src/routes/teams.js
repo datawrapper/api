@@ -998,20 +998,6 @@ async function inviteTeamMember(request, h) {
         invited_by: user.id
     };
 
-    if (payload.role === ROLE_OWNER) {
-        await UserTeam.update(
-            {
-                team_role: ROLE_ADMIN
-            },
-            {
-                where: {
-                    team_role: ROLE_OWNER,
-                    organization_id: params.id
-                }
-            }
-        );
-    }
-
     await UserTeam.create(data);
     const team = await Team.findByPk(data.organization_id);
 
