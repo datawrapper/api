@@ -915,6 +915,22 @@ async function createTeam(request, h) {
     }
 }
 
+function canInviteUsers({ userRole, memberRole, inviteeRole }) {
+    if (userRole === 'pending') {
+        // only activated users may invite users
+        return false;
+    }
+    if (memberRole !== ROLE_ADMIN && memberRole !== ROLE_OWNER) {
+        // only team admins and team owners may invite users
+        return false;
+    }
+    if (memberRole !== ROLE_OWNER && inviteeRole === ROLE_OWNER) {
+        // only a team owner may invite a new owner
+        return false;
+    }
+    return true;
+}
+
 /**
  * handles POST /v3/teams/:id/invites
  */
@@ -928,7 +944,13 @@ async function inviteTeamMember(request, h) {
     if (!isAdmin) {
         const memberRole = await getMemberRole(user.id, params.id);
 
-        if (memberRole === ROLE_MEMBER || user.role === 'pending') {
+        if (
+            !canInviteUsers({
+                userRole: user.role,
+                memberRole,
+                inviteeRole: payload.role
+            })
+        ) {
             return Boom.unauthorized();
         }
     }
