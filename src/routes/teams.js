@@ -1066,20 +1066,32 @@ async function acceptTeamInvitation(request, h) {
  * handles DELETE /v3/teams/:id/invites/:token
  */
 async function rejectTeamInvitation(request, h) {
-    const { auth, params } = request;
+    const { params } = request;
 
-    const user = auth.artifacts;
-
-    const res = await UserTeam.destroy({
+    const userTeam = await UserTeam.findOne({
         where: {
-            user_id: user.id,
             organization_id: params.id,
             invite_token: params.token
         }
     });
 
-    if (!res) {
+    if (!userTeam) {
         return Boom.unauthorized();
+    }
+
+    // remove invitation
+    await userTeam.destroy();
+
+    const user = await User.findOne({
+        where: {
+            id: userTeam.user_id,
+            activate_token: params.token
+        }
+    });
+
+    if (user) {
+        // also remove user who never activated the account
+        await user.destroy();
     }
 
     return h.response().code(204);
