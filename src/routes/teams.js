@@ -947,7 +947,8 @@ async function inviteTeamMember(request, h) {
         invited_by: user.id
     };
 
-    const team = await UserTeam.create(data);
+    await UserTeam.create(data);
+    const team = await Team.findByPk(data.organization_id);
 
     const { https, domain } = server.methods.config('frontend');
     await server.app.events.emit(server.app.event.SEND_EMAIL, {
