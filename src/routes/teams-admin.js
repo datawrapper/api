@@ -69,7 +69,7 @@ function register(server, options) {
         return {
             list: user.teams.map(({ dataValues }) => {
                 const { user_team, settings, users, ...data } = dataValues;
-                const owner = users.filter(user => user.user_team.team_role === 'owner').pop();
+                const owner = users.find(user => user.user_team.team_role === 'owner');
                 const team = camelizeKeys({
                     ...data,
                     memberCount: users.length,
