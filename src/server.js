@@ -76,19 +76,26 @@ function getLogLevel() {
     }
 }
 
-async function getCommitHash() {
-    const { promisify } = require('util');
-    const exec = promisify(require('child_process').exec);
+async function getVersionInfo() {
+    const { version } = pkg;
+    const { COMMIT } = process.env;
+    if (COMMIT) {
+        return { commit: COMMIT, version: `${version} (${COMMIT})` };
+    }
+
     try {
-        const { stdout } = await exec('git rev-parse --short HEAD');
-        return stdout.trim();
+        const { promisify } = require('util');
+        const exec = promisify(require('child_process').exec);
+        const { stdout } = await exec('gt rev-parse --short HEAD');
+        const commit = stdout.trim();
+        return { commit, version: `${version} (${commit})` };
     } catch (error) {
-        return pkg.version;
+        return { version };
     }
 }
 
 async function configure(options = { usePlugins: true, useOpenAPI: true }) {
-    const hash = await getCommitHash();
+    const { commit, version } = await getVersionInfo();
     await server.register({
         plugin: require('hapi-pino'),
         options: {
@@ -96,7 +103,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             timestamp: () => `,"time":"${new Date().toISOString()}"`,
             logEvents: ['request', 'log', 'onPostStart', 'onPostStop', 'request-error'],
             level: getLogLevel(),
-            base: { name: hash },
+            base: { name: commit || version },
             redact: process.env.NODE_ENV !== 'development' && [
                 'req.headers.authorization',
                 'req.headers.cookie',
@@ -107,7 +114,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     server.logger().info(
         {
-            VERSION: `${pkg.version} (${hash})`,
+            VERSION: version,
             CONFIG_FILE: configPath,
             NODE_ENV: process.env.NODE_ENV,
             NODE_VERSION: process.version,
