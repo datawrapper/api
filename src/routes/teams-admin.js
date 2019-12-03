@@ -47,6 +47,7 @@ function register(server, options) {
 
     async function getAllTeamsByUser(request, h) {
         const { query } = request;
+        const isAdmin = server.methods.isAdmin(request);
         const user = await User.findOne({
             where: {
                 id: query.userId
@@ -75,7 +76,7 @@ function register(server, options) {
                     teamRole: user_team.team_role,
                     url: `/v3/teams/${dataValues.id}`
                 });
-                if (user_team.team_role !== 'member') {
+                if (user_team.team_role !== 'member' || isAdmin) {
                     return {
                         ...team,
                         settings,
