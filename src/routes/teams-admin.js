@@ -55,9 +55,6 @@ function register(server, options) {
             include: [
                 {
                     model: Team,
-                    attributes: {
-                        exclude: ['deleted']
-                    },
                     include: [
                         {
                             model: User
@@ -101,9 +98,6 @@ function register(server, options) {
 
         const options = {
             order: [[decamelize(query.orderBy), query.order]],
-            attributes: {
-                exclude: ['deleted']
-            },
             include: [
                 {
                     model: User,
