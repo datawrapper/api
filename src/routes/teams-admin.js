@@ -45,8 +45,58 @@ function register(server, options) {
         handler: getAllTeams
     });
 
+    async function getAllTeamsByUser(request, h) {
+        const { query } = request;
+        const user = await User.findOne({
+            where: {
+                id: query.userId
+            },
+            include: [
+                {
+                    model: Team,
+                    attributes: {
+                        exclude: ['deleted']
+                    },
+                    include: [
+                        {
+                            model: User
+                        }
+                    ]
+                }
+            ]
+        });
+        return {
+            list: user.teams.map(({ dataValues }) => {
+                const { user_team, settings, users, ...data } = dataValues;
+                const owner = users.filter(user => user.user_team.team_role === 'owner').pop();
+                const team = camelizeKeys({
+                    ...data,
+                    memberCount: users.length,
+                    teamRole: user_team.team_role,
+                    url: `/v3/teams/${dataValues.id}`
+                });
+                if (user_team.team_role !== 'member') {
+                    return {
+                        ...team,
+                        settings,
+                        owner: owner
+                            ? {
+                                  id: owner.id,
+                                  url: `/v3/users/${owner.id}`,
+                                  email: owner.email
+                              }
+                            : null
+                    };
+                }
+                return team;
+            }),
+            total: user.teams.length
+        };
+    }
+
     async function getAllTeams(request, h) {
         const { query, url } = request;
+        if (query.userId) return getAllTeamsByUser(request, h);
 
         const options = {
             order: [[decamelize(query.orderBy), query.order]],
