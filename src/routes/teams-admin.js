@@ -168,4 +168,3 @@ function register(server, options) {
         return teamList;
     }
 }
-//
