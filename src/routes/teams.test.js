@@ -35,7 +35,7 @@ test('user can fetch their teams', async t => {
     t.is(typeof teams.result.list[0].settings, 'object');
 });
 
-test.only('check for correct memberCount', async t => {
+test.only('[/v3/teams] check for correct memberCount', async t => {
     const { getTeamWithUser } = t.context;
     const { addUser, user: owner, session: ownerSession, team } = await getTeamWithUser();
 
@@ -68,7 +68,7 @@ test.only('check for correct memberCount', async t => {
     t.is(teams.result.list[0].memberCount, 3);
 });
 
-test.only('check that owners and admins can see owner, but members cannot', async t => {
+test.only('[/v3/teams] check that owners and admins can see owner, but members cannot', async t => {
     const { getTeamWithUser } = t.context;
     const { addUser, user: owner, session: ownerSession } = await getTeamWithUser();
     const { user: admin, session: adminSession } = await addUser('admin');
@@ -113,7 +113,7 @@ test.only('check that owners and admins can see owner, but members cannot', asyn
     t.is(teams.result.list[0].owner, undefined);
 });
 
-test.only('check that owners and admins can see settings, but members cannot', async t => {
+test.only('[/v3/teams] check that owners and admins can see settings, but members cannot', async t => {
     const { getTeamWithUser } = t.context;
     const { addUser, user: owner, session: ownerSession } = await getTeamWithUser();
     const { user: admin, session: adminSession } = await addUser('admin');
@@ -154,6 +154,94 @@ test.only('check that owners and admins can see settings, but members cannot', a
     });
 
     t.is(teams.result.list[0].settings, undefined);
+});
+
+test.only('[/v3/teams/:id] check that owners and admins can see owner, but members cannot', async t => {
+    const { getTeamWithUser } = t.context;
+    const { addUser, user: owner, session: ownerSession, team } = await getTeamWithUser();
+    const { user: admin, session: adminSession } = await addUser('admin');
+    const { user: member, session: memberSession } = await addUser('member');
+
+    let teams = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/teams/${team.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: ownerSession,
+            artifacts: owner
+        }
+    });
+
+    t.is(typeof teams.result.owner, 'object');
+    t.is(teams.result.owner.id, owner.id);
+
+    teams = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/teams/${team.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: adminSession,
+            artifacts: admin
+        }
+    });
+
+    t.is(typeof teams.result.owner, 'object');
+    t.is(teams.result.owner.id, owner.id);
+
+    teams = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/teams/${team.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: memberSession,
+            artifacts: member
+        }
+    });
+
+    t.is(teams.result.owner, undefined);
+});
+
+test.only('[/v3/teams/:id] check that owners and admins can see settings, but members cannot', async t => {
+    const { getTeamWithUser } = t.context;
+    const { addUser, user: owner, session: ownerSession, team } = await getTeamWithUser();
+    const { user: admin, session: adminSession } = await addUser('admin');
+    const { user: member, session: memberSession } = await addUser('member');
+
+    let teams = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/teams/${team.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: ownerSession,
+            artifacts: owner
+        }
+    });
+
+    t.is(typeof teams.result.settings, 'object');
+
+    teams = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/teams/${team.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: adminSession,
+            artifacts: admin
+        }
+    });
+
+    t.is(typeof teams.result.settings, 'object');
+
+    teams = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/teams/${team.id}`,
+        auth: {
+            strategy: 'session',
+            credentials: memberSession,
+            artifacts: member
+        }
+    });
+
+    t.is(teams.result.settings, undefined);
 });
 
 test('user can fetch individual team', async t => {
