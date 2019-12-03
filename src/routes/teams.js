@@ -583,10 +583,6 @@ async function getTeam(request, h) {
         }
     };
 
-    if (!isAdmin) {
-        set(options, ['include', 0, 'where', 'id'], auth.artifacts.id);
-    }
-
     const team = await Team.findOne(options);
 
     if (!team) {
