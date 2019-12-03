@@ -1,7 +1,7 @@
 const Joi = require('@hapi/joi');
 const { Op } = require('sequelize');
 const set = require('lodash/set');
-const { camelizeKeys } = require('humps');
+const { camelizeKeys, decamelize } = require('humps');
 const { Team, User } = require('@datawrapper/orm/models');
 
 module.exports = {
@@ -49,6 +49,7 @@ function register(server, options) {
         const { query, url } = request;
 
         const options = {
+            order: [[decamelize(query.orderBy), query.order]],
             attributes: {
                 exclude: ['deleted']
             },
@@ -65,7 +66,8 @@ function register(server, options) {
                 }
             },
             limit: query.limit,
-            offset: query.offset
+            offset: query.offset,
+            distinct: true
         };
 
         if (query.search) {
@@ -85,7 +87,7 @@ function register(server, options) {
 
         const { rows, count } = await Team.findAndCountAll(options);
 
-        const chartList = {
+        const teamList = {
             list: rows.map(({ dataValues }) => {
                 const { users, ...data } = dataValues;
                 return camelizeKeys({
@@ -104,9 +106,9 @@ function register(server, options) {
                 limit: query.limit
             });
 
-            set(chartList, 'next', `${url.pathname}?${nextParams.toString()}`);
+            set(teamList, 'next', `${url.pathname}?${nextParams.toString()}`);
         }
 
-        return chartList;
+        return teamList;
     }
 }
