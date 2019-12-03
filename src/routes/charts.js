@@ -265,7 +265,8 @@ function register(server, options) {
                     plain: Joi.boolean().default(false),
                     scale: Joi.number().default(1),
                     borderWidth: Joi.number(),
-                    borderColor: Joi.string()
+                    borderColor: Joi.string(),
+                    download: Joi.boolean().default(false)
                 })
             }
         },
@@ -709,7 +710,7 @@ async function editChart(request, h) {
 }
 
 async function exportChart(request, h) {
-    const { payload, params, auth, logger, server } = request;
+    const { query, payload, params, auth, logger, server } = request;
     const { events, event } = server.app;
     const user = auth.artifacts;
 
@@ -747,7 +748,17 @@ async function exportChart(request, h) {
         await request.server.methods.logAction(user.id, `chart/export/${params.format}`, params.id);
 
         const { stream, type } = successfulResult.data;
-        return h.response(stream).header('Content-Type', type);
+
+        if (query.download) {
+            return h
+                .response(stream)
+                .header(
+                    'Content-Disposition',
+                    `attachment; filename="${params.id}.${params.format}"`
+                );
+        } else {
+            return h.response(stream).header('Content-Type', type);
+        }
     } catch (error) {
         if (error.name === 'CodedError' && Boom[error.code]) {
             // this seems to be an orderly error
