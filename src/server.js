@@ -76,7 +76,26 @@ function getLogLevel() {
     }
 }
 
+async function getVersionInfo() {
+    const { version } = pkg;
+    const { COMMIT } = process.env;
+    if (COMMIT) {
+        return { commit: COMMIT, version: `${version} (${COMMIT})` };
+    }
+
+    try {
+        const { promisify } = require('util');
+        const exec = promisify(require('child_process').exec);
+        const { stdout } = await exec('gt rev-parse --short HEAD');
+        const commit = stdout.trim();
+        return { commit, version: `${version} (${commit})` };
+    } catch (error) {
+        return { version };
+    }
+}
+
 async function configure(options = { usePlugins: true, useOpenAPI: true }) {
+    const { commit, version } = await getVersionInfo();
     await server.register({
         plugin: require('hapi-pino'),
         options: {
@@ -84,7 +103,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             timestamp: () => `,"time":"${new Date().toISOString()}"`,
             logEvents: ['request', 'log', 'onPostStart', 'onPostStop', 'request-error'],
             level: getLogLevel(),
-            base: { name: pkg.version },
+            base: { name: commit || version },
             redact: process.env.NODE_ENV !== 'development' && [
                 'req.headers.authorization',
                 'req.headers.cookie',
@@ -93,9 +112,16 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         }
     });
 
-    server
-        .logger()
-        .info({ CONFIG_FILE: configPath, NODE_ENV: process.env.NODE_ENV }, '[Initialize]');
+    server.logger().info(
+        {
+            VERSION: version,
+            CONFIG_FILE: configPath,
+            NODE_ENV: process.env.NODE_ENV,
+            NODE_VERSION: process.version,
+            PID: process.pid
+        },
+        '[Initialize] Starting server ...'
+    );
 
     await ORM.init(config);
     /* register api plugins with core db */
