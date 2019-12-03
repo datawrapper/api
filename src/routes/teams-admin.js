@@ -106,8 +106,10 @@ function register(server, options) {
             include: [
                 {
                     model: User,
-                    attributes: ['id'],
-                    where: query.userId ? { id: query.userId } : undefined
+                    attributes: ['id', 'email'],
+                    through: {
+                        attributes: ['team_role']
+                    }
                 }
             ],
             limit: query.limit,
@@ -135,9 +137,17 @@ function register(server, options) {
         const teamList = {
             list: rows.map(({ dataValues }) => {
                 const { users, ...data } = dataValues;
+                const owner = users.filter(user => user.user_team.team_role === 'owner').pop();
                 return camelizeKeys({
                     ...data,
                     memberCount: users.length,
+                    owner: owner
+                        ? {
+                              id: owner.id,
+                              url: `/v3/users/${owner.id}`,
+                              email: owner.email
+                          }
+                        : null,
                     url: `/v3/teams/${dataValues.id}`
                 });
             }),
@@ -157,3 +167,4 @@ function register(server, options) {
         return teamList;
     }
 }
+//
