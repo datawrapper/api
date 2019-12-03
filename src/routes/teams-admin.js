@@ -60,11 +60,6 @@ function register(server, options) {
                     where: query.userId ? { id: query.userId } : undefined
                 }
             ],
-            where: {
-                deleted: {
-                    [Op.not]: true
-                }
-            },
             limit: query.limit,
             offset: query.offset,
             distinct: true
