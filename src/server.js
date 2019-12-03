@@ -86,7 +86,7 @@ async function getVersionInfo() {
     try {
         const { promisify } = require('util');
         const exec = promisify(require('child_process').exec);
-        const { stdout } = await exec('gt rev-parse --short HEAD');
+        const { stdout } = await exec('git rev-parse --short HEAD');
         const commit = stdout.trim();
         return { commit, version: `${version} (${commit})` };
     } catch (error) {
