@@ -70,7 +70,7 @@ function register(server, options) {
                 const team = camelizeKeys({
                     ...data,
                     memberCount: users.length,
-                    teamRole: user_team.team_role,
+                    role: user_team.team_role,
                     url: `/v3/teams/${dataValues.id}`
                 });
                 if (user_team.team_role !== 'member' || isAdmin) {
