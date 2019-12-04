@@ -68,7 +68,7 @@ test('[/v3/teams] check for correct memberCount', async t => {
     t.is(teams.result.list[0].memberCount, 3);
 });
 
-test.only('[/v3/teams] check that owners and admins can see owner, but members cannot', async t => {
+test('[/v3/teams] check that owners and admins can see owner, but members cannot', async t => {
     const { getTeamWithUser } = t.context;
     const { addUser, user: owner, session: ownerSession } = await getTeamWithUser();
     const { user: admin, session: adminSession } = await addUser('admin');
