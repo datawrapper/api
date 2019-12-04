@@ -525,6 +525,19 @@ test('owners can change a members status', async t => {
     t.is(userTeam.dataValues.team_role, 1);
 });
 
+test('owners cant change their own role', async t => {
+    const team = await t.context.server.inject({
+        method: 'PUT',
+        url: `/v3/teams/${t.context.data.team.id}/members/${t.context.data.user.id}/status`,
+        auth: t.context.auth,
+        payload: {
+            status: 'admin'
+        }
+    });
+
+    t.is(team.statusCode, 403);
+});
+
 test('admins can add new members to a team', async t => {
     const data = await t.context.getUser();
     const { user: admin, session } = await t.context.getUser('admin');
