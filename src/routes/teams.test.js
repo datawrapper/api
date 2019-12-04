@@ -35,7 +35,7 @@ test('user can fetch their teams', async t => {
     t.is(typeof teams.result.list[0].settings, 'object');
 });
 
-test.only('[/v3/teams] check for correct memberCount', async t => {
+test('[/v3/teams] check for correct memberCount', async t => {
     const { getTeamWithUser } = t.context;
     const { addUser, user: owner, session: ownerSession, team } = await getTeamWithUser();
 
