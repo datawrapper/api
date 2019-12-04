@@ -156,7 +156,7 @@ test.only('[/v3/teams] check that owners and admins can see settings, but member
     t.is(teams.result.list[0].settings, undefined);
 });
 
-test.only('[/v3/teams/:id] check that owners and admins can see owner, but members cannot', async t => {
+test('[/v3/teams/:id] check that owners and admins can see owner, but members cannot', async t => {
     const { getTeamWithUser } = t.context;
     const { addUser, user: owner, session: ownerSession, team } = await getTeamWithUser();
     const { user: admin, session: adminSession } = await addUser('admin');
