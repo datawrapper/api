@@ -97,10 +97,7 @@ function register(server, options) {
             include: [
                 {
                     model: User,
-                    attributes: ['id', 'email'],
-                    through: {
-                        attributes: ['team_role']
-                    }
+                    attributes: ['id', 'email']
                 }
             ],
             limit: query.limit,
