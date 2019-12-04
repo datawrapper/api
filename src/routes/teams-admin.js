@@ -55,11 +55,7 @@ function register(server, options) {
             include: [
                 {
                     model: Team,
-                    include: [
-                        {
-                            model: User
-                        }
-                    ]
+                    include: [User]
                 }
             ]
         });
