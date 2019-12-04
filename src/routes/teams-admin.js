@@ -45,26 +45,61 @@ function register(server, options) {
         handler: getAllTeams
     });
 
-    async function getAllTeams(request, h) {
-        const { query, url } = request;
-
-        const options = {
-            order: [[decamelize(query.orderBy), query.order]],
-            attributes: {
-                exclude: ['deleted']
+    async function getAllTeamsByUser(request, h) {
+        const { query } = request;
+        const isAdmin = server.methods.isAdmin(request);
+        const user = await User.findOne({
+            where: {
+                id: query.userId
             },
             include: [
                 {
+                    model: Team,
+                    include: [User]
+                }
+            ]
+        });
+        return {
+            list: user.teams.map(({ dataValues }) => {
+                const { user_team, settings, users, ...data } = dataValues;
+                const owner = users.find(user => user.user_team.team_role === 'owner');
+                const team = camelizeKeys({
+                    ...data,
+                    memberCount: users.length,
+                    role: user_team.team_role,
+                    url: `/v3/teams/${dataValues.id}`
+                });
+                if (user_team.team_role !== 'member' || isAdmin) {
+                    return {
+                        ...team,
+                        settings,
+                        owner: owner
+                            ? {
+                                  id: owner.id,
+                                  url: `/v3/users/${owner.id}`,
+                                  email: owner.email
+                              }
+                            : null
+                    };
+                }
+                return team;
+            }),
+            total: user.teams.length
+        };
+    }
+
+    async function getAllTeams(request, h) {
+        const { query, url } = request;
+        if (query.userId) return getAllTeamsByUser(request, h);
+
+        const options = {
+            order: [[decamelize(query.orderBy), query.order]],
+            include: [
+                {
                     model: User,
-                    attributes: ['id'],
-                    where: query.userId ? { id: query.userId } : undefined
+                    attributes: ['id', 'email']
                 }
             ],
-            where: {
-                deleted: {
-                    [Op.not]: true
-                }
-            },
             limit: query.limit,
             offset: query.offset,
             distinct: true
@@ -90,9 +125,17 @@ function register(server, options) {
         const teamList = {
             list: rows.map(({ dataValues }) => {
                 const { users, ...data } = dataValues;
+                const owner = users.find(user => user.user_team.team_role === 'owner');
                 return camelizeKeys({
                     ...data,
                     memberCount: users.length,
+                    owner: owner
+                        ? {
+                              id: owner.id,
+                              url: `/v3/users/${owner.id}`,
+                              email: owner.email
+                          }
+                        : null,
                     url: `/v3/teams/${dataValues.id}`
                 });
             }),

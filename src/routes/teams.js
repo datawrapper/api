@@ -583,26 +583,40 @@ async function getTeam(request, h) {
         }
     };
 
-    if (!isAdmin) {
-        set(options, ['include', 0, 'where', 'id'], auth.artifacts.id);
-    }
-
     const team = await Team.findOne(options);
 
     if (!team) {
         return Boom.notFound();
     }
 
-    const { users, ...data } = team.dataValues;
+    const { users, settings, ...data } = team.dataValues;
 
-    return convertKeys(
+    const memberRole = hasTeam ? await getMemberRole(auth.artifacts.id, params.id) : undefined;
+    const owner = users.find(u => u.user_team.team_role === ROLE_OWNER);
+
+    const res = convertKeys(
         {
             ...data,
             memberCount: users.length,
+            role: memberRole,
             url: url.pathname
         },
         camelize
     );
+
+    if (isAdmin || memberRole !== ROLE_MEMBER) {
+        return {
+            ...res,
+            settings,
+            owner: owner
+                ? {
+                      id: owner.id,
+                      email: owner.email
+                  }
+                : null
+        };
+    }
+    return res;
 }
 
 async function getTeamMembers(request, h) {
