@@ -1205,13 +1205,21 @@ async function changeMemberStatus(request, h) {
     const { auth, params, payload, server } = request;
 
     const isAdmin = server.methods.isAdmin(request);
+    const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
     if (!isAdmin) {
-        const memberRole = await getMemberRole(auth.artifacts.id, params.id);
-
         if (!canChangeMemberStatus({ memberRole, userRole: payload.status })) {
             return Boom.unauthorized();
         }
+    }
+    if (
+        memberRole === ROLE_OWNER &&
+        auth.artifacts.id === params.userId &&
+        payload.status !== ROLE_OWNER
+    ) {
+        return Boom.forbidden(
+            "owners can't change their own role. please transfer ownership to another user first."
+        );
     }
 
     const userTeam = await UserTeam.findOne({
