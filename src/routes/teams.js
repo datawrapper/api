@@ -1075,7 +1075,8 @@ async function acceptTeamInvitation(request, h) {
                     user_id: {
                         [Op.not]: user.id
                     },
-                    team_role: 'owner'
+                    team_role: 'owner',
+                    organization_id: params.id
                 }
             }
         );
