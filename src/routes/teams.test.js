@@ -662,3 +662,94 @@ test('admins can remove members, themselves but not owners', async t => {
     t.is(row, null);
     t.log('admin could leave team');
 });
+
+test('Datawrapper admins can change member roles', async t => {
+    const { session } = await t.context.getUser('admin');
+    const { team, addUser } = await t.context.getTeamWithUser();
+    const teamMember = await addUser('member');
+
+    let userTeamRow = await t.context.models.UserTeam.findOne({
+        where: {
+            user_id: teamMember.user.id,
+            organization_id: team.id
+        }
+    });
+
+    t.is(userTeamRow.team_role, 'member');
+
+    const res = await t.context.server.inject({
+        method: 'PUT',
+        url: `/v3/teams/${team.id}/members/${teamMember.user.id}/status`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            status: 'admin'
+        }
+    });
+
+    t.is(res.statusCode, 204);
+    userTeamRow = await t.context.models.UserTeam.findOne({
+        where: {
+            user_id: teamMember.user.id,
+            organization_id: team.id
+        }
+    });
+
+    t.is(userTeamRow.team_role, 'admin');
+});
+
+test('Datawrapper admins can not change their own role if they are the team owner', async t => {
+    const { user: admin, session } = await t.context.getUser('admin');
+    const { team } = await t.context.getTeamWithUser('member');
+
+    let userTeamRow = await t.context.models.UserTeam.create({
+        user_id: admin.id,
+        organization_id: team.id,
+        team_role: 'owner'
+    });
+
+    t.is(userTeamRow.user_id, admin.id);
+    t.is(userTeamRow.team_role, 'owner');
+    t.is(userTeamRow.organization_id, team.id);
+
+    const res = await t.context.server.inject({
+        method: 'PUT',
+        url: `/v3/teams/${team.id}/members/${admin.id}/status`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            status: 'member'
+        }
+    });
+
+    t.is(res.statusCode, 403);
+
+    userTeamRow = await t.context.models.UserTeam.findOne({
+        where: {
+            user_id: admin.id,
+            organization_id: team.id
+        }
+    });
+
+    t.is(userTeamRow.team_role, 'owner');
+});
+
+test('users not part of a team can not change a team members role', async t => {
+    const { session } = await t.context.getUser();
+    const { team, user: teamMember } = await t.context.getTeamWithUser('member');
+
+    const res = await t.context.server.inject({
+        method: 'PUT',
+        url: `/v3/teams/${team.id}/members/${teamMember.id}/status`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            status: 'member'
+        }
+    });
+
+    t.is(res.statusCode, 401);
+});
