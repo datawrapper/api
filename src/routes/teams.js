@@ -1217,26 +1217,18 @@ async function changeMemberStatus(request, h) {
         request.logger.warn('User is not a team member');
     }
 
-    if (isAdmin) {
-        if (memberRole === ROLE_OWNER && auth.artifacts.id === params.userId) {
-            return Boom.forbidden(
-                "owners can't change their own role. please transfer ownership to another user first."
-            );
-        }
-    } else {
-        if (!canChangeMemberStatus({ memberRole, userRole: payload.status })) {
-            return Boom.unauthorized();
-        }
+    if (
+        memberRole === ROLE_OWNER &&
+        auth.artifacts.id === params.userId &&
+        payload.status !== ROLE_OWNER
+    ) {
+        return Boom.forbidden(
+            "owners can't change their own role. please transfer ownership to another user first."
+        );
+    }
 
-        if (
-            memberRole === ROLE_OWNER &&
-            auth.artifacts.id === params.userId &&
-            payload.status !== ROLE_OWNER
-        ) {
-            return Boom.forbidden(
-                "owners can't change their own role. please transfer ownership to another user first."
-            );
-        }
+    if (!isAdmin && !canChangeMemberStatus({ memberRole, userRole: payload.status })) {
+        return Boom.unauthorized();
     }
 
     const userTeam = await UserTeam.findOne({
