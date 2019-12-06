@@ -28,7 +28,8 @@ async function main() {
         team: [],
         session: [],
         user: [],
-        theme: []
+        theme: [],
+        token: []
     };
 
     csv.split('\n').forEach(line => {
@@ -38,10 +39,11 @@ async function main() {
         }
     });
 
-    const [actions, , , sessions, themes] = await Promise.all([
+    const [actions, , , tokens, sessions, themes] = await Promise.all([
         models.Action.destroy({ where: { id: { [Op.not]: null } } }),
         models.Chart.destroy({ where: { author_id: { [Op.in]: list.user } } }),
         models.UserTeam.destroy({ where: { organization_id: { [Op.in]: list.team } } }),
+        models.AuthToken.destroy({ where: { token: { [Op.in]: list.token } } }),
         models.Session.destroy({ where: { session_id: { [Op.in]: list.session } } }),
         models.Theme.destroy({ where: { id: { [Op.in]: list.theme } } }),
         models.UserData.destroy({ where: { user_id: { [Op.in]: list.user } } })
@@ -49,6 +51,7 @@ async function main() {
 
     log(chalk.magenta(`🧹 Cleaned ${actions} actions`));
     log(chalk.magenta(`🧹 Cleaned ${sessions} sessions`));
+    log(chalk.magenta(`🧹 Cleaned ${tokens} tokens`));
     log(chalk.magenta(`🧹 Cleaned ${themes} themes`));
 
     const teams = await models.Team.destroy({ where: { id: { [Op.in]: list.team } } });

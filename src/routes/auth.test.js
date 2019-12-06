@@ -20,8 +20,10 @@ test.before(async t => {
 
     t.context.server = server;
 
-    const { user } = await getUser();
+    const { user, session, token } = await getUser();
     t.context.user = user;
+    t.context.session = session.id;
+    t.context.token = token;
     t.context.models = models;
     t.context.getUser = getUser;
     t.context.getCredentials = getCredentials;
@@ -123,7 +125,7 @@ test('Logout errors with token', async t => {
         method: 'POST',
         url: '/v3/auth/logout',
         headers: {
-            authorization: `Bearer Agamotto`
+            authorization: `Bearer ${t.context.token}`
         }
     });
 
@@ -134,8 +136,8 @@ test('Logout errors with token', async t => {
 test('Tokens can be created, fetched and deleted', async t => {
     const auth = {
         strategy: 'session',
-        credentials: { session: 'Danvers' },
-        artifacts: { id: 1 }
+        credentials: { session: t.context.session },
+        artifacts: { id: t.context.user.id }
     };
 
     let res = await t.context.server.inject({
