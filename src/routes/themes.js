@@ -2,6 +2,7 @@ const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const assign = require('assign-deep');
 const { Theme } = require('@datawrapper/orm/models');
+const { validateThemeData } = require('@datawrapper/schemas');
 
 module.exports = {
     name: 'themes-routes',
@@ -64,6 +65,19 @@ ${dataValues.less || ''}
 
     dataValues.extend = originalExtend;
     dataValues.url = url.pathname;
+
+    if (request.server.methods.isAdmin(request)) {
+        try {
+            await validateThemeData(dataValues.data);
+            dataValues.errors = [];
+        } catch (err) {
+            if (err.name === 'ValidationError') {
+                dataValues.errors = err.details;
+            } else {
+                throw err;
+            }
+        }
+    }
 
     const { created_at, ...theme } = dataValues;
     return { createdAt: created_at, ...theme };
