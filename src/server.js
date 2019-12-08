@@ -4,6 +4,7 @@ const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
 const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/schemas/config');
+const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
 
 const { generateToken } = require('./utils');
@@ -12,6 +13,8 @@ const { ApiEventEmitter, eventList } = require('./utils/events');
 const pkg = require('../package.json');
 const configPath = findConfigPath();
 const config = require(configPath);
+
+schemas.initialize(config.schemas);
 
 validateAPI(config.api);
 validateORM(config.orm);
