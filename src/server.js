@@ -14,8 +14,6 @@ const pkg = require('../package.json');
 const configPath = findConfigPath();
 const config = require(configPath);
 
-schemas.initialize(config.schemas);
-
 validateAPI(config.api);
 validateORM(config.orm);
 validateFrontend(config.frontend);
@@ -140,6 +138,13 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
 
+    const { validateThemeData } = schemas.initialize({
+        getSchema: config.api.schemaBaseUrl
+            ? loadSchemaFromUrl(config.api.schemaBaseUrl)
+            : undefined
+    });
+    server.method('validateThemeData', validateThemeData);
+
     if (process.env.NODE_ENV === 'development') {
         server.register([require('@hapi/inert'), require('@hapi/vision')]);
     }
@@ -200,6 +205,26 @@ async function start() {
     server.start();
 
     return server;
+}
+
+function loadSchemaFromUrl(baseUrl) {
+    const fetch = require('node-fetch');
+    const cache = {};
+    return async id => {
+        // use cached schema if available
+        if (cache[id]) return cache[id];
+        // fetch schema from URL
+        return fetch(`${baseUrl}/${id}.json`)
+            .then(res => res.json())
+            .then(json => {
+                cache[id] = json;
+                // delete cache after 5 minutes
+                setTimeout(() => {
+                    delete cache[id];
+                }, 5 * 6e4);
+                return json;
+            });
+    };
 }
 
 module.exports = { init, start };

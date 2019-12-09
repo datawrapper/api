@@ -35,7 +35,6 @@
     },
     "dependencies": {
         "@datawrapper/orm": "^3.7.2",
-        "@datawrapper/schemas": "1.2.0",
         "@datawrapper/shared": "0.19.3",
         "@hapi/boom": "8.0.1",
         "@hapi/catbox-memory": "4.1.1",
@@ -56,6 +55,7 @@
         "lodash": "4.17.15",
         "mime": "2.4.4",
         "nanoid": "2.1.7",
+        "node-fetch": "^2.6.0",
         "sequelize": "6.0.0"
     },
     "devDependencies": {
