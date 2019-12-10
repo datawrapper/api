@@ -208,22 +208,21 @@ async function start() {
 }
 
 function loadSchemaFromUrl(baseUrl) {
-    const fetch = require('node-fetch');
+    const got = require('got');
     const cache = {};
     return async id => {
         // use cached schema if available
         if (cache[id]) return cache[id];
         // fetch schema from URL
-        return fetch(`${baseUrl}/${id}.json`)
-            .then(res => res.json())
-            .then(json => {
-                cache[id] = json;
-                // delete cache after 5 minutes
-                setTimeout(() => {
-                    delete cache[id];
-                }, 5 * 6e4);
-                return json;
-            });
+        return got(`${baseUrl}/${id}.json`, { json: true }).then(({ body }) => {
+            cache[id] = body;
+            // delete cache after 5 minutes
+            setTimeout(() => {
+                delete cache[id];
+            }, 5 * 6e4);
+
+            return body;
+        });
     };
 }
 
