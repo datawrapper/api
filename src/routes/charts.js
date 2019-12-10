@@ -4,7 +4,6 @@ const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
-const nanoid = require('nanoid');
 const set = require('lodash/set');
 const assign = require('assign-deep');
 const mime = require('mime');
@@ -485,11 +484,6 @@ function prepareChart(chart) {
     };
 }
 
-async function findChartId() {
-    const id = nanoid(5);
-    return (await Chart.findByPk(id)) ? findChartId() : id;
-}
-
 async function getAllCharts(request, h) {
     const { query, url, auth } = request;
     const isAdmin = request.server.methods.isAdmin(request);
@@ -616,6 +610,12 @@ async function createChart(request, h) {
     const { url, auth, payload, server } = request;
     const user = auth.artifacts;
     const isAdmin = server.methods.isAdmin(request);
+
+    async function findChartId() {
+        const id = server.methods.generateToken(5);
+        return (await Chart.findByPk(id)) ? findChartId() : id;
+    }
+
     if (payload && payload.folderId) {
         // check if folder belongs to user to team
         const folder = await Folder.findOne({ where: { id: payload.folderId } });
