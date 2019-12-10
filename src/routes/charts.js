@@ -699,6 +699,10 @@ async function editChart(request, h) {
         payload.organizationId = folder.org_id ? folder.org_id : null;
     }
 
+    if ('authorId' in payload && !isAdmin) {
+        delete payload.authorId;
+    }
+
     const newData = assign(prepareChart(chart), payload);
 
     chart = await chart.update({ ...decamelizeKeys(newData), metadata: newData.metadata });
