@@ -7,6 +7,7 @@ test.before(async t => {
 
     t.context.server = server;
     t.context.data = data;
+    t.context.getUser = getUser;
     t.context.auth = {
         strategy: 'session',
         credentials: data.session,
@@ -106,4 +107,30 @@ test('Should be possible to search in multiple fields', async t => {
         t.is(chart.result.list.length, 1);
         t.is(chart.result.list[0].id, chartId);
     }
+});
+
+test('Users can not change the author ID of a chart', async t => {
+    const { user, session } = await t.context.getUser();
+    let chart = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        }
+    });
+
+    t.is(chart.result.authorId, user.id);
+
+    chart = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/charts/${chart.result.id}`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            authorId: null
+        }
+    });
+
+    t.is(chart.result.authorId, user.id);
 });
