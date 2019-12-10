@@ -4,6 +4,7 @@ const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
 const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/schemas/config');
+const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
 
 const { generateToken } = require('./utils');
@@ -137,6 +138,13 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
 
+    const { validateThemeData } = schemas.initialize({
+        getSchema: config.api.schemaBaseUrl
+            ? loadSchemaFromUrl(config.api.schemaBaseUrl)
+            : undefined
+    });
+    server.method('validateThemeData', validateThemeData);
+
     if (process.env.NODE_ENV === 'development') {
         server.register([require('@hapi/inert'), require('@hapi/vision')]);
     }
@@ -197,6 +205,25 @@ async function start() {
     server.start();
 
     return server;
+}
+
+function loadSchemaFromUrl(baseUrl) {
+    const got = require('got');
+    const cache = {};
+    return async id => {
+        // use cached schema if available
+        if (cache[id]) return cache[id];
+        // fetch schema from URL
+        return got(`${baseUrl}/${id}.json`, { json: true }).then(({ body }) => {
+            cache[id] = body;
+            // delete cache after 5 minutes
+            setTimeout(() => {
+                delete cache[id];
+            }, 5 * 6e4);
+
+            return body;
+        });
+    };
 }
 
 module.exports = { init, start };

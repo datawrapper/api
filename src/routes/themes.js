@@ -27,7 +27,7 @@ module.exports = {
 };
 
 async function getTheme(request, h) {
-    const { params, query, url } = request;
+    const { server, params, query, url } = request;
 
     let originalExtend;
     let dataValues = { extend: params.id, data: {} };
@@ -64,6 +64,19 @@ ${dataValues.less || ''}
 
     dataValues.extend = originalExtend;
     dataValues.url = url.pathname;
+
+    if (server.methods.isAdmin(request)) {
+        try {
+            await server.methods.validateThemeData(dataValues.data);
+            dataValues.errors = [];
+        } catch (err) {
+            if (err.name === 'ValidationError') {
+                dataValues.errors = err.details;
+            } else {
+                throw err;
+            }
+        }
+    }
 
     const { created_at, ...theme } = dataValues;
     return { createdAt: created_at, ...theme };
