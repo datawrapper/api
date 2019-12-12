@@ -1,6 +1,6 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const assign = require('assign-deep');
+const merge = require('merge-deep');
 const { Theme } = require('@datawrapper/orm/models');
 
 module.exports = {
@@ -55,7 +55,7 @@ ${dataValues.less || ''}
 `;
         }
 
-        dataValues.data = assign(extendedTheme.data, dataValues.data);
+        dataValues.data = merge(extendedTheme.data, dataValues.data);
         dataValues.assets = { ...extendedTheme.assets, ...dataValues.assets };
         dataValues.extend = extendedTheme.extend;
 

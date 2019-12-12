@@ -5,7 +5,7 @@ const Boom = require('@hapi/boom');
 const { Op } = require('sequelize');
 const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
 const set = require('lodash/set');
-const assign = require('assign-deep');
+const merge = require('merge-deep');
 const mime = require('mime');
 const { Chart, ChartPublic, User, Folder, Plugin } = require('@datawrapper/orm/models');
 const CodedError = require('@datawrapper/shared/CodedError');
@@ -703,7 +703,7 @@ async function editChart(request, h) {
         delete payload.authorId;
     }
 
-    const newData = assign(prepareChart(chart), payload);
+    const newData = merge(prepareChart(chart), payload);
 
     chart = await chart.update({ ...decamelizeKeys(newData), metadata: newData.metadata });
 
