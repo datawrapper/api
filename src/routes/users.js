@@ -196,17 +196,17 @@ module.exports = {
                 tags: ['api'],
                 description: 'Update user settings',
                 validate: {
-                    params: {
+                    params: Joi.object({
                         id: Joi.number()
                             .required()
                             .description('User ID')
-                    },
-                    payload: {
+                    }),
+                    payload: Joi.object({
                         activeTeam: Joi.string()
                             .allow(null)
                             .example('teamxyz')
                             .description('The active team for the user')
-                    }
+                    })
                 },
                 response: createResponseConfig({
                     schema: Joi.object({

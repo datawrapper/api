@@ -17,18 +17,18 @@ function register(server, options) {
         options: {
             auth: 'admin',
             validate: {
-                query: {
+                query: Joi.object({
                     userId: Joi.number(),
                     search: Joi.string().description(
                         'Search for a team name or id including this term.'
                     ),
                     order: Joi.string()
                         .uppercase()
-                        .valid(['ASC', 'DESC'])
+                        .valid('ASC', 'DESC')
                         .default('ASC')
                         .description('Result order (ascending or descending)'),
                     orderBy: Joi.string()
-                        .valid(['name', 'createdAt'])
+                        .valid('name', 'createdAt')
                         .default('name')
                         .description('Attribute to order by'),
                     limit: Joi.number()
@@ -39,7 +39,7 @@ function register(server, options) {
                         .integer()
                         .default(0)
                         .description('Number of items to skip. Useful for pagination.')
-                }
+                })
             }
         },
         handler: getAllTeams
