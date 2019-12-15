@@ -2,12 +2,13 @@ import test from 'ava';
 import { setup } from '../../test/helpers/setup';
 
 test.before(async t => {
-    const { server, getUser } = await setup({ usePlugins: false });
+    const { server, getUser, getTeamWithUser } = await setup({ usePlugins: false });
     const data = await getUser('admin');
 
     t.context.server = server;
     t.context.data = data;
     t.context.getUser = getUser;
+    t.context.getTeamWithUser = getTeamWithUser;
     t.context.auth = {
         strategy: 'session',
         credentials: data.session,
@@ -133,4 +134,39 @@ test('Users can not change the author ID of a chart', async t => {
     });
 
     t.is(chart.result.authorId, user.id);
+});
+
+test('Users can create charts in a team they have access to', async t => {
+    const { team, session } = await t.context.getTeamWithUser('member');
+
+    const chart = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            organizationId: team.id
+        }
+    });
+
+    t.is(chart.statusCode, 201);
+});
+
+test('Users cannot create chart in a team they dont have access to', async t => {
+    const { session } = await t.context.getUser();
+    const { team } = await t.context.getTeamWithUser('member');
+
+    const chart = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            organizationId: team.id
+        }
+    });
+
+    t.is(chart.statusCode, 404);
 });
