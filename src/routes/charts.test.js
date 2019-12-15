@@ -168,5 +168,5 @@ test('Users cannot create chart in a team they dont have access to', async t => 
         }
     });
 
-    t.is(chart.statusCode, 404);
+    t.is(chart.statusCode, 401);
 });
