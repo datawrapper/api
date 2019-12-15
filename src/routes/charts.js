@@ -616,6 +616,15 @@ async function createChart(request, h) {
         return (await Chart.findByPk(id)) ? findChartId() : id;
     }
 
+    if (
+        payload &&
+        payload.organizationId &&
+        !isAdmin &&
+        !(await user.hasTeam(payload.organizationId))
+    ) {
+        return Boom.unauthorized('User is not allowed to create a chart in that team.');
+    }
+
     if (payload && payload.folderId) {
         // check if folder belongs to user to team
         const folder = await Folder.findOne({ where: { id: payload.folderId } });
