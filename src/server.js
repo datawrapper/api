@@ -214,14 +214,15 @@ function loadSchemaFromUrl(baseUrl) {
         // use cached schema if available
         if (cache[id]) return cache[id];
         // fetch schema from URL
-        const body = await got(`${id}.json`, { prefixUrl: baseUrl }).json();
-        cache[id] = body;
-        // delete cache after 5 minutes
-        setTimeout(() => {
-            delete cache[id];
-        }, 5 * 6e4);
+        return got(`${baseUrl}/${id}.json`, { json: true }).then(({ body }) => {
+            cache[id] = body;
+            // delete cache after 5 minutes
+            setTimeout(() => {
+                delete cache[id];
+            }, 5 * 6e4);
 
-        return body;
+            return body;
+        });
     };
 }
 

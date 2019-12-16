@@ -66,12 +66,12 @@ module.exports = {
                 description: 'Update your account settings',
                 notes: 'Use this endpoint to change your active team.',
                 validate: {
-                    payload: Joi.object({
+                    payload: {
                         activeTeam: Joi.string()
                             .allow(null)
                             .example('teamxyz')
                             .description('Your active team')
-                    })
+                    }
                 },
                 response: createResponseConfig({
                     schema: Joi.object({
