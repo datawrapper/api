@@ -374,12 +374,12 @@ function register(server, options) {
                         .required()
                         .description('Full filename including extension.')
                 }),
-                payload: Joi.alternatives(
+                payload: [
                     Joi.string().description(
                         'An asset used by the chart such as CSV data or custom JSON map.'
                     ),
                     Joi.object()
-                )
+                ]
             },
             response: noContentResponse,
             payload: {
@@ -408,12 +408,12 @@ function register(server, options) {
                         .length(5)
                         .required()
                 }),
-                payload: Joi.alternatives(
+                payload: [
                     Joi.string().description(
                         'An asset used by the chart such as CSV data or custom JSON map.'
                     ),
                     Joi.object()
-                )
+                ]
             },
             response: noContentResponse,
             payload: {
