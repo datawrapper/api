@@ -1,6 +1,5 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const sequelize = require('sequelize');
 const bcrypt = require('bcryptjs');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
 const set = require('lodash/set');
@@ -18,7 +17,7 @@ const userResponse = createResponseConfig({
     }).unknown()
 });
 
-const { Op } = sequelize;
+const { Op } = require('@datawrapper/orm').db;
 const attributes = ['id', 'email', 'name', 'role', 'language'];
 
 module.exports = {
