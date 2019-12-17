@@ -1,5 +1,5 @@
 const Joi = require('@hapi/joi');
-const { Op } = require('sequelize');
+const { Op } = require('@datawrapper/orm').db;
 const set = require('lodash/set');
 const { camelizeKeys, decamelize } = require('humps');
 const { Team, User } = require('@datawrapper/orm/models');

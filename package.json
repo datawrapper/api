@@ -55,8 +55,7 @@
         "less": "3.10.3",
         "lodash": "4.17.15",
         "mime": "2.4.4",
-        "nanoid": "2.1.7",
-        "sequelize": "6.0.0"
+        "nanoid": "2.1.7"
     },
     "devDependencies": {
         "@hapi/inert": "~5.2.2",

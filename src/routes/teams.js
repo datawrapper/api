@@ -1,6 +1,6 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { Op } = require('sequelize');
+const { Op } = require('@datawrapper/orm').db;
 const set = require('lodash/set');
 const nanoid = require('nanoid');
 const crypto = require('crypto');
