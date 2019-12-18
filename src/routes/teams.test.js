@@ -380,6 +380,8 @@ test('admins can create teams', async t => {
     const { user: admin } = await t.context.getUser('admin');
     const auth = { strategy: 'simple', credentials: { session: '' }, artifacts: admin };
 
+    await t.context.addToCleanup('team', 'team-admin');
+
     const team = await t.context.server.inject({
         method: 'POST',
         url: `/v3/teams`,
@@ -391,8 +393,6 @@ test('admins can create teams', async t => {
     });
 
     t.is(team.statusCode, 201);
-
-    await t.context.addToCleanup('team', team.result.id);
 
     t.is(team.result.name, 'Test');
     t.truthy(team.result.createdAt);
