@@ -217,7 +217,7 @@ function register(server, options) {
                     unit: Joi.string().default('px'),
                     mode: Joi.string().default('rgb'),
                     width: Joi.number().default(600),
-                    height: Joi.number().optional(),
+                    height: [Joi.number(), Joi.string().valid('auto')],
                     plain: Joi.boolean().default(false),
                     scale: Joi.number().default(1),
                     zoom: Joi.number().default(2),
@@ -257,10 +257,10 @@ function register(server, options) {
                 query: Joi.object({
                     unit: Joi.string().default('px'),
                     mode: Joi.string()
-                        .allow('rgb', 'cmyk')
+                        .valid('rgb', 'cmyk')
                         .default('rgb'),
                     width: Joi.number().default(600),
-                    height: Joi.number().optional(),
+                    height: [Joi.number(), Joi.string().valid('auto')],
                     plain: Joi.boolean().default(false),
                     scale: Joi.number().default(1),
                     zoom: Joi.number().default(2),
@@ -786,7 +786,6 @@ async function handleChartExport(request, h) {
     }
 
     request.payload = Object.assign(query, { border });
-
     return exportChart(request, h);
 }
 
