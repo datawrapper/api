@@ -217,7 +217,7 @@ function register(server, options) {
                     unit: Joi.string().default('px'),
                     mode: Joi.string().default('rgb'),
                     width: Joi.number().default(600),
-                    height: Joi.any(),
+                    height: Joi.number().optional(),
                     plain: Joi.boolean().default(false),
                     scale: Joi.number().default(1),
                     zoom: Joi.number().default(2),
@@ -260,9 +260,10 @@ function register(server, options) {
                         .allow('rgb', 'cmyk')
                         .default('rgb'),
                     width: Joi.number().default(600),
-                    height: Joi.any(),
+                    height: Joi.number().optional(),
                     plain: Joi.boolean().default(false),
                     scale: Joi.number().default(1),
+                    zoom: Joi.number().default(2),
                     borderWidth: Joi.number(),
                     borderColor: Joi.string(),
                     download: Joi.boolean().default(false)
@@ -785,6 +786,7 @@ async function handleChartExport(request, h) {
     }
 
     request.payload = Object.assign(query, { border });
+
     return exportChart(request, h);
 }
 
