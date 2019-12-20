@@ -1,6 +1,6 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { Op } = require('sequelize');
+const { Op } = require('@datawrapper/orm').db;
 const set = require('lodash/set');
 const nanoid = require('nanoid');
 const crypto = require('crypto');
@@ -36,11 +36,11 @@ const routes = [
     {
         method: 'GET',
         path: '/{teamId}/products',
-        params: Joi.object({
+        params: {
             teamId: Joi.string()
                 .required()
                 .description('ID of the team to fetch products for.')
-        }),
+        },
         handler: async function getAllTeamProducts(request, h) {
             const { auth, params } = request;
             const user = auth.artifacts;
@@ -74,17 +74,17 @@ const routes = [
     {
         method: 'POST',
         path: '/{teamId}/products',
-        params: Joi.object({
+        params: {
             teamId: Joi.string()
                 .required()
                 .description('ID of the team to create the product for.')
-        }),
-        payload: Joi.object({
+        },
+        payload: {
             expires: Joi.date()
                 .allow(null)
                 .optional(),
             productId: Joi.number()
-        }),
+        },
         handler: async function addTeamProduct(request, h) {
             const { server, payload, params } = request;
             server.methods.isAdmin(request, { throwError: true });
@@ -116,19 +116,19 @@ const routes = [
     {
         method: 'PUT',
         path: '/{teamId}/products/{productId}',
-        params: Joi.object({
+        params: {
             teamId: Joi.string()
                 .required()
                 .description('ID of the team.'),
             productId: Joi.number()
                 .required()
                 .description('ID of the product.')
-        }),
-        payload: Joi.object({
+        },
+        payload: {
             expires: Joi.date()
                 .allow(null)
                 .optional()
-        }),
+        },
         handler: async function updateTeamProduct(request, h) {
             const { server, payload, params } = request;
             server.methods.isAdmin(request, { throwError: true });
@@ -157,14 +157,14 @@ const routes = [
     {
         method: 'DELETE',
         path: '/{teamId}/products/{productId}',
-        params: Joi.object({
+        params: {
             teamId: Joi.string()
                 .required()
                 .description('ID of the team.'),
             productId: Joi.number()
                 .required()
                 .description('ID of the product.')
-        }),
+        },
         handler: async function deleteTeamProduct(request, h) {
             const { server, params } = request;
             const isAdmin = server.methods.isAdmin(request);
@@ -398,7 +398,7 @@ module.exports = {
                             .required()
                             .description('ID of the team member you want to change the status of.'),
                         role: Joi.string()
-                            .valid(...ROLES)
+                            .valid(ROLES)
                             .required()
                     })
                 },
@@ -416,20 +416,20 @@ module.exports = {
                 tags: ['api'],
                 description: 'Invite a person',
                 validate: {
-                    params: Joi.object({
+                    params: {
                         id: Joi.string()
                             .required()
                             .description('Team ID (eg. guardians-of-the-galaxy)')
-                    }),
-                    payload: Joi.object({
+                    },
+                    payload: {
                         email: Joi.string()
                             .email()
                             .required()
                             .example('thor@gmail.com'),
                         role: Joi.string()
-                            .valid(...ROLES)
+                            .valid(ROLES)
                             .required()
-                    })
+                    }
                 },
                 response: createResponseConfig({
                     status: { '201': Joi.any().empty() }
@@ -448,14 +448,14 @@ module.exports = {
                 tags: ['api'],
                 description: 'Accept a team invitation',
                 validate: {
-                    params: Joi.object({
+                    params: {
                         id: Joi.string()
                             .required()
                             .description('Team ID (eg. guardians-of-the-galaxy)'),
                         token: Joi.string()
                             .required()
                             .description('A valid team invitation token')
-                    })
+                    }
                 },
                 response: createResponseConfig({
                     status: { '201': Joi.any().empty() }
@@ -472,14 +472,14 @@ module.exports = {
                 auth: false,
                 description: 'Reject a team invitation',
                 validate: {
-                    params: Joi.object({
+                    params: {
                         id: Joi.string()
                             .required()
                             .description('Team ID (eg. guardians-of-the-galaxy)'),
                         token: Joi.string()
                             .required()
                             .description('A valid team invitation token')
-                    })
+                    }
                 },
                 response: createResponseConfig({
                     status: { '204': Joi.any().empty() }

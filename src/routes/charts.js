@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { Op } = require('sequelize');
+const { Op } = require('@datawrapper/orm').db;
 const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
 const set = require('lodash/set');
 const assign = require('assign-deep');
@@ -383,12 +383,12 @@ function register(server, options) {
                         .required()
                         .description('Full filename including extension.')
                 }),
-                payload: Joi.alternatives(
+                payload: [
                     Joi.string().description(
                         'An asset used by the chart such as CSV data or custom JSON map.'
                     ),
                     Joi.object()
-                )
+                ]
             },
             response: noContentResponse,
             payload: {
@@ -417,12 +417,12 @@ function register(server, options) {
                         .length(5)
                         .required()
                 }),
-                payload: Joi.alternatives(
+                payload: [
                     Joi.string().description(
                         'An asset used by the chart such as CSV data or custom JSON map.'
                     ),
                     Joi.object()
-                )
+                ]
             },
             response: noContentResponse,
             payload: {
@@ -623,6 +623,15 @@ async function createChart(request, h) {
     async function findChartId() {
         const id = server.methods.generateToken(5);
         return (await Chart.findByPk(id)) ? findChartId() : id;
+    }
+
+    if (
+        payload &&
+        payload.organizationId &&
+        !isAdmin &&
+        !(await user.hasTeam(payload.organizationId))
+    ) {
+        return Boom.unauthorized('User is not allowed to create a chart in that team.');
     }
 
     if (payload && payload.folderId) {
