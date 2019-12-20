@@ -260,7 +260,7 @@ function register(server, options) {
                         .valid('rgb', 'cmyk')
                         .default('rgb'),
                     width: Joi.number().default(600),
-                    height: [Joi.number(), Joi.string().valid('auto')],
+                    height: [Joi.number().optional(), Joi.string().valid('auto')],
                     plain: Joi.boolean().default(false),
                     scale: Joi.number().default(1),
                     zoom: Joi.number().default(2),
