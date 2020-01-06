@@ -1,4 +1,5 @@
 import test from 'ava';
+import nanoid from 'nanoid';
 import { setup } from '../../test/helpers/setup';
 
 test.before(async t => {
@@ -377,17 +378,18 @@ test('owners can not get removed', async t => {
 });
 
 test('admins can create teams', async t => {
+    const teamId = `team-admin-${nanoid(5)}`;
     const { user: admin } = await t.context.getUser('admin');
     const auth = { strategy: 'simple', credentials: { session: '' }, artifacts: admin };
 
-    await t.context.addToCleanup('team', 'team-admin');
+    await t.context.addToCleanup('team', teamId);
 
     const team = await t.context.server.inject({
         method: 'POST',
         url: `/v3/teams`,
         auth,
         payload: {
-            id: 'test-admin',
+            id: teamId,
             name: 'Test'
         }
     });
