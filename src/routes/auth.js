@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { Op } = require('sequelize');
+const { Op } = require('@datawrapper/orm').db;
 const { camelizeKeys } = require('humps');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
