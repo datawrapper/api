@@ -10,7 +10,11 @@ module.exports = {
             handler: async function getAllProducts(request, h) {
                 request.server.methods.isAdmin(request, { throwError: true });
 
-                const { rows, count } = await Product.findAndCountAll();
+                const { rows, count } = await Product.findAndCountAll({
+                    where: {
+                        deleted: false
+                    }
+                });
 
                 return {
                     list: rows.map(product => {
