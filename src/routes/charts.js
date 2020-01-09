@@ -665,7 +665,7 @@ async function editChart(request, h) {
     const user = auth.artifacts;
     const isAdmin = server.methods.isAdmin(request);
 
-    let chart = await Chart.findOne({
+    const chart = await Chart.findOne({
         where: {
             id: params.id,
             deleted: { [Op.not]: true }
@@ -714,7 +714,11 @@ async function editChart(request, h) {
 
     const newData = assign(prepareChart(chart), payload);
 
-    chart = await chart.update({ ...decamelizeKeys(newData), metadata: newData.metadata });
+    await Chart.update(
+        { ...decamelizeKeys(newData), metadata: newData.metadata },
+        { where: { id: chart.id }, limit: 1 }
+    );
+    await chart.reload();
 
     return {
         ...prepareChart(chart),
