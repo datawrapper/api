@@ -217,7 +217,9 @@ function register(server, options) {
                     unit: Joi.string().default('px'),
                     mode: Joi.string().default('rgb'),
                     width: Joi.number().default(600),
-                    height: Joi.any(),
+                    height: Joi.number()
+                        .min(1)
+                        .allow('auto'),
                     plain: Joi.boolean().default(false),
                     scale: Joi.number().default(1),
                     zoom: Joi.number().default(2),
@@ -257,12 +259,18 @@ function register(server, options) {
                 query: Joi.object({
                     unit: Joi.string().default('px'),
                     mode: Joi.string()
-                        .allow('rgb', 'cmyk')
+                        .valid('rgb', 'cmyk')
                         .default('rgb'),
-                    width: Joi.number().default(600),
-                    height: Joi.any(),
+                    width: Joi.number()
+                        .default(600)
+                        .min(1)
+                        .optional(),
+                    height: Joi.number()
+                        .min(1)
+                        .allow('auto'),
                     plain: Joi.boolean().default(false),
                     scale: Joi.number().default(1),
+                    zoom: Joi.number().default(2),
                     borderWidth: Joi.number(),
                     borderColor: Joi.string(),
                     download: Joi.boolean().default(false)
