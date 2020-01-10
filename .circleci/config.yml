@@ -33,7 +33,7 @@ jobs:
                       DW_CONFIG_PATH: ./test/_config.ci.js
                   command: |
                       mkdir -p ~/reports/ava
-                      npm test -- --tap | npx tap-xunit > ~/reports/ava/results.xml
+                      npx ava --tap | npx tap-xunit > ~/reports/ava/results.xml
             - run:
                   name: Cleanup DB because tests failed
                   environment:
