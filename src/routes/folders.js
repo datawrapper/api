@@ -11,7 +11,7 @@ const routes = [
         description: 'List folders',
         notes: 'Get a list of folders and their associated charts.',
         response: listResponse,
-        handler: async function getAllFolders(request, h) {
+        async handler(request, h) {
             const { auth } = request;
 
             const { teams } = await User.findByPk(auth.artifacts.id, {
@@ -40,7 +40,11 @@ const routes = [
                     charts: (
                         await Chart.findAll({
                             attributes: ['id', 'title', 'type', 'theme', 'createdAt'],
-                            where: { organization_id: team.id, in_folder: null }
+                            where: {
+                                organization_id: team.id,
+                                in_folder: null,
+                                deleted: false
+                            }
                         })
                     ).map(cleanChart),
                     folders: await getFolders('org_id', team.id)
@@ -67,9 +71,9 @@ const routes = [
                     arr.push({
                         id: folder.id,
                         name: folder.name,
-                        charts: await Chart.findAll({ where: { in_folder: folder.id } }).map(
-                            cleanChart
-                        ),
+                        charts: await Chart.findAll({
+                            where: { in_folder: folder.id, deleted: false }
+                        }).map(cleanChart),
                         folders: await getFolders(by, owner, folder.id)
                     });
                 }
@@ -96,7 +100,7 @@ const routes = [
             parentId: Joi.number().optional(),
             name: Joi.string()
         }),
-        handler: async function(request, h) {
+        async handler(request, h) {
             const { auth, server, payload } = request;
             const isAdmin = server.methods.isAdmin(request);
 
