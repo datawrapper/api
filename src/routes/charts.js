@@ -665,6 +665,9 @@ async function createChart(request, h) {
         id
     });
 
+    // log chart/edit
+    await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
+
     return h.response({ ...prepareChart(chart), url: `${url.pathname}/${chart.id}` }).code(201);
 }
 
@@ -727,6 +730,8 @@ async function editChart(request, h) {
         { where: { id: chart.id }, limit: 1 }
     );
     await chart.reload();
+    // log chart/edit
+    await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
 
     return {
         ...prepareChart(chart),
@@ -896,8 +901,9 @@ function getAssetWhitelist(id) {
 }
 
 async function writeChartAsset(request, h) {
-    const { params } = request;
+    const { params, auth } = request;
     const { events, event } = request.server.app;
+    const user = auth.artifacts;
     const chart = await loadChart(request);
 
     const isGuestChart = chart.guest_session === request.auth.credentials.session;
@@ -924,6 +930,9 @@ async function writeChartAsset(request, h) {
         });
 
         const { code } = eventResults.find(e => e.status === 'success').data;
+
+        // log chart/edit
+        await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
 
         return h.response().code(code);
     } catch (error) {
