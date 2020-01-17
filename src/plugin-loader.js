@@ -30,16 +30,15 @@ module.exports = {
                 plugins.map(async ({ plugin, options, error, name }) => {
                     if (error) {
                         server.logger().error(`[Plugin] ${error}`, logError(root, name));
-                        process.exit(1);
-                    } else {
-                        server.logger().info(
-                            {
-                                version: get(plugin, ['pkg', 'version'], plugin.version)
-                            },
-                            `[Plugin] ${get(plugin, ['pkg', 'name'], plugin.name)}`
-                        );
-                        await server.register({ plugin, options }, plugin.options);
+                        return process.exit(1);
                     }
+                    server.logger().info(
+                        {
+                            version: get(plugin, ['pkg', 'version'], plugin.version)
+                        },
+                        `[Plugin] ${get(plugin, ['pkg', 'name'], plugin.name)}`
+                    );
+                    return server.register({ plugin, options }, plugin.options);
                 })
             );
         }
