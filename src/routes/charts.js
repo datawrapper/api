@@ -665,6 +665,8 @@ async function createChart(request, h) {
         id
     });
 
+    await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
+
     return h.response({ ...prepareChart(chart), url: `${url.pathname}/${chart.id}` }).code(201);
 }
 
@@ -727,6 +729,8 @@ async function editChart(request, h) {
         { where: { id: chart.id }, limit: 1 }
     );
     await chart.reload();
+    // log chart edit
+    await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
 
     return {
         ...prepareChart(chart),
