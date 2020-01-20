@@ -450,6 +450,10 @@ async function createUser(request, h) {
         ...data
     };
 
+    if (!request.server.methods.isAdmin(request)) {
+        newUser.role = 'pending';
+    }
+
     const { role, dataValues } = await User.create(newUser);
     const { pwd, ...user } = dataValues;
 
