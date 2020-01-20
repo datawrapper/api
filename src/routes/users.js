@@ -445,18 +445,19 @@ async function createUser(request, h) {
 
     const newUser = {
         role: 'pending',
-        pwd: hash,
-        name: null,
-        ...data
+        name: data.name,
+        email: data.email,
+        language: data.language,
+        pwd: hash
     };
 
-    if (!request.server.methods.isAdmin(request)) {
-        newUser.role = 'pending';
+    if (data.role && request.server.methods.isAdmin(request)) {
+        newUser.role = data.role;
     }
 
     const { role, dataValues } = await User.create(newUser);
-    const { pwd, ...user } = dataValues;
 
+    const { pwd, ...user } = dataValues;
     const { count } = await Chart.findAndCountAll({ where: { author_id: user.id } });
 
     return h
