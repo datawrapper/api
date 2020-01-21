@@ -709,7 +709,11 @@ async function editTeam(request, h) {
         }
     }
 
-    let data = payload;
+    let data = {
+        name: payload.name,
+        settings: payload.settings,
+        disabled: payload.disabled
+    };
 
     let team = await Team.findByPk(params.id);
 
