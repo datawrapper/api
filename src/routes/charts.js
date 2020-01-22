@@ -12,6 +12,7 @@ const CodedError = require('@datawrapper/shared/CodedError');
 const { promisify } = require('util');
 const mkdirAsync = promisify(fs.mkdir);
 const writeFileAsync = promisify(fs.writeFile);
+const accessAsync = promisify(fs.access);
 
 const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
 
@@ -462,6 +463,16 @@ function register(server, options) {
 
     if (!hasRegisteredDataPlugins) {
         events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
+            const fn = path.join(
+                localChartAssetRoot,
+                getDataPath(chart.dataValues.created_at),
+                filename
+            );
+            try {
+                await accessAsync(fn, fs.constants.R_OK);
+            } catch (e) {
+                throw new CodedError(404);
+            }
             return fs.createReadStream(
                 path.join(localChartAssetRoot, getDataPath(chart.dataValues.created_at), filename)
             );
