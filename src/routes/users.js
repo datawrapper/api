@@ -378,13 +378,14 @@ async function getUser(request, h) {
 }
 
 async function editUser(request, h) {
-    const { auth, params, payload } = request;
+    const { auth, params, payload, server } = request;
+    const { generateToken, isAdmin, userIsDeleted, config } = server.methods;
     const userId = params.id;
 
-    await request.server.methods.userIsDeleted(userId);
+    await userIsDeleted(userId);
 
     if (userId !== auth.artifacts.id) {
-        request.server.methods.isAdmin(request, { throwError: true });
+        isAdmin(request, { throwError: true });
     }
 
     const data = {
@@ -400,9 +401,30 @@ async function editUser(request, h) {
                 : await request.server.methods.hashPassword(payload.pwd);
     }
 
-    if (request.server.methods.isAdmin(request)) {
+    if (isAdmin(request)) {
         data.activateToken = payload.activateToken;
         data.role = payload.role;
+    }
+
+    if (!isAdmin(request) && payload.email) {
+        // check if email has changed
+        const oldUser = User.findByPk(userId);
+        if (oldUser.email !== payload.email) {
+            const token = (data.activate_token = generateToken());
+            const { https, domain } = config('frontend');
+
+            await server.app.events.emit(request.server.app.event.SEND_EMAIL, {
+                type: 'user-setup',
+                to: payload.email,
+                language: oldUser.language,
+                data: {
+                    email: payload.email,
+                    invite_link: `${
+                        https ? 'https' : 'http'
+                    }://${domain}/account/profile?token=${token}`
+                }
+            });
+        }
     }
 
     await User.update(decamelizeKeys(data), {
