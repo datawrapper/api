@@ -431,3 +431,47 @@ test('User can set and unset activeTeam herself', async t => {
     t.is(res2.statusCode, 200);
     t.is(res2.result.activeTeam, null);
 });
+
+test.only("Users can't change protected fields using PATCH", async t => {
+    let user = await t.context.getUser();
+
+    const forbiddenFields = {
+        customerId: 12345,
+        oauthSignin: 'blub',
+        id: 9999
+    };
+
+    let res = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user.user.id}`,
+        headers: {
+            cookie: `DW-SESSION=${user.session.id}`,
+            'Content-Type': 'application/json'
+        },
+        payload: forbiddenFields
+    });
+
+    t.is(res.statusCode, 400);
+
+    const protectedFields = {
+        activateToken: '12345',
+        role: 'admin'
+    };
+
+    res = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user.user.id}`,
+        headers: {
+            cookie: `DW-SESSION=${user.session.id}`,
+            'Content-Type': 'application/json'
+        },
+        payload: protectedFields
+    });
+
+    t.is(res.statusCode, 200);
+
+    user = await user.user.reload();
+    for (const f in protectedFields) {
+        t.not(user[decamelize(f)], protectedFields[f]);
+    }
+});
