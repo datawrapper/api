@@ -432,7 +432,7 @@ test('User can set and unset activeTeam herself', async t => {
     t.is(res2.result.activeTeam, null);
 });
 
-test.only("Users can't change protected fields using PATCH", async t => {
+test("Users can't change protected fields using PATCH", async t => {
     let user = await t.context.getUser();
 
     const forbiddenFields = {
