@@ -475,3 +475,29 @@ test("Users can't change protected fields using PATCH", async t => {
         t.not(user[decamelize(f)], protectedFields[f]);
     }
 });
+
+test.only('Users can change allowed fields', async t => {
+    let user = await t.context.getUser();
+
+    const allowedFields = {
+        name: 'My new name',
+        email: 'new@example.com'
+    };
+
+    const res = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user.user.id}`,
+        headers: {
+            cookie: `DW-SESSION=${user.session.id}`,
+            'Content-Type': 'application/json'
+        },
+        payload: allowedFields
+    });
+
+    t.is(res.statusCode, 200);
+
+    user = await user.user.reload();
+    for (const f in allowedFields) {
+        t.is(user[decamelize(f)], allowedFields[f]);
+    }
+});
