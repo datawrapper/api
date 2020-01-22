@@ -1,5 +1,6 @@
 import test from 'ava';
 import sortBy from 'lodash/sortBy';
+import { decamelize, decamelizeKeys } from 'humps';
 
 import { setup } from '../../test/helpers/setup';
 
@@ -83,6 +84,55 @@ test('New user passwords should be saved as bcrypt hash', async t => {
 
     t.is(user.pwd.slice(0, 2), '$2');
 
+    await t.context.addToCleanup('user', result.id);
+});
+
+test("New users can't set their role to admin", async t => {
+    const credentials = t.context.getCredentials();
+
+    /* create user with email and some data */
+    const { result } = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/users',
+        payload: { ...credentials, role: 'admin' }
+    });
+
+    t.log('User created', result.email);
+
+    const user = await t.context.models.User.findByPk(result.id, { attributes: ['role'] });
+
+    t.is(user.role, 'pending');
+    await t.context.addToCleanup('user', result.id);
+});
+
+test("New users can't set protected fields", async t => {
+    const credentials = t.context.getCredentials();
+
+    const fields = {
+        id: 123455789,
+        activateToken: '12345',
+        deleted: true,
+        resetPasswordToken: '12345',
+        customerId: 12345,
+        oauthSignin: 'blub'
+    };
+    /* create user with email and some data */
+    const { result } = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/users',
+        payload: { ...credentials, ...fields }
+    });
+
+    t.log('User created', result.email);
+
+    const user = await t.context.models.User.findByPk(result.id, {
+        attributes: Object.keys(decamelizeKeys(fields))
+    });
+
+    for (const f in fields) {
+        t.not(user[decamelize(f)], fields[f]);
+    }
+    // t.is(user.role, 'pending');
     await t.context.addToCleanup('user', result.id);
 });
 
