@@ -217,3 +217,45 @@ test('Users can edit chart medatata', async t => {
 
     t.is(chart.result.metadata.annotate.notes, 'note-2');
 });
+
+test('User can read and write chart data', async t => {
+    const { session } = await t.context.getUser();
+    const headers = {
+        cookie: `DW-SESSION=${session.id}`
+    };
+    const chart = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        headers,
+        payload: {}
+    });
+
+    async function getData() {
+        return t.context.server.inject({
+            method: 'GET',
+            headers,
+            url: `/v3/charts/${chart.result.id}/data`
+        });
+    }
+    async function putData(data) {
+        return t.context.server.inject({
+            method: 'PUT',
+            headers: {
+                ...headers,
+                'Content-Type': 'text/csv'
+            },
+            url: `/v3/charts/${chart.result.id}/data`,
+            payload: data
+        });
+    }
+
+    // chart data is missing by default
+    let res = await getData();
+    t.is(res.statusCode, 404);
+    // set chart data
+    await putData('hello world');
+    // confirm chart data was set
+    res = await getData();
+    t.is(res.statusCode, 200);
+    t.is(res.result, 'hello world');
+});
