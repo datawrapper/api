@@ -380,7 +380,7 @@ async function getUser(request, h) {
 
 async function editUser(request, h) {
     const { auth, params, payload, server } = request;
-    const { generateToken, isAdmin, userIsDeleted, config } = server.methods;
+    const { generateToken, isAdmin, userIsDeleted, hashPassword, config } = server.methods;
     const userId = params.id;
 
     await userIsDeleted(userId);
@@ -394,44 +394,52 @@ async function editUser(request, h) {
         name: payload.name
     };
 
-    if (payload.pwd) {
-        data.pwd =
-            payload.pwd === ''
-                ? payload.pwd
-                : await request.server.methods.hashPassword(payload.pwd);
-    }
-
     if (isAdmin(request)) {
+        // admins can update user without confirmation
         data.email = payload.email;
         data.activateToken = payload.activateToken;
         data.role = payload.role;
-    } else if (payload.email) {
-        // check if email has changed
-        const oldUser = User.findByPk(userId);
-        if (oldUser.email !== payload.email) {
-            const token = generateToken();
-            // set activate token (will be set in User.update call below)
-            data.activate_token = token;
-            // log new email to actions
-            await logAction(userId, 'email-change-request', {
-                'old-email': oldUser.email,
-                'new-email': payload.email,
-                token
-            });
-            // send email-confirmation email
-            const { https, domain } = config('frontend');
-            await server.app.events.emit(request.server.app.event.SEND_EMAIL, {
-                type: 'change-email',
-                to: payload.email,
-                language: oldUser.language,
-                data: {
-                    old_email: oldUser.email,
-                    new_email: payload.email,
-                    confirmation_link: `${
-                        https ? 'https' : 'http'
-                    }://${domain}/account/profile?token=${token}`
-                }
-            });
+        data.pwd = payload.pwd === '' ? payload.pwd : await hashPassword(payload.pwd);
+    } else {
+        // non-admins need to confirm email and password changes
+        if (payload.email) {
+            // check if email has changed
+            const oldUser = User.findByPk(userId);
+            if (oldUser.email !== payload.email) {
+                const token = generateToken();
+                // set activate token (will be set in User.update call below)
+                data.activate_token = token;
+                // log new email to actions
+                await logAction(userId, 'email-change-request', {
+                    'old-email': oldUser.email,
+                    'new-email': payload.email,
+                    token
+                });
+                // send email-confirmation email
+                const { https, domain } = config('frontend');
+                await server.app.events.emit(request.server.app.event.SEND_EMAIL, {
+                    type: 'change-email',
+                    to: payload.email,
+                    language: oldUser.language,
+                    data: {
+                        old_email: oldUser.email,
+                        new_email: payload.email,
+                        confirmation_link: `${
+                            https ? 'https' : 'http'
+                        }://${domain}/account/profile?token=${token}`
+                    }
+                });
+            }
+        }
+        if (payload.pwd && payload.oldpwd) {
+            // compare old password to current password
+            const oldUser = User.findByPk(userId);
+            const oldHash =
+                payload.oldpwd === '' ? payload.oldpwd : await hashPassword(payload.oldpwd);
+            if (oldUser.pwd !== oldHash) {
+                return Boom.unauthorized('old password is wrong');
+            }
+            data.pwd = await hashPassword(payload.pwd);
         }
     }
 
