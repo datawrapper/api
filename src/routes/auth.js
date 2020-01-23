@@ -561,8 +561,6 @@ async function signup(request, h) {
 
     const { generateToken, config } = request.server.methods;
 
-    request.payload.activate_token = generateToken();
-
     const res = await request.server.inject({
         method: 'POST',
         url: '/v3/users',
@@ -591,18 +589,6 @@ async function signup(request, h) {
 
     const { activateToken, ...data } = res.result;
 
-    const { https, domain } = config('frontend');
-
-    await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
-        type: 'activation',
-        to: data.email,
-        language: data.language,
-        data: {
-            activation_link: `${
-                https ? 'https' : 'http'
-            }://${domain}/account/activate/${activateToken}`
-        }
-    });
     const api = config('api');
 
     return h.response(camelizeKeys(data)).state(api.sessionID, session.id, {
