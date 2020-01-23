@@ -481,6 +481,7 @@ async function editUserSettings(request, h) {
 }
 
 async function createUser(request, h) {
+    const { hashPassword, isAdmin, generateToken, config } = request.server.methods;
     const { password = '', ...data } = request.payload;
 
     const existingUser = await User.findOne({ where: { email: data.email } });
@@ -489,17 +490,26 @@ async function createUser(request, h) {
         return Boom.conflict('User already exists');
     }
 
-    const hash = password === '' ? password : await request.server.methods.hashPassword(password);
+    const isInvitation = !!data.invitation;
 
     const newUser = {
         role: 'pending',
         name: data.name,
         email: data.email,
-        language: data.language,
-        pwd: hash
+        language: data.language, // session language?
+        activateToken: generateToken()
     };
 
-    if (data.role && request.server.methods.isAdmin(request)) {
+    if (!isInvitation) {
+        if (password === '') {
+            return Boom.badRequest('Password must not be empty');
+        }
+        const hash = await hashPassword(password);
+        newUser.pwd = hash;
+    }
+
+    if (data.role && isAdmin(request)) {
+        // only admins are allowed to set a user role
         newUser.role = data.role;
     }
 
@@ -507,6 +517,25 @@ async function createUser(request, h) {
 
     const { pwd, ...user } = dataValues;
     const { count } = await Chart.findAndCountAll({ where: { author_id: user.id } });
+
+    const { https, domain } = config('frontend');
+    const accountBaseUrl = `${https ? 'https' : 'http'}://${domain}/account`;
+
+    // send activation/invitation link
+    await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
+        type: isInvitation ? 'new-invite' : 'activation',
+        to: newUser.email,
+        language: newUser.language,
+        data: isInvitation
+            ? {
+                  confirmation_link: `${accountBaseUrl}/invite/${newUser.activateToken}${
+                      data.chartId ? `?chart=${data.chartId}` : ''
+                  }`
+              }
+            : {
+                  activation_link: `${accountBaseUrl}/activate/${newUser.activateToken}`
+              }
+    });
 
     return h
         .response({
