@@ -358,6 +358,10 @@ async function handleSession(request, h) {
             [api.sessionID]: session.id
         })
         .state(api.sessionID, session.id, {
+            domain: `.${api.domain
+                .split('.')
+                .slice(1)
+                .join('.')}`,
             ttl: cookieTTL(30)
         });
 }
@@ -443,6 +447,10 @@ async function login(request, h) {
             [api.sessionID]: session.id
         })
         .state(api.sessionID, session.id, {
+            domain: `.${api.domain
+                .split('.')
+                .slice(1)
+                .join('.')}`,
             ttl: cookieTTL(keepSession ? 90 : 30)
         });
 }
@@ -595,8 +603,13 @@ async function signup(request, h) {
             }://${domain}/account/activate/${activateToken}`
         }
     });
+    const api = config('api');
 
-    return h.response(camelizeKeys(data)).state(config('api').sessionID, session.id, {
+    return h.response(camelizeKeys(data)).state(api.sessionID, session.id, {
+        domain: `.${api.domain
+            .split('.')
+            .slice(1)
+            .join('.')}`,
         ttl: cookieTTL(90)
     });
 }
@@ -616,10 +629,14 @@ async function activateAccount(request, h) {
     const response = h.response().code(204);
 
     if (!request.auth.credentials) {
-        const { sessionID } = request.server.methods.config('api');
+        const { domain, sessionID } = request.server.methods.config('api');
         const session = await createSession(request.server.methods.generateToken(), user.id);
 
         response.state(sessionID, session.id, {
+            domain: `.${domain
+                .split('.')
+                .slice(1)
+                .join('.')}`,
             ttl: cookieTTL(90)
         });
     }
