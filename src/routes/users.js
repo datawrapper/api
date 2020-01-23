@@ -497,7 +497,7 @@ async function createUser(request, h) {
         name: data.name,
         email: data.email,
         language: data.language, // session language?
-        activateToken: generateToken()
+        activate_token: generateToken()
     };
 
     if (!isInvitation) {
