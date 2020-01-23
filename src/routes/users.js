@@ -5,6 +5,7 @@ const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
 const set = require('lodash/set');
 const keyBy = require('lodash/keyBy');
 const { setUserData } = require('@datawrapper/orm/utils/userData');
+const { logAction } = require('@datawrapper/orm/utils/action');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
 const { queryUsers } = require('../utils/raw-queries');
 
@@ -389,7 +390,6 @@ async function editUser(request, h) {
     }
 
     const data = {
-        email: payload.email,
         language: payload.language,
         name: payload.name
     };
@@ -402,24 +402,32 @@ async function editUser(request, h) {
     }
 
     if (isAdmin(request)) {
+        data.email = payload.email;
         data.activateToken = payload.activateToken;
         data.role = payload.role;
-    }
-
-    if (!isAdmin(request) && payload.email) {
+    } else if (payload.email) {
         // check if email has changed
         const oldUser = User.findByPk(userId);
         if (oldUser.email !== payload.email) {
-            const token = (data.activate_token = generateToken());
+            const token = generateToken();
+            // set activate token (will be set in User.update call below)
+            data.activate_token = token;
+            // log new email to actions
+            await logAction(userId, 'email-change-request', {
+                'old-email': oldUser.email,
+                'new-email': payload.email,
+                token
+            });
+            // send email-confirmation email
             const { https, domain } = config('frontend');
-
             await server.app.events.emit(request.server.app.event.SEND_EMAIL, {
-                type: 'user-setup',
+                type: 'change-email',
                 to: payload.email,
                 language: oldUser.language,
                 data: {
-                    email: payload.email,
-                    invite_link: `${
+                    old_email: oldUser.email,
+                    new_email: payload.email,
+                    confirmation_link: `${
                         https ? 'https' : 'http'
                     }://${domain}/account/profile?token=${token}`
                 }
