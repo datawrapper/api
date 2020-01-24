@@ -185,7 +185,10 @@ module.exports = {
                             .email()
                             .required()
                             .example('james.barnes@shield.com')
-                            .description('User email address to confirm deletion.')
+                            .description('User email address to confirm deletion.'),
+                        password: Joi.string()
+                            .required()
+                            .description('User password to confirm deletion')
                     })
                 },
                 response: noContentResponse
@@ -570,13 +573,18 @@ async function deleteUser(request, h) {
         return Boom.forbidden('You can only delete your account');
     }
 
-    const user = await User.findByPk(id, { attributes: ['email', 'role'] });
+    const user = await User.findByPk(id, { attributes: ['email', 'role', 'pwd'] });
     if (payload.email !== user.email) {
         return Boom.badRequest('Wrong email address');
     }
+    // check password
+    const isValid = await bcrypt.compare(payload.password, user.pwd);
+    if (!isValid) {
+        return Boom.badRequest('Wrong passsword');
+    }
 
     if (user.role === 'admin') {
-        return Boom.forbidden('Can not delete admin account');
+        return Boom.forbidden('Cannot delete admin account');
     }
 
     await User.update(

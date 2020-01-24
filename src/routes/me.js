@@ -102,7 +102,10 @@ module.exports = {
                         email: Joi.string()
                             .email()
                             .example('zola@hydra.com')
-                            .description('User email address to confirm deletion.')
+                            .description('User email address to confirm deletion.'),
+                        password: Joi.string()
+                            .required()
+                            .description('User password to confirm deletion')
                     })
                 },
                 response: noContentResponse
