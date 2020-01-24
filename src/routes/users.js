@@ -451,7 +451,7 @@ async function editUser(request, h) {
     const user = await getUser(request, h);
 
     return {
-        ...user,
+        ...camelizeKeys(user.serialize()),
         updatedAt
     };
 }
@@ -521,9 +521,8 @@ async function createUser(request, h) {
         newUser.role = data.role;
     }
 
-    const { role, dataValues } = await User.create(newUser);
+    const user = await User.create(newUser);
 
-    const { pwd, ...user } = dataValues;
     const { count } = await Chart.findAndCountAll({ where: { author_id: user.id } });
 
     const { https, domain } = config('frontend');
@@ -547,8 +546,7 @@ async function createUser(request, h) {
 
     return h
         .response({
-            ...camelizeKeys(user),
-            role,
+            ...camelizeKeys(user.serialize()),
             url: `${request.url.pathname}/${user.id}`,
             chartCount: count,
             createdAt: request.server.methods.isAdmin(request) ? user.created_at : undefined

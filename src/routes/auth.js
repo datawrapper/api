@@ -553,7 +553,6 @@ async function signup(request, h) {
 
     if (request.auth.isAuthenticated) {
         session = await Session.findByPk(request.auth.credentials.session);
-
         if (session.data['dw-user-id']) {
             return Boom.badRequest('Impossible to sign up with active user session');
         }
