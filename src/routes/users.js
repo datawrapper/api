@@ -183,12 +183,9 @@ module.exports = {
                     payload: Joi.object({
                         email: Joi.string()
                             .email()
-                            .required()
                             .example('james.barnes@shield.com')
                             .description('User email address to confirm deletion.'),
-                        password: Joi.string()
-                            .required()
-                            .description('User password to confirm deletion')
+                        password: Joi.string().description('User password to confirm deletion')
                     })
                 },
                 response: noContentResponse
@@ -564,23 +561,33 @@ async function createUser(request, h) {
 async function deleteUser(request, h) {
     const { auth, server, payload } = request;
     const { id } = request.params;
+    const { isAdmin, userIsDeleted } = server.methods;
 
-    await server.methods.userIsDeleted(id);
+    await userIsDeleted(id);
 
     const isSameUser = id === auth.artifacts.id;
 
-    if (!server.methods.isAdmin(request) && !isSameUser) {
+    if (!isAdmin(request) && !isSameUser) {
         return Boom.forbidden('You can only delete your account');
     }
 
-    const user = await User.findByPk(id, { attributes: ['email', 'role', 'pwd'] });
-    if (payload.email !== user.email) {
-        return Boom.badRequest('Wrong email address');
+    if (!isAdmin(request) && (!payload.email || !payload.password)) {
+        return Boom.badRequest(
+            'You need to provide email and password to confirm account deletion.'
+        );
     }
-    // check password
-    const isValid = await bcrypt.compare(payload.password, user.pwd);
-    if (!isValid) {
-        return Boom.badRequest('Wrong passsword');
+
+    const user = await User.findByPk(id, { attributes: ['email', 'role', 'pwd'] });
+    if (!isAdmin(request)) {
+        // check email
+        if (payload.email !== user.email) {
+            return Boom.badRequest('Wrong email address');
+        }
+        // check password
+        const isValid = await bcrypt.compare(payload.password, user.pwd);
+        if (!isValid) {
+            return Boom.badRequest('Wrong passsword');
+        }
     }
 
     if (user.role === 'admin') {
