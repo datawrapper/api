@@ -587,11 +587,9 @@ async function signup(request, h) {
         session = await createSession(generateToken(), res.result.id);
     }
 
-    const { activateToken, ...data } = res.result;
-
     const api = config('api');
 
-    return h.response(camelizeKeys(data)).state(api.sessionID, session.id, {
+    return h.response(res.result).state(api.sessionID, session.id, {
         domain: `.${api.domain
             .split('.')
             .slice(1)
