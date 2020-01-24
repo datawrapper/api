@@ -108,7 +108,11 @@ module.exports = {
                             .allow(null)
                             .description(
                                 'Activate token, typically used to unset it when activating user.'
-                            )
+                            ),
+                        password: Joi.string()
+                            .example('13-binary-1968')
+                            .description('Strong user password.'),
+                        oldPassword: Joi.string().description('The previous user password.')
                     })
                 },
                 response: userResponse
@@ -399,12 +403,13 @@ async function editUser(request, h) {
         data.email = payload.email;
         data.activateToken = payload.activateToken;
         data.role = payload.role;
-        data.pwd = payload.pwd === '' ? payload.pwd : await hashPassword(payload.pwd);
+        data.pwd =
+            payload.password === '' ? payload.password : await hashPassword(payload.password);
     } else {
         // non-admins need to confirm email and password changes
         if (payload.email) {
             // check if email has changed
-            const oldUser = User.findByPk(userId);
+            const oldUser = await User.findByPk(userId);
             if (oldUser.email !== payload.email) {
                 const token = generateToken();
                 // set activate token (will be set in User.update call below)
@@ -431,15 +436,14 @@ async function editUser(request, h) {
                 });
             }
         }
-        if (payload.pwd && payload.oldpwd) {
+        if (payload.password && payload.oldPassword) {
             // compare old password to current password
-            const oldUser = User.findByPk(userId);
-            const oldHash =
-                payload.oldpwd === '' ? payload.oldpwd : await hashPassword(payload.oldpwd);
-            if (oldUser.pwd !== oldHash) {
+            const oldUser = await User.findByPk(userId);
+            const isValid = await bcrypt.compare(payload.oldPassword, oldUser.pwd);
+            if (!isValid) {
                 return Boom.unauthorized('old password is wrong');
             }
-            data.pwd = await hashPassword(payload.pwd);
+            data.pwd = await hashPassword(payload.password);
         }
     }
 
@@ -451,7 +455,7 @@ async function editUser(request, h) {
     const user = await getUser(request, h);
 
     return {
-        ...camelizeKeys(user.serialize()),
+        ...user,
         updatedAt
     };
 }
@@ -535,12 +539,12 @@ async function createUser(request, h) {
         language: newUser.language,
         data: isInvitation
             ? {
-                  confirmation_link: `${accountBaseUrl}/invite/${newUser.activateToken}${
+                  confirmation_link: `${accountBaseUrl}/invite/${newUser.activate_token}${
                       data.chartId ? `?chart=${data.chartId}` : ''
                   }`
               }
             : {
-                  activation_link: `${accountBaseUrl}/activate/${newUser.activateToken}`
+                  activation_link: `${accountBaseUrl}/activate/${newUser.activate_token}`
               }
     });
 
