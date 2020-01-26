@@ -21,6 +21,49 @@ const userResponse = createResponseConfig({
 const { Op } = require('@datawrapper/orm').db;
 const attributes = ['id', 'email', 'name', 'role', 'language'];
 
+const createUserPayloadValidation = [
+    // normal sign-up
+    Joi.object({
+        name: Joi.string()
+            .allow(null)
+            .example('Carol Danvers')
+            .description('Name of the user that should get created. This can be omitted.'),
+        email: Joi.string()
+            .email()
+            .required()
+            .example('cpt-marvel@shield.com')
+            .description('User email address'),
+        role: Joi.string()
+            .valid('editor', 'admin')
+            .description('User role. This can be omitted.'),
+        language: Joi.string()
+            .example('en_US')
+            .description('User language preference. This can be omitted.'),
+        password: Joi.string()
+            .example('13-binary-1968')
+            .required()
+            .description('Strong user password.'),
+        invitation: Joi.boolean()
+            .valid(false)
+            .allow(null)
+    }),
+    // for invitation sign-ups
+    Joi.object({
+        email: Joi.string()
+            .email()
+            .required()
+            .example('cpt-marvel@shield.com')
+            .description('User email address'),
+        invitation: Joi.boolean()
+            .valid(true)
+            .required(),
+        chartId: Joi.string(),
+        role: Joi.string()
+            .valid('editor', 'admin')
+            .description('User role. This can be omitted.')
+    })
+];
+
 module.exports = {
     name: 'users-routes',
     version: '1.0.0',
@@ -141,28 +184,7 @@ module.exports = {
             options: {
                 auth: false,
                 validate: {
-                    payload: Joi.object({
-                        name: Joi.string()
-                            .allow(null)
-                            .example('Carol Danvers')
-                            .description(
-                                'Name of the user that should get created. This can be omitted.'
-                            ),
-                        email: Joi.string()
-                            .email()
-                            .required()
-                            .example('cpt-marvel@shield.com')
-                            .description('User email address'),
-                        role: Joi.string()
-                            .valid('editor', 'admin')
-                            .description('User role. This can be omitted.'),
-                        language: Joi.string()
-                            .example('en_US')
-                            .description('User language preference. This can be omitted.'),
-                        password: Joi.string()
-                            .example('13-binary-1968')
-                            .description('Strong user password.')
-                    }).unknown()
+                    payload: createUserPayloadValidation
                 }
             },
             handler: createUser
@@ -226,7 +248,8 @@ module.exports = {
 
         const { hashRounds = 15 } = server.methods.config('api');
         server.method('hashPassword', hashPassword(hashRounds));
-    }
+    },
+    createUserPayloadValidation
 };
 
 async function isDeleted(id) {
@@ -503,7 +526,6 @@ async function createUser(request, h) {
     }
 
     const isInvitation = !!data.invitation;
-
     const newUser = {
         role: 'pending',
         name: data.name,
@@ -518,6 +540,8 @@ async function createUser(request, h) {
         }
         const hash = await hashPassword(password);
         newUser.pwd = hash;
+    } else {
+        newUser.pwd = '';
     }
 
     if (data.role && isAdmin(request)) {
