@@ -264,7 +264,7 @@ async function isDeleted(id) {
 
 function hashPassword(hashRounds) {
     return async function(password) {
-        return bcrypt.hash(password, hashRounds);
+        return password === '' ? password : bcrypt.hash(password, hashRounds);
     };
 }
 
@@ -426,8 +426,9 @@ async function editUser(request, h) {
         data.email = payload.email;
         data.activateToken = payload.activateToken;
         data.role = payload.role;
-        data.pwd =
-            payload.password === '' ? payload.password : await hashPassword(payload.password);
+        if (payload.password) {
+            data.pwd = await hashPassword(payload.password);
+        }
     } else {
         // non-admins need to confirm email and password changes
         if (payload.email) {
