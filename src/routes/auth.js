@@ -7,8 +7,9 @@ const Boom = require('@hapi/boom');
 const { User, Session, AuthToken, Chart } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const get = require('lodash/get');
-const { cookieTTL } = require('../utils');
+const { cookieTTL, cookieDomain } = require('../utils');
 const { listResponse, noContentResponse, createResponseConfig } = require('../schemas/response.js');
+const { createUserPayloadValidation } = require('./users');
 
 const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
 
@@ -190,22 +191,7 @@ module.exports = {
                     strategy: 'session'
                 },
                 validate: {
-                    payload: Joi.object({
-                        email: Joi.string()
-                            .email()
-                            .required()
-                            .example('tony@stark-industries.com')
-                            .description('Email address of the user signing up.'),
-                        password: Joi.string()
-                            .required()
-                            .example('morgan-3000')
-                            .description(
-                                'A strong user password. Ideally this is generated and saved in a password manager.'
-                            ),
-                        language: Joi.string()
-                            .default('en_US')
-                            .description('Preferred language for the user interface.')
-                    })
+                    payload: createUserPayloadValidation
                 }
             },
             handler: signup
@@ -358,10 +344,7 @@ async function handleSession(request, h) {
             [api.sessionID]: session.id
         })
         .state(api.sessionID, session.id, {
-            domain: `.${api.domain
-                .split('.')
-                .slice(1)
-                .join('.')}`,
+            domain: cookieDomain(api),
             ttl: cookieTTL(30)
         });
 }
@@ -447,10 +430,7 @@ async function login(request, h) {
             [api.sessionID]: session.id
         })
         .state(api.sessionID, session.id, {
-            domain: `.${api.domain
-                .split('.')
-                .slice(1)
-                .join('.')}`,
+            domain: cookieDomain(api),
             ttl: cookieTTL(keepSession ? 90 : 30)
         });
 }
@@ -589,10 +569,7 @@ async function signup(request, h) {
     const api = config('api');
 
     return h.response(res.result).state(api.sessionID, session.id, {
-        domain: `.${api.domain
-            .split('.')
-            .slice(1)
-            .join('.')}`,
+        domain: cookieDomain(api),
         ttl: cookieTTL(90)
     });
 }
@@ -612,14 +589,11 @@ async function activateAccount(request, h) {
     const response = h.response().code(204);
 
     if (!request.auth.credentials) {
-        const { domain, sessionID } = request.server.methods.config('api');
+        const api = request.server.methods.config('api');
         const session = await createSession(request.server.methods.generateToken(), user.id);
 
-        response.state(sessionID, session.id, {
-            domain: `.${domain
-                .split('.')
-                .slice(1)
-                .join('.')}`,
+        response.state(api.sessionID, session.id, {
+            domain: cookieDomain(api),
             ttl: cookieTTL(90)
         });
     }
