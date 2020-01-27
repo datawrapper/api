@@ -463,7 +463,7 @@ function register(server, options) {
 
     if (!hasRegisteredDataPlugins) {
         events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
-            const fn = path.join(
+            const filePath = path.join(
                 localChartAssetRoot,
                 getDataPath(chart.dataValues.created_at),
                 filename
