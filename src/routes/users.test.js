@@ -476,7 +476,7 @@ test("Users can't change protected fields using PATCH", async t => {
     }
 });
 
-test.only('Users can change allowed fields', async t => {
+test('Users can change allowed fields', async t => {
     let user = await t.context.getUser();
 
     const allowedFields = {
