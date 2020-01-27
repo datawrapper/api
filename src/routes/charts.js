@@ -474,7 +474,7 @@ function register(server, options) {
                 throw new CodedError(404);
             }
             return fs.createReadStream(
-                path.join(localChartAssetRoot, getDataPath(chart.dataValues.created_at), filename)
+                filePath
             );
         });
 
