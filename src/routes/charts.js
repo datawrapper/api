@@ -471,7 +471,7 @@ function register(server, options) {
             try {
                 await accessAsync(filePath, fs.constants.R_OK);
             } catch (e) {
-                throw new CodedError('notFound');
+                throw new CodedError('notFound', 'chart asset not found');
             }
             return fs.createReadStream(filePath);
         });
@@ -898,8 +898,12 @@ async function getChartAsset(request, h) {
             .header('Content-Type', contentType)
             .header('Content-Disposition', `attachment; filename=${filename}`);
     } catch (error) {
+        if (error.name === 'CodedError' && Boom[error.code]) {
+            // this seems to be an orderly error
+            return Boom[error.code](error.message);
+        }
         request.logger.error(error.message);
-        return Boom.notFound();
+        return Boom.badImplementation();
     }
 }
 
