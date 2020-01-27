@@ -132,7 +132,6 @@ test("New users can't set protected fields", async t => {
     for (const f in fields) {
         t.not(user[decamelize(f)], fields[f]);
     }
-    // t.is(user.role, 'pending');
     await t.context.addToCleanup('user', result.id);
 });
 
