@@ -469,13 +469,11 @@ function register(server, options) {
                 filename
             );
             try {
-                await accessAsync(fn, fs.constants.R_OK);
+                await accessAsync(filePath, fs.constants.R_OK);
             } catch (e) {
                 throw new CodedError(404);
             }
-            return fs.createReadStream(
-                filePath
-            );
+            return fs.createReadStream(filePath);
         });
 
         events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
