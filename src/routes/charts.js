@@ -471,7 +471,7 @@ function register(server, options) {
             try {
                 await accessAsync(filePath, fs.constants.R_OK);
             } catch (e) {
-                throw new CodedError(404);
+                throw new CodedError('notFound');
             }
             return fs.createReadStream(filePath);
         });
