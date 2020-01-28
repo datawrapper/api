@@ -1,5 +1,6 @@
 import test from 'ava';
 import sortBy from 'lodash/sortBy';
+import { decamelize, decamelizeKeys } from 'humps';
 
 import { setup } from '../../test/helpers/setup';
 
@@ -83,6 +84,54 @@ test('New user passwords should be saved as bcrypt hash', async t => {
 
     t.is(user.pwd.slice(0, 2), '$2');
 
+    await t.context.addToCleanup('user', result.id);
+});
+
+test("New users can't set their role to admin", async t => {
+    const credentials = t.context.getCredentials();
+
+    /* create user with email and some data */
+    const { result } = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/users',
+        payload: { ...credentials, role: 'admin' }
+    });
+
+    t.log('User created', result.email);
+
+    const user = await t.context.models.User.findByPk(result.id, { attributes: ['role'] });
+
+    t.is(user.role, 'pending');
+    await t.context.addToCleanup('user', result.id);
+});
+
+test("New users can't set protected fields", async t => {
+    const credentials = t.context.getCredentials();
+
+    const fields = {
+        id: 123455789,
+        activateToken: '12345',
+        deleted: true,
+        resetPasswordToken: '12345',
+        customerId: 12345,
+        oauthSignin: 'blub'
+    };
+    /* create user with email and some data */
+    const { result } = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/users',
+        payload: { ...credentials, ...fields }
+    });
+
+    t.log('User created', result.email);
+
+    const user = await t.context.models.User.findByPk(result.id, {
+        attributes: Object.keys(decamelizeKeys(fields))
+    });
+
+    for (const f in fields) {
+        t.not(user[decamelize(f)], fields[f]);
+    }
     await t.context.addToCleanup('user', result.id);
 });
 
@@ -380,4 +429,74 @@ test('User can set and unset activeTeam herself', async t => {
 
     t.is(res2.statusCode, 200);
     t.is(res2.result.activeTeam, null);
+});
+
+test("Users can't change protected fields using PATCH", async t => {
+    let user = await t.context.getUser();
+
+    const forbiddenFields = {
+        customerId: 12345,
+        oauthSignin: 'blub',
+        id: 9999
+    };
+
+    let res = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user.user.id}`,
+        headers: {
+            cookie: `DW-SESSION=${user.session.id}`,
+            'Content-Type': 'application/json'
+        },
+        payload: forbiddenFields
+    });
+
+    t.is(res.statusCode, 400);
+
+    const protectedFields = {
+        activateToken: '12345',
+        role: 'admin'
+    };
+
+    res = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user.user.id}`,
+        headers: {
+            cookie: `DW-SESSION=${user.session.id}`,
+            'Content-Type': 'application/json'
+        },
+        payload: protectedFields
+    });
+
+    t.is(res.statusCode, 200);
+
+    user = await user.user.reload();
+    for (const f in protectedFields) {
+        t.not(user[decamelize(f)], protectedFields[f]);
+    }
+});
+
+test('Users can change allowed fields', async t => {
+    let user = await t.context.getUser();
+
+    const allowedFields = {
+        name: 'My new name',
+        email: 'new@example.com'
+    };
+
+    const res = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user.user.id}`,
+        headers: {
+            cookie: `DW-SESSION=${user.session.id}`,
+            'Content-Type': 'application/json'
+        },
+        payload: allowedFields
+    });
+
+    t.is(res.statusCode, 200);
+
+    user = await user.user.reload();
+    for (const f in allowedFields) {
+        t.is(user[decamelize(f)], allowedFields[f]);
+    }
 });
