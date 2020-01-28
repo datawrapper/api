@@ -1,8 +1,16 @@
 import test from 'ava';
 import sortBy from 'lodash/sortBy';
+import crypto from 'crypto';
 import { decamelize, decamelizeKeys } from 'humps';
 
 import { setup } from '../../test/helpers/setup';
+import { api } from '../../config.js';
+
+function legacyHash(pwhash, secret) {
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(pwhash);
+    return hmac.digest('hex');
+}
 
 test.before(async t => {
     const { server, models, getUser, getTeamWithUser, getCredentials, addToCleanup } = await setup({
@@ -499,4 +507,51 @@ test('Users can change allowed fields', async t => {
     for (const f in allowedFields) {
         t.is(user[decamelize(f)], allowedFields[f]);
     }
+});
+
+test.only('User cannot change password without old password', async t => {
+    const { session, user } = t.context.user;
+
+    const patchMe = async payload => {
+        return t.context.server.inject({
+            method: 'PATCH',
+            url: '/v3/me',
+            headers: {
+                cookie: `DW-SESSION=${session.id}`
+            },
+            payload
+        });
+    };
+
+    const oldPwdHash = user.pwd;
+    // try to change without password
+    t.is((await patchMe({ password: 'new-password' })).statusCode, 401);
+    // check that password hash is still the same
+    await user.reload();
+    t.is(user.pwd, oldPwdHash);
+    // try to change with false password
+    t.is((await patchMe({ password: 'new-password', oldPassword: 'I dont know' })).statusCode, 401);
+    // check that password hash is still the same
+    await user.reload();
+    t.is(user.pwd, oldPwdHash);
+    // try to change with correct password
+    t.is(
+        (await patchMe({ password: 'new-password', oldPassword: 'test-password' })).statusCode,
+        200
+    );
+    // check that password hash is still the same
+    await user.reload();
+    t.not(user.pwd, oldPwdHash);
+    // try the same with legacy login
+    await user.update({ pwd: legacyHash('legacy-password', api.authSalt) });
+    // test is changing password also works with legacy hashes
+    t.is(
+        (await patchMe({ password: 'new-password', oldPassword: 'wrong-legacy-password' }))
+            .statusCode,
+        401
+    );
+    t.is(
+        (await patchMe({ password: 'new-password', oldPassword: 'legacy-password' })).statusCode,
+        200
+    );
 });
