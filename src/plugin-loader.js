@@ -26,7 +26,7 @@ module.exports = {
         }
 
         if (plugins.length) {
-            plugins.forEach(({ plugin, options, error, name }) => {
+            for (const { plugin, options, error, name } of plugins) {
                 if (error) {
                     server.logger().error(`[Plugin] ${error}`, logError(root, name));
                     process.exit(1);
@@ -37,10 +37,10 @@ module.exports = {
                         },
                         `[Plugin] ${get(plugin, ['pkg', 'name'], plugin.name)}`
                     );
-                }
-            });
 
-            await server.register(plugins);
+                    await server.register({ plugin, options }, plugin.options);
+                }
+            }
         }
     }
 };

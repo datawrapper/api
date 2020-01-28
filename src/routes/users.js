@@ -378,7 +378,7 @@ async function getUser(request, h) {
 }
 
 async function editUser(request, h) {
-    const { auth, params } = request;
+    const { auth, params, payload } = request;
     const userId = params.id;
 
     await request.server.methods.userIsDeleted(userId);
@@ -387,7 +387,25 @@ async function editUser(request, h) {
         request.server.methods.isAdmin(request, { throwError: true });
     }
 
-    await User.update(decamelizeKeys(request.payload), {
+    const data = {
+        email: payload.email,
+        language: payload.language,
+        name: payload.name
+    };
+
+    if (payload.pwd) {
+        data.pwd =
+            payload.pwd === ''
+                ? payload.pwd
+                : await request.server.methods.hashPassword(payload.pwd);
+    }
+
+    if (request.server.methods.isAdmin(request)) {
+        data.activateToken = payload.activateToken;
+        data.role = payload.role;
+    }
+
+    await User.update(decamelizeKeys(data), {
         where: { id: userId }
     });
 
@@ -445,14 +463,19 @@ async function createUser(request, h) {
 
     const newUser = {
         role: 'pending',
-        pwd: hash,
-        name: null,
-        ...data
+        name: data.name,
+        email: data.email,
+        language: data.language,
+        pwd: hash
     };
 
-    const { role, dataValues } = await User.create(newUser);
-    const { pwd, ...user } = dataValues;
+    if (data.role && request.server.methods.isAdmin(request)) {
+        newUser.role = data.role;
+    }
 
+    const { role, dataValues } = await User.create(newUser);
+
+    const { pwd, ...user } = dataValues;
     const { count } = await Chart.findAndCountAll({ where: { author_id: user.id } });
 
     return h

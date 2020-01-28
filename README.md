@@ -173,6 +173,25 @@ module.exports = {
 }
 ```
 
+You can use the `hapijs` plugin options to prefix all routes defined in your plugin (to avoid repeating the prefix again and again):
+
+```js
+/* api.js */
+module.exports = {
+    name: 'my-plugin',
+    version: '1.0.0',
+    options: {
+        routes: {
+            prefix: '/plugins/my-plugin',
+        }
+    },
+    register: (server, options) => {
+        console.log('hello from my-plugin!')
+        console.log(`the api key is "${options.config.apiKey}"`) // the api key is "agamotto"
+    }
+}
+```
+
 ### Local plugins
 
 Plugins can be loaded from the local file system. This is very useful for plugin development. The plugin needs to be a folder inside the `plugins/` directory, with an `api.js`.
