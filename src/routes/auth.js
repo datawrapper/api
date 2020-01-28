@@ -296,7 +296,8 @@ module.exports = {
             },
             handler: handleSession
         });
-    }
+    },
+    legacyLogin
 };
 
 async function createSession(id, userId, keepSession = true) {

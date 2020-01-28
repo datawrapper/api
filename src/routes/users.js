@@ -8,6 +8,7 @@ const { setUserData } = require('@datawrapper/orm/utils/userData');
 const { logAction } = require('@datawrapper/orm/utils/action');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
 const { queryUsers } = require('../utils/raw-queries');
+const { legacyLogin } = require('./auth');
 
 const { createResponseConfig, noContentResponse, listResponse } = require('../schemas/response.js');
 
@@ -460,12 +461,20 @@ async function editUser(request, h) {
                 });
             }
         }
-        if (payload.password && payload.oldPassword) {
+        if (payload.password) {
+            if (!payload.oldPassword) {
+                return Boom.unauthorized(
+                    'You need to provide the current password in order to change it.'
+                );
+            }
             // compare old password to current password
             const oldUser = await User.findByPk(userId);
-            const isValid = await bcrypt.compare(payload.oldPassword, oldUser.pwd);
+            const api = server.methods.config('api');
+            const isValid = oldUser.pwd.startsWith('$2')
+                ? await bcrypt.compare(payload.oldPassword, oldUser.pwd)
+                : legacyLogin(payload.oldPassword, oldUser.pwd, api.authSalt, api.secretAuthSalt);
             if (!isValid) {
-                return Boom.unauthorized('old password is wrong');
+                return Boom.unauthorized('The old password is wrong');
             }
             data.pwd = await hashPassword(payload.password);
         }
@@ -586,7 +595,7 @@ async function createUser(request, h) {
 async function deleteUser(request, h) {
     const { auth, server, payload } = request;
     const { id } = request.params;
-    const { isAdmin, userIsDeleted } = server.methods;
+    const { isAdmin, userIsDeleted, config } = server.methods;
 
     await userIsDeleted(id);
 
@@ -609,7 +618,10 @@ async function deleteUser(request, h) {
             return Boom.badRequest('Wrong email address');
         }
         // check password
-        const isValid = await bcrypt.compare(payload.password, user.pwd);
+        const api = config('api');
+        const isValid = user.pwd.startsWith('$2')
+            ? await bcrypt.compare(payload.password, user.pwd)
+            : legacyLogin(payload.password, user.pwd, api.authSalt, api.secretAuthSalt);
         if (!isValid) {
             return Boom.badRequest('Wrong passsword');
         }
