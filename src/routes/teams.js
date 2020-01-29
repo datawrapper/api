@@ -712,7 +712,8 @@ async function editTeam(request, h) {
     let data = {
         name: payload.name,
         settings: payload.settings,
-        disabled: payload.disabled
+        disabled: payload.disabled,
+        defaultTheme: payload.defaultTheme
     };
 
     let team = await Team.findByPk(params.id);
