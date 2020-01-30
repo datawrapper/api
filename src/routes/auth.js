@@ -222,6 +222,7 @@ module.exports = {
                             ),
                         token: Joi.string()
                             .example('shamballa')
+                            .required()
                             .description('Password reset token which is send as email to the user.')
                     })
                 }
