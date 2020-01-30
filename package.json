@@ -22,8 +22,8 @@
     "scripts": {
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
-        "test": "ava --verbose || true",
-        "clean:db": "node test/helpers/teardown.js",
+        "test": "DW_CONFIG_PATH=test/_config.test.js ava --verbose || true",
+        "clean:db": "DW_CONFIG_PATH=test/_config.test.js node test/helpers/teardown.js",
         "posttest": "npm run clean:db",
         "dev": "NODE_ENV=development nodemon src/index.js",
         "api": "node src/index.js",
@@ -62,6 +62,7 @@
         "@hapi/vision": "~5.5.4",
         "ava": "~2.4.0",
         "babel-eslint": "~10.0.3",
+        "dotenv": "~8.2.0",
         "healthier": "~3.2.0",
         "husky": "~3.1.0",
         "lint-staged": "~9.4.3",
