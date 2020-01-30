@@ -1,6 +1,5 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const bcrypt = require('bcryptjs');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
 const set = require('lodash/set');
 const keyBy = require('lodash/keyBy');
@@ -8,7 +7,6 @@ const { setUserData } = require('@datawrapper/orm/utils/userData');
 const { logAction } = require('@datawrapper/orm/utils/action');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
 const { queryUsers } = require('../utils/raw-queries');
-const { legacyLogin } = require('./auth');
 
 const { createResponseConfig, noContentResponse, listResponse } = require('../schemas/response.js');
 
@@ -246,9 +244,6 @@ module.exports = {
         });
 
         server.method('userIsDeleted', isDeleted);
-
-        const { hashRounds = 15 } = server.methods.config('api');
-        server.method('hashPassword', hashPassword(hashRounds));
     },
     createUserPayloadValidation
 };
@@ -261,12 +256,6 @@ async function isDeleted(id) {
     if (!user || user.email === 'DELETED') {
         throw Boom.notFound();
     }
-}
-
-function hashPassword(hashRounds) {
-    return async function(password) {
-        return password === '' ? password : bcrypt.hash(password, hashRounds);
-    };
 }
 
 function serializeTeam(team) {
@@ -408,7 +397,14 @@ async function getUser(request, h) {
 
 async function editUser(request, h) {
     const { auth, params, payload, server } = request;
-    const { generateToken, isAdmin, userIsDeleted, hashPassword, config } = server.methods;
+    const {
+        generateToken,
+        isAdmin,
+        userIsDeleted,
+        hashPassword,
+        comparePassword,
+        config
+    } = server.methods;
     const userId = params.id;
 
     await userIsDeleted(userId);
@@ -468,11 +464,12 @@ async function editUser(request, h) {
                 );
             }
             // compare old password to current password
-            const oldUser = await User.findByPk(userId);
-            const api = server.methods.config('api');
-            const isValid = oldUser.pwd.startsWith('$2')
-                ? await bcrypt.compare(payload.oldPassword, oldUser.pwd)
-                : legacyLogin(payload.oldPassword, oldUser.pwd, api.authSalt, api.secretAuthSalt);
+            const oldUser = await User.findByPk(userId, { attributes: ['pwd'] });
+
+            const isValid = await comparePassword(payload.oldPassword, oldUser.pwd, {
+                userId
+            });
+
             if (!isValid) {
                 return Boom.unauthorized('The old password is wrong');
             }
@@ -595,7 +592,7 @@ async function createUser(request, h) {
 async function deleteUser(request, h) {
     const { auth, server, payload } = request;
     const { id } = request.params;
-    const { isAdmin, userIsDeleted, config } = server.methods;
+    const { isAdmin, userIsDeleted, comparePassword } = server.methods;
 
     await userIsDeleted(id);
 
@@ -617,11 +614,12 @@ async function deleteUser(request, h) {
         if (payload.email !== user.email) {
             return Boom.badRequest('Wrong email address');
         }
+
         // check password
-        const api = config('api');
-        const isValid = user.pwd.startsWith('$2')
-            ? await bcrypt.compare(payload.password, user.pwd)
-            : legacyLogin(payload.password, user.pwd, api.authSalt, api.secretAuthSalt);
+        const isValid = await comparePassword(payload.password, user.pwd, {
+            userId: user.id
+        });
+
         if (!isValid) {
             return Boom.badRequest('Wrong passsword');
         }

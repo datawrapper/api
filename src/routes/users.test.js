@@ -10,7 +10,7 @@ test.before(async t => {
     });
     t.context.server = server;
 
-    t.context.legacyHash = require('./auth').legacyHash;
+    t.context.legacyHash = require('../auth/utils').legacyHash;
 
     t.context.user = await getUser();
     t.context.admin = await getUser('admin');
