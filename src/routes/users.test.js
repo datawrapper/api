@@ -471,18 +471,21 @@ test("Users can't change protected fields using PATCH", async t => {
 });
 
 test('Users can change allowed fields', async t => {
-    let user = await t.context.getUser();
+    let { user, session } = await t.context.getUser();
+
+    const oldEmail = user.email;
 
     const allowedFields = {
         name: 'My new name',
+        email: 'new@example.com',
         language: 'de_DE'
     };
 
     const res = await t.context.server.inject({
         method: 'PATCH',
-        url: `/v3/users/${user.user.id}`,
+        url: `/v3/users/${user.id}`,
         headers: {
-            cookie: `DW-SESSION=${user.session.id}`,
+            cookie: `DW-SESSION=${session.id}`,
             'Content-Type': 'application/json'
         },
         payload: allowedFields
@@ -490,10 +493,21 @@ test('Users can change allowed fields', async t => {
 
     t.is(res.statusCode, 200);
 
-    user = await user.user.reload();
-    for (const f in allowedFields) {
-        t.is(user[decamelize(f)], allowedFields[f]);
-    }
+    user = await user.reload();
+
+    const action = await t.context.models.Action.findOne({
+        where: {
+            user_id: user.id
+        }
+    });
+
+    const details = JSON.parse(action.details);
+
+    t.is(details['old-email'], oldEmail);
+    t.is(details['new-email'], allowedFields.email);
+    t.truthy(details.token);
+    t.is(user.name, allowedFields.name);
+    t.is(user.language, allowedFields.language);
 });
 
 test('User cannot change password without old password', async t => {
