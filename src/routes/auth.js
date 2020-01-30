@@ -149,6 +149,9 @@ module.exports = {
                         token: Joi.string()
                             .required()
                             .description('User activation token')
+                    }),
+                    payload: Joi.object({
+                        password: Joi.string().description('New password of the user.')
                     })
                 }
             },
@@ -492,7 +495,14 @@ async function activateAccount(request, h) {
         return Boom.notFound();
     }
 
-    user = await user.update({ role: 'editor', activate_token: null });
+    const userData = { role: 'editor', activate_token: null };
+
+    const { password } = request.payload;
+    if (password) {
+        userData.pwd = await request.server.methods.hashPassword(password);
+    }
+
+    user = await user.update(userData);
 
     const response = h.response().code(204);
 
