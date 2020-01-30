@@ -555,26 +555,18 @@ async function resetPassword(request, h) {
 }
 
 async function changePassword(request, h) {
-    const { email } = get(request, ['auth', 'artifacts'], {});
     const { server, payload } = request;
-    const { token, password } = payload;
+    const { token, password, email } = payload;
 
-    if (!email) {
-        const user = await User.findOne({
-            where: { email: payload.email, reset_password_token: token }
-        });
+    if (!token || !email) return Boom.badRequest();
 
-        if (user) {
-            const pwd = await server.methods.hashPassword(password);
-            await user.update({ pwd, reset_password_token: null });
+    const user = await User.findOne({
+        where: { email: email, reset_password_token: token }
+    });
 
-            return h.response().code(204);
-        }
-    }
-
-    if (email === payload.email) {
+    if (user) {
         const pwd = await server.methods.hashPassword(password);
-        await User.update({ pwd }, { where: { email } });
+        await user.update({ pwd, reset_password_token: null });
 
         return h.response().code(204);
     }
