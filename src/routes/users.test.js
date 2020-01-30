@@ -510,6 +510,26 @@ test('Users can change allowed fields', async t => {
     t.is(user.language, allowedFields.language);
 });
 
+test.only('User cannot change email if it already exists', async t => {
+    const { user: user1, session } = await t.context.getUser();
+    const { user: user2 } = await t.context.getUser();
+
+    const { result, statusCode } = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/users/${user1.id}`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`,
+            'Content-Type': 'application/json'
+        },
+        payload: {
+            email: user2.email
+        }
+    });
+
+    t.is(statusCode, 409);
+    t.is(result.message, 'email-already-exists');
+});
+
 test('User cannot change password without old password', async t => {
     const { legacyHash, server, user: contextUser } = t.context;
     const { authSalt, secretAuthSalt } = server.methods.config('api');
