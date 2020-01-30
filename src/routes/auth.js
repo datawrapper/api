@@ -209,11 +209,6 @@ module.exports = {
                 },
                 validate: {
                     payload: Joi.object({
-                        email: Joi.string()
-                            .email()
-                            .required()
-                            .example('strange@kamar-taj.com.np')
-                            .description('Email address of the user.'),
                         password: Joi.string()
                             .required()
                             .example('tales-126')
@@ -556,12 +551,12 @@ async function resetPassword(request, h) {
 
 async function changePassword(request, h) {
     const { server, payload } = request;
-    const { token, password, email } = payload;
+    const { token, password } = payload;
 
-    if (!token || !email) return Boom.badRequest();
+    if (!token || !password) return Boom.badRequest();
 
     const user = await User.findOne({
-        where: { email: email, reset_password_token: token }
+        where: { reset_password_token: token }
     });
 
     if (user) {
