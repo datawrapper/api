@@ -75,56 +75,55 @@ function createHashPassword(hashRounds) {
     };
 }
 
-/**
- * Check validity of a password against the saved password hash
- *
- * @param {string} password - Plaintext password to check
- * @param {string} passwordHash - Password hash to compare (from DB)
- * @param {object} options
- * @param {number} options.userId - User ID for hash migration
- * @param {object} options.server - Hapi server object
- * @returns {Boolean}
- */
-async function comparePassword(password, passwordHash, { userId, server }) {
-    const { api } = server.methods.config();
-    let isValid = false;
+function createComparePassword(server) {
     /**
-     * Bcrypt uses a prefix for versioning. That way a bcrypt hash can be identified with "$2".
-     * https://en.wikipedia.org/wiki/Bcrypt#Description
+     * Check validity of a password against the saved password hash
+     *
+     * @param {string} password - Plaintext password to check
+     * @param {string} passwordHash - Password hash to compare (from DB)
+     * @param {object} options
+     * @param {number} options.userId - User ID for hash migration
+     * @returns {Boolean}
      */
-    if (passwordHash.startsWith('$2')) {
-        isValid = await bcrypt.compare(password, passwordHash);
+    return async function comparePassword(password, passwordHash, { userId }) {
+        const { api } = server.methods.config();
+        let isValid = false;
         /**
-         * Due to the migration from sha256 to bcrypt, the API must deal with sha256 passwords that
-         * got created by the PHP API and migrated from the `migrateHashToBcrypt` function.
-         * The node API get's passwords only in clear text and to compare those with a migrated
-         * password, it first has to generate the former client hashed password.
+         * Bcrypt uses a prefix for versioning. That way a bcrypt hash can be identified with "$2".
+         * https://en.wikipedia.org/wiki/Bcrypt#Description
          */
-        if (!isValid) {
-            isValid = await bcrypt.compare(legacyHash(password, api.authSalt), passwordHash);
-        }
-    } else {
-        /**
-         * The user password hash was created by the PHP API and is not a bcrypt hash. That means
-         * the API needs to use the old comparison method with double sha256 hashes.
-         */
-        isValid = legacyLogin(password, passwordHash, api.authSalt, api.secretAuthSalt);
+        if (passwordHash.startsWith('$2')) {
+            isValid = await bcrypt.compare(password, passwordHash);
+            /**
+             * Due to the migration from sha256 to bcrypt, the API must deal with sha256 passwords that
+             * got created by the PHP API and migrated from the `migrateHashToBcrypt` function.
+             * The node API get's passwords only in clear text and to compare those with a migrated
+             * password, it first has to generate the former client hashed password.
+             */
+            if (!isValid) {
+                isValid = await bcrypt.compare(legacyHash(password, api.authSalt), passwordHash);
+            }
+        } else {
+            /**
+             * The user password hash was created by the PHP API and is not a bcrypt hash. That means
+             * the API needs to use the old comparison method with double sha256 hashes.
+             */
+            isValid = legacyLogin(password, passwordHash, api.authSalt, api.secretAuthSalt);
 
-        /**
-         * When the old method works, the API migrates the old hash to a bcrypt hash for more
-         * security. This ensures a seemless migration for users.
-         */
-        if (isValid && userId && api.enableMigration) {
-            await migrateHashToBcrypt(userId, password, api.hashRounds);
+            /**
+             * When the old method works, the API migrates the old hash to a bcrypt hash for more
+             * security. This ensures a seemless migration for users.
+             */
+            if (isValid && userId && api.enableMigration) {
+                await migrateHashToBcrypt(userId, password, api.hashRounds);
+            }
         }
-    }
-    return isValid;
+        return isValid;
+    };
 }
 
 module.exports = {
     legacyHash,
-    legacyLogin,
     createHashPassword,
-    migrateHashToBcrypt,
-    comparePassword
+    createComparePassword
 };

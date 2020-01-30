@@ -7,7 +7,6 @@ const { setUserData } = require('@datawrapper/orm/utils/userData');
 const { logAction } = require('@datawrapper/orm/utils/action');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
 const { queryUsers } = require('../utils/raw-queries');
-const { comparePassword, createHashPassword } = require('../auth/utils');
 
 const { createResponseConfig, noContentResponse, listResponse } = require('../schemas/response.js');
 
@@ -245,9 +244,6 @@ module.exports = {
         });
 
         server.method('userIsDeleted', isDeleted);
-
-        const { hashRounds = 15 } = server.methods.config('api');
-        server.method('hashPassword', createHashPassword(hashRounds));
     },
     createUserPayloadValidation
 };
@@ -401,7 +397,14 @@ async function getUser(request, h) {
 
 async function editUser(request, h) {
     const { auth, params, payload, server } = request;
-    const { generateToken, isAdmin, userIsDeleted, hashPassword, config } = server.methods;
+    const {
+        generateToken,
+        isAdmin,
+        userIsDeleted,
+        hashPassword,
+        comparePassword,
+        config
+    } = server.methods;
     const userId = params.id;
 
     await userIsDeleted(userId);
@@ -464,8 +467,7 @@ async function editUser(request, h) {
             const oldUser = await User.findByPk(userId, { attributes: ['pwd'] });
 
             const isValid = await comparePassword(payload.oldPassword, oldUser.pwd, {
-                userId,
-                server
+                userId
             });
 
             if (!isValid) {
@@ -590,7 +592,7 @@ async function createUser(request, h) {
 async function deleteUser(request, h) {
     const { auth, server, payload } = request;
     const { id } = request.params;
-    const { isAdmin, userIsDeleted } = server.methods;
+    const { isAdmin, userIsDeleted, comparePassword } = server.methods;
 
     await userIsDeleted(id);
 
@@ -615,8 +617,7 @@ async function deleteUser(request, h) {
 
         // check password
         const isValid = await comparePassword(payload.password, user.pwd, {
-            userId: user.id,
-            server
+            userId: user.id
         });
 
         if (!isValid) {

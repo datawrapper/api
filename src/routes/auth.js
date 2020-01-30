@@ -8,7 +8,6 @@ const get = require('lodash/get');
 const { cookieTTL } = require('../utils');
 const { listResponse, noContentResponse, createResponseConfig } = require('../schemas/response.js');
 const { createUserPayloadValidation } = require('./users');
-const { comparePassword } = require('../auth/utils');
 
 module.exports = {
     name: 'auth-routes',
@@ -300,12 +299,11 @@ async function login(request, h) {
         return Boom.unauthorized('Invalid credentials');
     }
 
-    const { generateToken, config } = request.server.methods;
+    const { generateToken, config, comparePassword } = request.server.methods;
     const api = config('api');
 
     let isValid = await comparePassword(password, user.pwd, {
-        userId: user.id,
-        server: request.server
+        userId: user.id
     });
 
     if (!isValid && password === user.reset_password_token) {
