@@ -1,22 +1,16 @@
 import test from 'ava';
 import sortBy from 'lodash/sortBy';
-import crypto from 'crypto';
-import { decamelize, decamelizeKeys } from 'humps';
+import { decamelize } from 'humps';
 
 import { setup } from '../../test/helpers/setup';
-import { api } from '../../config.js';
-
-function legacyHash(pwhash, secret) {
-    const hmac = crypto.createHmac('sha256', secret);
-    hmac.update(pwhash);
-    return hmac.digest('hex');
-}
 
 test.before(async t => {
     const { server, models, getUser, getTeamWithUser, getCredentials, addToCleanup } = await setup({
         usePlugins: false
     });
     t.context.server = server;
+
+    t.context.legacyHash = require('./auth').legacyHash;
 
     t.context.user = await getUser();
     t.context.admin = await getUser('admin');
@@ -124,23 +118,16 @@ test("New users can't set protected fields", async t => {
         customerId: 12345,
         oauthSignin: 'blub'
     };
+
     /* create user with email and some data */
-    const { result } = await t.context.server.inject({
+    const { result, statusCode } = await t.context.server.inject({
         method: 'POST',
         url: '/v3/users',
         payload: { ...credentials, ...fields }
     });
 
-    t.log('User created', result.email);
-
-    const user = await t.context.models.User.findByPk(result.id, {
-        attributes: Object.keys(decamelizeKeys(fields))
-    });
-
-    for (const f in fields) {
-        t.not(user[decamelize(f)], fields[f]);
-    }
-    await t.context.addToCleanup('user', result.id);
+    t.log(result.message);
+    t.is(statusCode, 400);
 });
 
 test('GET /users/:id - should include teams when fetched as admin', async t => {
@@ -488,7 +475,7 @@ test('Users can change allowed fields', async t => {
 
     const allowedFields = {
         name: 'My new name',
-        email: 'new@example.com'
+        language: 'de_DE'
     };
 
     const res = await t.context.server.inject({
@@ -509,11 +496,13 @@ test('Users can change allowed fields', async t => {
     }
 });
 
-test.only('User cannot change password without old password', async t => {
-    const { session, user } = t.context.user;
+test('User cannot change password without old password', async t => {
+    const { legacyHash, server, user: contextUser } = t.context;
+    const { authSalt, secretAuthSalt } = server.methods.config('api');
+    const { session, user } = contextUser;
 
-    const patchMe = async payload => {
-        return t.context.server.inject({
+    const patchMe = async payload =>
+        t.context.server.inject({
             method: 'PATCH',
             url: '/v3/me',
             headers: {
@@ -521,37 +510,43 @@ test.only('User cannot change password without old password', async t => {
             },
             payload
         });
-    };
 
     const oldPwdHash = user.pwd;
     // try to change without password
-    t.is((await patchMe({ password: 'new-password' })).statusCode, 401);
+    let res = await patchMe({ password: 'new-password' });
+    t.is(res.statusCode, 401);
+
     // check that password hash is still the same
     await user.reload();
     t.is(user.pwd, oldPwdHash);
+
     // try to change with false password
-    t.is((await patchMe({ password: 'new-password', oldPassword: 'I dont know' })).statusCode, 401);
+    res = await patchMe({ password: 'new-password', oldPassword: 'I dont know' });
+    t.is(res.statusCode, 401);
+
     // check that password hash is still the same
     await user.reload();
     t.is(user.pwd, oldPwdHash);
+
     // try to change with correct password
-    t.is(
-        (await patchMe({ password: 'new-password', oldPassword: 'test-password' })).statusCode,
-        200
-    );
+    res = await patchMe({ password: 'new-password', oldPassword: 'test-password' });
+    t.is(res.statusCode, 200);
+
     // check that password hash is still the same
     await user.reload();
     t.not(user.pwd, oldPwdHash);
-    // try the same with legacy login
-    await user.update({ pwd: legacyHash('legacy-password', api.authSalt) });
+
+    // try the same with legacy login (tests have secret salt configured)
+    const legacyPwd = legacyHash(legacyHash('legacy-password', authSalt), secretAuthSalt);
+    await user.update({ pwd: legacyPwd });
+
     // test is changing password also works with legacy hashes
-    t.is(
-        (await patchMe({ password: 'new-password', oldPassword: 'wrong-legacy-password' }))
-            .statusCode,
-        401
-    );
-    t.is(
-        (await patchMe({ password: 'new-password', oldPassword: 'legacy-password' })).statusCode,
-        200
-    );
+    res = await patchMe({
+        password: 'new-password',
+        oldPassword: 'wrong-legacy-password'
+    });
+    t.is(res.statusCode, 401);
+
+    res = await patchMe({ password: 'new-password', oldPassword: 'legacy-password' });
+    t.is(res.statusCode, 200);
 });
