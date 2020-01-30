@@ -418,6 +418,14 @@ async function editUser(request, h) {
         name: payload.name
     };
 
+    if (payload.email) {
+        // see if there already is an existing user with that email address
+        const existingUser = await User.findOne({ where: { email: payload.email } });
+        if (existingUser) {
+            return Boom.conflict('email-already-exists');
+        }
+    }
+
     if (isAdmin(request)) {
         // admins can update user without confirmation
         data.email = payload.email;
