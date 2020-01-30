@@ -523,12 +523,16 @@ async function resetPassword(request, h) {
     }
 
     const user = await User.findOne({
-        attributes: ['id', 'language', 'email'],
+        attributes: ['id', 'language', 'email', 'reset_password_token'],
         where: { email: request.payload.email }
     });
 
     if (!user) {
         return Boom.notFound();
+    }
+
+    if (user.reset_password_token) {
+        return Boom.badRequest('token-already-set');
     }
 
     await user.update({ reset_password_token: token });
