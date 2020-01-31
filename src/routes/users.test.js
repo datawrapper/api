@@ -510,7 +510,7 @@ test('Users can change allowed fields', async t => {
     t.is(user.language, allowedFields.language);
 });
 
-test.only('User cannot change email if it already exists', async t => {
+test('User cannot change email if it already exists', async t => {
     const { user: user1, session } = await t.context.getUser();
     const { user: user2 } = await t.context.getUser();
 
