@@ -477,7 +477,7 @@ test('Users can change allowed fields', async t => {
 
     const allowedFields = {
         name: 'My new name',
-        email: 'new@example.com',
+        email: `new-${Math.round(Math.random() * 1e6).toString(36)}@example.com`,
         language: 'de_DE'
     };
 
@@ -571,7 +571,8 @@ test('User cannot change password without old password', async t => {
     t.not(user.pwd, oldPwdHash);
 
     // try the same with legacy login (tests have secret salt configured)
-    const legacyPwd = legacyHash(legacyHash('legacy-password', authSalt), secretAuthSalt);
+    let legacyPwd = legacyHash('legacy-password', authSalt);
+    if (secretAuthSalt) legacyPwd = legacyHash(legacyPwd, secretAuthSalt);
     await user.update({ pwd: legacyPwd });
 
     // test is changing password also works with legacy hashes
