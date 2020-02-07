@@ -13,11 +13,17 @@ module.exports = {
 
         function registerPlugin(name) {
             try {
+                const pluginPath = path.join(root, name, 'api.js');
+                const plugin = require(pluginPath);
+
                 return {
-                    plugin: require(path.join(root, name, 'api.js')),
+                    plugin,
                     options: {
                         models,
-                        config: get(config, ['plugins', name], {})
+                        config: get(config, ['plugins', name], {}),
+                        tarball:
+                            plugin.tarball ||
+                            `https://api.github.com/repos/datawrapper/plugin-${name}/tarball`
                     }
                 };
             } catch (error) {

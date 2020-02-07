@@ -55,5 +55,11 @@ module.exports = {
                 prefix: '/products'
             }
         });
+
+        server.register(require('./plugins-admin'), {
+            routes: {
+                prefix: '/admin/plugins'
+            }
+        });
     }
 };
