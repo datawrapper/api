@@ -40,6 +40,7 @@ const createUserPayloadValidation = [
             .description('User language preference. This can be omitted.'),
         password: Joi.string()
             .example('13-binary-1968')
+            .min(8)
             .required()
             .description('Strong user password.'),
         invitation: Joi.boolean()
@@ -153,6 +154,7 @@ module.exports = {
                             ),
                         password: Joi.string()
                             .example('13-binary-1968')
+                            .min(8)
                             .description('Strong user password.'),
                         oldPassword: Joi.string().description('The previous user password.')
                     })
