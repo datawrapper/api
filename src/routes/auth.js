@@ -528,7 +528,7 @@ async function resetPassword(request, h) {
     });
 
     if (!user) {
-        return Boom.notFound();
+        return Boom.notFound('email-not-found');
     }
 
     if (user.reset_password_token) {
