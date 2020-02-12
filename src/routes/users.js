@@ -428,8 +428,8 @@ async function editUser(request, h) {
         }
     }
 
-    if (isAdmin(request)) {
-        // admins can update user without confirmation
+    if (isAdmin(request) && userId !== auth.artifacts.id) {
+        // admins can update other users without confirmation
         data.email = payload.email;
         data.activateToken = payload.activateToken;
         data.role = payload.role;
