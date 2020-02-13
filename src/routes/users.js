@@ -437,7 +437,7 @@ async function editUser(request, h) {
             data.pwd = await hashPassword(payload.password);
         }
     } else {
-        // non-admins need to confirm email and password changes
+        // all users need to confirm their email and password changes
         if (payload.email) {
             // check if email has changed
             const oldUser = await User.findByPk(userId);
