@@ -505,14 +505,27 @@ async function activateAccount(request, h) {
 
     const response = h.response().code(204);
 
-    if (!request.auth.credentials) {
-        const api = request.server.methods.config('api');
-        const session = await createSession(request.server.methods.generateToken(), user.id);
+    const api = request.server.methods.config('api');
+    let session;
 
-        response.state(api.sessionID, session.id, {
-            ttl: cookieTTL(90)
+    if (!request.auth.credentials) {
+        // create a new session
+        session = await createSession(request.server.methods.generateToken(), user.id);
+    } else if (request.auth.artifacts && request.auth.artifacts.role === 'guest') {
+        // associate guest session with the activated user
+        session = request.auth.credentials.data;
+        await session.update({
+            data: {
+                ...session.data,
+                'dw-user-id': user.id,
+                last_action_time: Math.floor(Date.now() / 1000)
+            }
         });
     }
+
+    response.state(api.sessionID, session.id, {
+        ttl: cookieTTL(90)
+    });
 
     return response;
 }
