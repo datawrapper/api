@@ -337,6 +337,8 @@ async function login(request, h) {
         session = await createSession(generateToken(), user.id, keepSession);
     }
 
+    await request.server.methods.logAction(user.id, 'login');
+
     return h
         .response({
             [api.sessionID]: session.id
@@ -350,6 +352,10 @@ async function logout(request, h) {
     const session = await Session.findByPk(request.auth.credentials.session, {
         attributes: ['id']
     });
+
+    if (request.auth.artifacts) {
+        await request.server.methods.logAction(request.auth.artifacts.id, 'logout');
+    }
 
     if (session) {
         await session.destroy();
@@ -567,6 +573,8 @@ async function resetPassword(request, h) {
             }://${domain}/account/reset-password/${token}`
         }
     });
+
+    await request.server.methods.logAction(user.id, 'reset-password', token);
 
     return h.response().code(204);
 }
