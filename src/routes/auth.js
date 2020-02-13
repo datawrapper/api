@@ -209,7 +209,7 @@ module.exports = {
                 },
                 validate: {
                     payload: Joi.object({
-                        password: Joi.string()
+                        password: Joi.string().min(8)
                             .required()
                             .example('tales-126')
                             .description(
