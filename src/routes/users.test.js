@@ -477,7 +477,7 @@ test('Users can change allowed fields', async t => {
 
     const allowedFields = {
         name: 'My new name',
-        email: `new-${Math.round(Math.random() * 1e6).toString(36)}@example.com`,
+        email: t.context.getCredentials().email
         language: 'de_DE'
     };
 
