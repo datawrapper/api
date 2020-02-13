@@ -151,7 +151,7 @@ module.exports = {
                             .description('User activation token')
                     }),
                     payload: Joi.object({
-                        password: Joi.string().description('New password of the user.')
+                        password: Joi.string().min(8).description('New password of the user.')
                     })
                 }
             },
