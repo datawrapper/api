@@ -511,7 +511,7 @@ async function activateAccount(request, h) {
     if (!request.auth.credentials) {
         // create a new session
         session = await createSession(request.server.methods.generateToken(), user.id);
-    } else if (request.auth.artifacts && request.auth.artifacts.role === 'guest') {
+    } else {
         // associate guest session with the activated user
         session = request.auth.credentials.data;
         await session.update({
