@@ -477,7 +477,7 @@ test('Users can change allowed fields', async t => {
 
     const allowedFields = {
         name: 'My new name',
-        email: t.context.getCredentials().email
+        email: t.context.getCredentials().email,
         language: 'de_DE'
     };
 
