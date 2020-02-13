@@ -51,7 +51,7 @@ module.exports = {
                         language: Joi.string()
                             .example('en_US')
                             .description('Your new language preference.'),
-                        password: Joi.string()
+                        password: Joi.string().min(8)
                             .example('13-binary-1968')
                             .description('Strong user password.'),
                         oldPassword: Joi.string().description('The previous user password.')
