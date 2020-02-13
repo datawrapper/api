@@ -496,9 +496,11 @@ async function activateAccount(request, h) {
 
     const userData = { role: 'editor', activate_token: null };
 
-    const { password } = request.payload;
-    if (password) {
-        userData.pwd = await request.server.methods.hashPassword(password);
+    if (request.payload) {
+        const { password } = request.payload;
+        if (password) {
+            userData.pwd = await request.server.methods.hashPassword(password);
+        }
     }
 
     user = await user.update(userData);
