@@ -1,5 +1,3 @@
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const { Op } = require('@datawrapper/orm').db;
 const { camelizeKeys } = require('humps');
 const Joi = require('@hapi/joi');
@@ -9,64 +7,7 @@ const set = require('lodash/set');
 const get = require('lodash/get');
 const { cookieTTL } = require('../utils');
 const { listResponse, noContentResponse, createResponseConfig } = require('../schemas/response.js');
-
-const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
-
-/**
- * Generate a sha256 hash from a string. This is used in the PHP API and is needed for backwards
- * compatibility.
- *
- * @param {string} pwhash - value to hash with sha256
- * @param {string} secret - salt to hash the value with
- * @returns {string}
- */
-function legacyHash(pwhash, secret = DEFAULT_SALT) {
-    const hmac = crypto.createHmac('sha256', secret);
-    hmac.update(pwhash);
-    return hmac.digest('hex');
-}
-
-/**
- * The old PHP API used sha256 to hash passwords with constant salts.
- * The Node.js API uses bcrypt which is more secure.
- * It is still important to support the old way for migration purposes since PHP and Node API
- * will live side by side for some time.
- * When the PHP Server gets turned off, we can hopefully delete this function.
- *
- * @deprecated
- * @param {string} password - Password string sent from the client (Can be client side hashed or not)
- * @param {string} passwordHash - Password hash to compare (from DB)
- * @param {string} authSalt - defined in config.js
- * @param {string} secretAuthSalt - defined in config.js
- * @returns {boolean}
- */
-function legacyLogin(password, passwordHash, authSalt, secretAuthSalt) {
-    let serverHash = secretAuthSalt ? legacyHash(password, secretAuthSalt) : password;
-
-    if (serverHash === passwordHash) return true;
-
-    const clientHash = legacyHash(password, authSalt);
-    serverHash = secretAuthSalt ? legacyHash(clientHash, secretAuthSalt) : clientHash;
-    return serverHash === passwordHash;
-}
-
-/**
- * Migrate the old sha256 password hash to a more modern and secure bcrypt hash.
- *
- * @param {number} userId - ID of the user to migrate
- * @param {string} password - User password
- * @param {number} hashRounds - Iteration amout for bcrypt
- */
-async function migrateHashToBcrypt(userId, password, hashRounds) {
-    const hash = await bcrypt.hash(password, hashRounds);
-
-    await User.update(
-        {
-            pwd: hash
-        },
-        { where: { id: userId } }
-    );
-}
+const { createUserPayloadValidation } = require('./users');
 
 module.exports = {
     name: 'auth-routes',
@@ -190,22 +131,7 @@ module.exports = {
                     strategy: 'session'
                 },
                 validate: {
-                    payload: Joi.object({
-                        email: Joi.string()
-                            .email()
-                            .required()
-                            .example('tony@stark-industries.com')
-                            .description('Email address of the user signing up.'),
-                        password: Joi.string()
-                            .required()
-                            .example('morgan-3000')
-                            .description(
-                                'A strong user password. Ideally this is generated and saved in a password manager.'
-                            ),
-                        language: Joi.string()
-                            .default('en_US')
-                            .description('Preferred language for the user interface.')
-                    })
+                    payload: createUserPayloadValidation
                 }
             },
             handler: signup
@@ -223,6 +149,11 @@ module.exports = {
                         token: Joi.string()
                             .required()
                             .description('User activation token')
+                    }),
+                    payload: Joi.object({
+                        password: Joi.string()
+                            .min(8)
+                            .description('New password of the user.')
                     })
                 }
             },
@@ -280,12 +211,8 @@ module.exports = {
                 },
                 validate: {
                     payload: Joi.object({
-                        email: Joi.string()
-                            .email()
-                            .required()
-                            .example('strange@kamar-taj.com.np')
-                            .description('Email address of the user.'),
                         password: Joi.string()
+                            .min(8)
                             .required()
                             .example('tales-126')
                             .description(
@@ -293,6 +220,7 @@ module.exports = {
                             ),
                         token: Joi.string()
                             .example('shamballa')
+                            .required()
                             .description('Password reset token which is send as email to the user.')
                     })
                 }
@@ -373,41 +301,12 @@ async function login(request, h) {
         return Boom.unauthorized('Invalid credentials');
     }
 
-    let isValid = false;
-    const { generateToken, config } = request.server.methods;
+    const { generateToken, config, comparePassword } = request.server.methods;
     const api = config('api');
 
-    /**
-     * Bcrypt uses a prefix for versioning. That way a bcrypt hash can be identified with "$2".
-     * https://en.wikipedia.org/wiki/Bcrypt#Description
-     */
-    if (user.pwd.startsWith('$2')) {
-        isValid = await bcrypt.compare(password, user.pwd);
-
-        /**
-         * Due to the migration from sha256 to bcrypt, the API must deal with sha256 passwords that
-         * got created by the PHP API and migrated from the `migrateHashToBcrypt` function.
-         * The node API get's passwords only in clear text and to compare those with a migrated
-         * password, it first has to generate the former client hashed password.
-         */
-        if (!isValid) {
-            isValid = await bcrypt.compare(legacyHash(password, api.authSalt), user.pwd);
-        }
-    } else {
-        /**
-         * The user password hash was created by the PHP API and is not a bcrypt hash. That means
-         * the API needs to use the old comparison method with double sha256 hashes.
-         */
-        isValid = legacyLogin(password, user.pwd, api.authSalt, api.secretAuthSalt);
-
-        /**
-         * When the old method works, the API migrates the old hash to a bcrypt hash for more
-         * security. This ensures a seemless migration for users.
-         */
-        if (isValid && api.enableMigration) {
-            await migrateHashToBcrypt(user.id, password, api.hashRounds);
-        }
-    }
+    let isValid = await comparePassword(password, user.pwd, {
+        userId: user.id
+    });
 
     if (!isValid && password === user.reset_password_token) {
         isValid = true;
@@ -545,15 +444,12 @@ async function signup(request, h) {
 
     if (request.auth.isAuthenticated) {
         session = await Session.findByPk(request.auth.credentials.session);
-
         if (session.data['dw-user-id']) {
             return Boom.badRequest('Impossible to sign up with active user session');
         }
     }
 
     const { generateToken, config } = request.server.methods;
-
-    request.payload.activate_token = generateToken();
 
     const res = await request.server.inject({
         method: 'POST',
@@ -581,22 +477,9 @@ async function signup(request, h) {
         session = await createSession(generateToken(), res.result.id);
     }
 
-    const { activateToken, ...data } = res.result;
+    const api = config('api');
 
-    const { https, domain } = config('frontend');
-
-    await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
-        type: 'activation',
-        to: data.email,
-        language: data.language,
-        data: {
-            activation_link: `${
-                https ? 'https' : 'http'
-            }://${domain}/account/activate/${activateToken}`
-        }
-    });
-
-    return h.response(camelizeKeys(data)).state(config('api').sessionID, session.id, {
+    return h.response(res.result).state(api.sessionID, session.id, {
         ttl: cookieTTL(90)
     });
 }
@@ -611,15 +494,22 @@ async function activateAccount(request, h) {
         return Boom.notFound();
     }
 
-    user = await user.update({ role: 'editor', activate_token: null });
+    const userData = { role: 'editor', activate_token: null };
+
+    const { password } = request.payload;
+    if (password) {
+        userData.pwd = await request.server.methods.hashPassword(password);
+    }
+
+    user = await user.update(userData);
 
     const response = h.response().code(204);
 
     if (!request.auth.credentials) {
-        const { sessionID } = request.server.methods.config('api');
+        const api = request.server.methods.config('api');
         const session = await createSession(request.server.methods.generateToken(), user.id);
 
-        response.state(sessionID, session.id, {
+        response.state(api.sessionID, session.id, {
             ttl: cookieTTL(90)
         });
     }
@@ -636,12 +526,16 @@ async function resetPassword(request, h) {
     }
 
     const user = await User.findOne({
-        attributes: ['id', 'language', 'email'],
+        attributes: ['id', 'language', 'email', 'reset_password_token'],
         where: { email: request.payload.email }
     });
 
     if (!user) {
-        return Boom.notFound();
+        return Boom.notFound('email-not-found');
+    }
+
+    if (user.reset_password_token) {
+        return Boom.badRequest('token-already-set');
     }
 
     await user.update({ reset_password_token: token });
@@ -663,26 +557,18 @@ async function resetPassword(request, h) {
 }
 
 async function changePassword(request, h) {
-    const { email } = get(request, ['auth', 'artifacts'], {});
     const { server, payload } = request;
     const { token, password } = payload;
 
-    if (!email) {
-        const user = await User.findOne({
-            where: { email: payload.email, reset_password_token: token }
-        });
+    if (!token || !password) return Boom.badRequest();
 
-        if (user) {
-            const pwd = await server.methods.hashPassword(password);
-            await user.update({ pwd, reset_password_token: null });
+    const user = await User.findOne({
+        where: { reset_password_token: token }
+    });
 
-            return h.response().code(204);
-        }
-    }
-
-    if (email === payload.email) {
+    if (user) {
         const pwd = await server.methods.hashPassword(password);
-        await User.update({ pwd }, { where: { email } });
+        await user.update({ pwd, reset_password_token: null });
 
         return h.response().code(204);
     }

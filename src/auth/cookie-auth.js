@@ -1,5 +1,5 @@
 const Boom = require('@hapi/boom');
-const { cookieTTL } = require('../utils');
+const { cookieTTL, cookieDomain } = require('../utils');
 const { Session } = require('@datawrapper/orm/models');
 const getUser = require('./get-user');
 
@@ -32,7 +32,7 @@ function cookieAuth(server, options) {
         ttl: cookieTTL(90),
         isSecure: process.env.NODE_ENV === 'production',
         strictHeader: false,
-        domain: api.domain,
+        domain: cookieDomain(api),
         isSameSite: false,
         path: '/'
     });
