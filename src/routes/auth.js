@@ -154,7 +154,7 @@ module.exports = {
                         password: Joi.string()
                             .min(8)
                             .description('New password of the user.')
-                    })
+                    }).allow(null)
                 }
             },
             handler: activateAccount
