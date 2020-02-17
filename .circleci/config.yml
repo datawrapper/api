@@ -3,7 +3,7 @@ jobs:
     test:
         working_directory: ~/repo
         docker:
-            - image: sto3psl/dw-ci:1.3.0
+            - image: sto3psl/dw-ci:1.4.0
         steps:
             - checkout
 

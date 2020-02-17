@@ -39,7 +39,7 @@
         "@datawrapper/shared": "0.19.4",
         "@hapi/boom": "8.0.1",
         "@hapi/catbox-memory": "4.1.1",
-        "@hapi/hapi": "18.4.0",
+        "@hapi/hapi": "19.1.1",
         "@hapi/joi": "15.1.1",
         "arg": "4.1.2",
         "assign-deep": "1.0.1",

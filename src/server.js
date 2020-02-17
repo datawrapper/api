@@ -1,5 +1,6 @@
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
+const Joi = require('@hapi/joi');
 const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
@@ -130,6 +131,8 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         'datawrapper-api',
         Object.keys(config.plugins)
     );
+
+    server.validator(Joi);
 
     server.app.event = eventList;
     server.app.events = new ApiEventEmitter({ logger: server.logger });
