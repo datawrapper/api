@@ -1,8 +1,11 @@
 import test from 'ava';
 import sortBy from 'lodash/sortBy';
 import { decamelize } from 'humps';
+import util from 'util';
 
 import { setup } from '../../test/helpers/setup';
+
+const setTimeoutPromise = util.promisify(setTimeout);
 
 test.before(async t => {
     const { server, models, getUser, getTeamWithUser, getCredentials, addToCleanup } = await setup({
@@ -584,4 +587,25 @@ test('User cannot change password without old password', async t => {
 
     res = await patchMe({ password: 'new-password', oldPassword: 'legacy-password' });
     t.is(res.statusCode, 200);
+});
+
+test('Parallel user creation requests with the same email should not create multiple users', async t => {
+    const credentials = t.context.getCredentials();
+
+    const options = {
+        method: 'POST',
+        url: '/v3/users',
+        payload: credentials
+    };
+
+    const responses = await Promise.all([
+        t.context.server.inject(options),
+        setTimeoutPromise(200).then(() => t.context.server.inject(options))
+    ]);
+
+    t.is(responses[0].statusCode, 201);
+    t.is(responses[1].statusCode, 409);
+    t.log(responses[1].result.message);
+
+    await t.context.addToCleanup('user', responses[0].result.id);
 });
