@@ -640,7 +640,7 @@ async function deleteUser(request, h) {
     }
 
     await User.update(
-        { email: 'DELETED', name: 'DELETED', pwd: 'DELETED', website: 'DELETED', deleted: true },
+        { email: null, name: 'DELETED', pwd: 'DELETED', website: 'DELETED', deleted: true },
         { where: { id } }
     );
 
