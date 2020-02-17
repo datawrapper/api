@@ -532,15 +532,22 @@ async function editUserSettings(request, h) {
     };
 }
 
+const cache = new Set();
+
 async function createUser(request, h) {
     const { hashPassword, isAdmin, generateToken, config } = request.server.methods;
     const { password = '', ...data } = request.payload;
 
     const existingUser = await User.findOne({ where: { email: data.email } });
 
-    if (existingUser) {
+    if (existingUser || cache.has(data.email)) {
         return Boom.conflict('User already exists');
     }
+
+    if (cache.has(data.email)) {
+        return Boom.conflict('Processing');
+    }
+    cache.add(data.email);
 
     const isInvitation = !!data.invitation;
     const newUser = {
@@ -567,6 +574,7 @@ async function createUser(request, h) {
     }
 
     const user = await User.create(newUser);
+    cache.delete(data.email);
 
     const { count } = await Chart.findAndCountAll({ where: { author_id: user.id } });
 
