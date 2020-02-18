@@ -30,11 +30,10 @@ function register(server, options) {
     async function getAllPlugins(request, h) {
         const plugins = [];
         for (const [plugin, { version, options }] of Object.entries(request.server.registrations)) {
-            if (options && options.tarball && options.config && options.config.reload) {
+            if (get(options, 'tarball') && get(options, 'reload')) {
                 plugins.push({
                     plugin,
-                    version,
-                    url: `/v3/admin/plugins/${plugin}`
+                    version
                 });
             }
         }
@@ -61,13 +60,14 @@ function register(server, options) {
         const { server, payload, auth } = request;
         const registration = server.registrations[payload.name];
         const { api, general } = server.methods.config();
+        const log = server.logger();
 
         if (!registration) {
             return Boom.notFound();
         }
 
         const tarball = get(registration, 'options.tarball');
-        if (!get(registration, 'options.config.reload') || !tarball) {
+        if (!get(registration, 'options.reload') || !tarball) {
             return Boom.notImplemented();
         }
 
@@ -95,26 +95,47 @@ function register(server, options) {
             staticDirectories
         );
 
-        server.logger().info('[Done] Backup plugin', payload.name);
-        server.logger().info('[Start] Update plugin', payload.name);
+        log.info('[Done] Backup plugin', payload.name);
+        log.info('[Start] Update plugin', payload.name);
 
         /* Download repo archive from Github and pipe it into node-tar to extract directories */
         const staticDirectoriesRegex = new RegExp(`.*/(${staticDirectories.join('|')})/.*`);
-        await pipeline(
-            got.stream(`${tarball}/${payload.branch}`, {
-                headers: {
-                    authorization: `token ${api.githubToken}`
-                }
-            }),
-            tar.extract({
+        const url = `${tarball}/${payload.branch}`;
+        try {
+            await pipeline(
+                got.stream(url, {
+                    headers: {
+                        authorization: `token ${api.githubToken}`
+                    }
+                }),
+                tar.extract({
+                    cwd: pluginLocation,
+                    strip: 1,
+                    filter: path => staticDirectoriesRegex.test(path)
+                })
+            );
+        } catch (error) {
+            if (error.name === 'HTTPError') {
+                log.error({ url }, error.message);
+                return Boom.badGateway();
+            }
+            log.error(error);
+            log.info('[Failed] Update plugin', payload.name);
+
+            log.info('[Start] Restoring backup', payload.name);
+
+            await tar.extract({
                 cwd: pluginLocation,
-                strip: 1,
+                file: backupFile,
                 filter: path => staticDirectoriesRegex.test(path)
-            })
-        );
+            });
 
-        server.logger().info('[Done] Update plugin', payload.name);
+            log.info('[Done] Restoring backup', payload.name);
 
+            return Boom.badGateway();
+        }
+
+        log.info('[Done] Update plugin', payload.name);
         return h.response().code(204);
     }
 }
