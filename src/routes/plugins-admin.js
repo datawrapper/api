@@ -11,6 +11,11 @@ const tar = require('tar');
 
 const pipeline = promisify(stream.pipeline);
 
+function getNormalizedName(str) {
+    const match = /(?:.*plugin-)?(.*)/.exec(str);
+    return match ? match[1] : undefined;
+}
+
 module.exports = {
     name: 'admin-plugin-routes',
     version: '1.0.0',
@@ -29,8 +34,10 @@ function register(server, options) {
 
     async function getAllPlugins(request, h) {
         const plugins = [];
-        for (const [plugin, { version, options }] of Object.entries(request.server.registrations)) {
-            if (get(options, 'tarball') && get(options, 'reload')) {
+        const config = request.server.methods.config();
+
+        for (const [plugin, { version }] of Object.entries(request.server.registrations)) {
+            if (config.plugins[getNormalizedName(plugin)]) {
                 plugins.push({
                     plugin,
                     version
@@ -59,20 +66,22 @@ function register(server, options) {
     async function updatePlugin(request, h) {
         const { server, payload, auth } = request;
         const registration = server.registrations[payload.name];
-        const { api, general } = server.methods.config();
+        const { api, general, plugins } = server.methods.config();
         const log = server.logger();
 
-        if (!registration) {
+        const name = getNormalizedName(payload.name);
+
+        if (!plugins[name]) {
             return Boom.notFound();
         }
 
         const tarball = get(registration, 'options.tarball');
-        if (!get(registration, 'options.reload') || !tarball) {
+        if (!tarball) {
             return Boom.notImplemented();
         }
 
-        const pluginLocation = path.join(general.localPluginRoot, payload.name);
-        const backupFile = path.join(general.localPluginRoot, `${payload.name}-backup.tgz`);
+        const pluginLocation = path.join(general.localPluginRoot, name);
+        const backupFile = path.join(general.localPluginRoot, `${name}-backup.tgz`);
 
         const dir = await fs.readdir(pluginLocation);
 
@@ -82,6 +91,10 @@ function register(server, options) {
             'locale',
             'static'
         ]); /* is this all?  */
+
+        if (!staticDirectories.length) {
+            return h.response().code(204);
+        }
 
         request.logger.info({ user: auth.artifacts.id }, '[Start] Backup plugin', payload.name);
 
