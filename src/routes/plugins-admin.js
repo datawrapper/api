@@ -130,7 +130,7 @@ function register(server, options) {
         } catch (error) {
             if (error.name === 'HTTPError') {
                 log.error({ url }, error.message);
-                return Boom.badGateway();
+                return Boom.badGateway(`(${error.name}) ${error.message} [${url}]`);
             }
             log.error(error);
             log.info('[Failed] Update plugin', payload.name);
