@@ -13,20 +13,29 @@ module.exports = {
 
         function registerPlugin(name) {
             try {
-                return {
-                    plugin: require(path.join(root, name, 'api.js')),
-                    options: {
-                        models,
-                        config: get(config, ['plugins', name], {})
-                    }
-                };
+                const pluginPath = path.join(root, name, 'api.js');
+                const { options = {}, ...plugin } = require(pluginPath);
+
+                const { routes, ...opts } = options;
+                return [
+                    {
+                        plugin,
+                        options: {
+                            models,
+                            config: get(config, ['plugins', name], {}),
+                            tarball: `https://api.github.com/repos/datawrapper/plugin-${name}/tarball`,
+                            ...opts
+                        }
+                    },
+                    { routes }
+                ];
             } catch (error) {
-                return { name, error };
+                return [{ name, error }];
             }
         }
 
         if (plugins.length) {
-            for (const { plugin, options, error, name } of plugins) {
+            for (const [{ plugin, options, error, name }, pluginOptions] of plugins) {
                 if (error) {
                     server.logger().error(`[Plugin] ${error}`, logError(root, name));
                     process.exit(1);
@@ -38,7 +47,7 @@ module.exports = {
                         `[Plugin] ${get(plugin, ['pkg', 'name'], plugin.name)}`
                     );
 
-                    await server.register({ plugin, options }, plugin.options);
+                    await server.register({ plugin, options }, pluginOptions);
                 }
             }
         }
