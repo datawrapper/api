@@ -46,6 +46,7 @@
         "bcryptjs": "2.4.3",
         "chalk": "3.0.0",
         "cssnano": "4.1.10",
+        "fs-extra": "8.1.0",
         "got": "10.0.3",
         "hapi-auth-bearer-token": "6.2.1",
         "hapi-pino": "6.3.0",
@@ -55,7 +56,8 @@
         "less": "3.10.3",
         "lodash": "4.17.15",
         "mime": "2.4.4",
-        "nanoid": "2.1.7"
+        "nanoid": "2.1.7",
+        "tar": "6.0.1"
     },
     "devDependencies": {
         "@hapi/inert": "~5.2.2",

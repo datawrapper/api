@@ -136,6 +136,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     server.app.event = eventList;
     server.app.events = new ApiEventEmitter({ logger: server.logger });
+    server.app.visualization = new Set();
 
     server.method('config', key => (key ? config[key] : config));
     server.method('generateToken', generateToken);
