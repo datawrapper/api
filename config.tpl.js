@@ -9,6 +9,7 @@ module.exports = {
     api: {
         port: 3000,
         domain: '<domain>.<tld>',
+        legacyApi: '<protocol>://<domain>.<tld>',
         subdomain: '<subdomain>',
         sessionID: 'DW-SESSION',
         https: false,

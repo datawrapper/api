@@ -4,6 +4,8 @@ jobs:
         working_directory: ~/repo
         docker:
             - image: sto3psl/dw-ci:1.4.0
+              environment:
+                  DW_CONFIG_PATH: /home/circleci/repo/test/_config.ci.js
         steps:
             - checkout
 
@@ -29,15 +31,11 @@ jobs:
 
             - run:
                   name: Run tests
-                  environment:
-                      DW_CONFIG_PATH: ./test/_config.ci.js
                   command: |
                       mkdir -p ~/reports/ava
                       npx ava --tap | npx tap-xunit > ~/reports/ava/results.xml
             - run:
                   name: Cleanup DB because tests failed
-                  environment:
-                      DW_CONFIG_PATH: ./test/_config.ci.js
                   command: npm run clean:db
                   when: on_fail
             - store_test_results:

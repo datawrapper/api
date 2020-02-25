@@ -61,5 +61,17 @@ module.exports = {
                 prefix: '/admin/plugins'
             }
         });
+
+        server.register(require('./visualizations'), {
+            routes: {
+                prefix: '/visualizations'
+            }
+        });
+
+        server.register(require('./basemaps'), {
+            routes: {
+                prefix: '/basemaps'
+            }
+        });
     }
 };
