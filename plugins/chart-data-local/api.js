@@ -1,60 +1,69 @@
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const { promisify } = require('util');
 const writeFile = promisify(fs.writeFile);
-const mkdir = promisify(fs.mkdir);
-const stat = promisify(fs.stat);
 
 module.exports = {
     name: 'chart-data-local',
     version: '1.0.0',
     register: (server, options) => {
+        const serverConfig = server.methods.config();
+        const protocol = serverConfig.frontend.https ? 'https' : 'http';
         const { events, event } = server.app;
 
         async function isFile(path) {
             try {
-                const fileStats = await stat(path);
+                const fileStats = await fs.stat(path);
                 return fileStats.isFile(path);
             } catch (error) {
                 return false;
             }
         }
 
-        events.on(event.GET_CHART_ASSET, async ({ chart, filename }) => {
-            const filePath = path.join(
-                options.config.data_path,
-                getDataPath(chart.dataValues.created_at),
-                filename
-            );
+        events.on(event.PUBLISH_CHART, async ({ chart, outDir }) => {
+            const dest = path.resolve(options.config.publish_path, chart.id);
+            await fs.move(outDir, dest, { overwrite: true });
 
-            const fileExists = await isFile(filePath);
-
-            if (!fileExists) {
-                throw new Error('ASSET_NOT_FOUND');
-            }
-
-            const stream = fs.createReadStream(filePath, { encoding: 'utf-8' });
-            return stream;
+            return `${protocol}://${serverConfig.general.chart_domain}/${chart.id}`;
         });
 
-        events.on(event.PUT_CHART_ASSET, async ({ chart, data, filename }) => {
-            const dataPath = path.join(
-                options.config.data_path,
-                getDataPath(chart.dataValues.created_at)
-            );
-            const filePath = path.join(dataPath, filename);
+        if (options.config.data_path) {
+            events.on(event.GET_CHART_ASSET, async ({ chart, filename }) => {
+                const filePath = path.join(
+                    options.config.data_path,
+                    getDataPath(chart.dataValues.created_at),
+                    filename
+                );
 
-            const fileExists = await isFile(filePath);
-            if (!fileExists) {
-                await mkdir(dataPath, { recursive: true });
-            }
+                const fileExists = await isFile(filePath);
 
-            await writeFile(filePath, data, {
-                encoding: 'utf-8'
+                if (!fileExists) {
+                    throw new Error('ASSET_NOT_FOUND');
+                }
+
+                const stream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+                return stream;
             });
 
-            return { code: fileExists ? 204 : 201 };
-        });
+            events.on(event.PUT_CHART_ASSET, async ({ chart, data, filename }) => {
+                const dataPath = path.join(
+                    options.config.data_path,
+                    getDataPath(chart.dataValues.created_at)
+                );
+                const filePath = path.join(dataPath, filename);
+
+                const fileExists = await isFile(filePath);
+                if (!fileExists) {
+                    await fs.mkdir(dataPath, { recursive: true });
+                }
+
+                await writeFile(filePath, data, {
+                    encoding: 'utf-8'
+                });
+
+                return { code: fileExists ? 204 : 201 };
+            });
+        }
     }
 };
 

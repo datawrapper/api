@@ -1,12 +1,17 @@
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
+const CatboxMemory = require('@hapi/catbox-memory');
 const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
+const fs = require('fs');
+const { promisify } = require('util');
 const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/schemas/config');
 const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
+
+const readFile = promisify(fs.readFile);
 
 const { generateToken } = require('./utils');
 const { ApiEventEmitter, eventList } = require('./utils/events');
@@ -56,7 +61,7 @@ const server = Hapi.server({
     host: 'localhost',
     address: '0.0.0.0',
     port,
-    tls: config.api.https,
+    tls: false,
     router: { stripTrailingSlash: true },
     /* https://hapijs.com/api#-serveroptionsdebug */
     debug: DW_DEV_MODE ? { request: ['implementation'] } : false,
@@ -65,7 +70,15 @@ const server = Hapi.server({
             origin: config.api.cors,
             credentials: true
         }
-    }
+    },
+    cache: [
+        {
+            name: 'dw_cache',
+            provider: {
+                constructor: CatboxMemory
+            }
+        }
+    ]
 });
 
 function getLogLevel() {
@@ -125,6 +138,10 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     );
 
     await ORM.init(config);
+    if (ORM.registerPlugins) {
+        await ORM.registerPlugins();
+    }
+
     /* register api plugins with core db */
     require('@datawrapper/orm/models/Plugin').register(
         'datawrapper-api',
@@ -137,9 +154,11 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.app.events = new ApiEventEmitter({ logger: server.logger });
     server.app.visualization = new Set();
 
+    server.method('getModel', name => ORM.db.models[name]);
     server.method('config', key => (key ? config[key] : config));
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
+    server.method('readJSON', (path, options) => readFile(path, options).then(JSON.parse));
 
     const { validateThemeData } = schemas.initialize({
         getSchema: config.api.schemaBaseUrl
