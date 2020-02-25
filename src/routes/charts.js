@@ -1,9 +1,10 @@
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
 const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
+const get = require('lodash/get');
 const set = require('lodash/set');
 const assign = require('assign-deep');
 const mime = require('mime');
@@ -23,6 +24,8 @@ const chartResponse = createResponseConfig({
         metadata: Joi.object()
     }).unknown()
 });
+
+const { publishChart } = require('../publish/publish');
 
 module.exports = {
     name: 'chart-routes',
@@ -83,6 +86,9 @@ function register(server, options) {
                         .length(5)
                         .required()
                         .description('5 character long chart ID.')
+                }),
+                query: Joi.object({
+                    withData: Joi.boolean()
                 })
             },
             response: chartResponse
@@ -433,6 +439,22 @@ function register(server, options) {
         handler: writeChartData
     });
 
+    server.route({
+        method: 'POST',
+        path: '/{id}/publish',
+        options: {
+            tags: ['api'],
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                })
+            }
+        },
+        handler: publishChart
+    });
+
     async function writeChartData(request, h) {
         const { params } = request;
 
@@ -447,10 +469,11 @@ function register(server, options) {
     }
 
     const { events, event } = server.app;
-    const { localChartAssetRoot } = server.methods.config('general');
+    const { general, frontend } = server.methods.config();
+    const { localChartAssetRoot } = general;
+    const eventList = events.eventNames();
     const hasRegisteredDataPlugins =
-        events.eventNames().includes(event.GET_CHART_ASSET) &&
-        events.eventNames().includes(event.PUT_CHART_ASSET);
+        eventList.includes(event.GET_CHART_ASSET) && eventList.includes(event.PUT_CHART_ASSET);
 
     if (localChartAssetRoot === undefined && !hasRegisteredDataPlugins) {
         server
@@ -485,6 +508,18 @@ function register(server, options) {
             await mkdirAsync(outPath, { recursive: true });
             await writeFileAsync(path.join(outPath, filename), data);
             return { code: 200 };
+        });
+    }
+
+    const hasRegisteredPublishPlugin = eventList.includes(event.PUBLISH_CHART);
+
+    if (!hasRegisteredPublishPlugin) {
+        const protocol = frontend.https ? 'https' : 'http';
+        events.on(event.PUBLISH_CHART, async ({ chart, outDir }) => {
+            const dest = path.resolve(general.localChartPublishRoot, chart.id);
+            await fs.move(outDir, dest, { overwrite: true });
+
+            return `${protocol}://${general.chart_domain}/${chart.id}`;
         });
     }
 }
@@ -579,8 +614,97 @@ async function getAllCharts(request, h) {
     return chartList;
 }
 
+async function getBasemap(chart, request) {
+    const { server, auth } = request;
+    // TO DO: set default basemap as fallback
+    const basemapId = get(chart, 'metadata.visualize.basemap');
+
+    let basemap = {};
+    if (basemapId === 'custom_upload') {
+        const { result: content } = await server.inject({
+            url: `/v3/charts/${chart.id}/assets/${chart.id}.map.json`,
+            auth
+        });
+        basemap = {
+            content,
+            meta: {
+                regions: get(chart, 'metadata.visualize.basemapRegions'),
+                projection: {
+                    type: get(chart, 'metadata.visualize.basemapProjection')
+                },
+                extent: {
+                    padding: false,
+                    exclude: {}
+                }
+            }
+        };
+
+        // gather all unique keys from basemap and include them in metadata
+        const keyIds = [];
+        basemap.content.objects[basemap.meta.regions].geometries.forEach(geo => {
+            for (const key in geo.properties) {
+                if (key !== 'cx' && key !== 'cy' && !keyIds.includes(key)) {
+                    keyIds.push(key);
+                }
+            }
+        });
+        const keys = keyIds.map(key => ({ value: key, label: key }));
+        basemap.meta.keys = keys;
+    } else {
+        const { result } = await server.inject({
+            url: `/v3/basemaps/${chart.id}/${basemapId}`,
+            auth
+        });
+        basemap = result;
+    }
+    basemap.__id = basemapId;
+    return basemap;
+}
+
+async function getBulkData(chart, request) {
+    const { params, server, auth } = request;
+    const res = await request.server.inject({
+        url: `/v3/charts/${params.id}/data`,
+        auth
+    });
+
+    const data = { chart: res.result };
+
+    if (chart.type === 'd3-maps-choropleth' || chart.type === 'd3-maps-symbols') {
+        data.basemap = await getBasemap(chart, request);
+    }
+
+    if (chart.type === 'locator-map') {
+        const isMinimapBoundaryEnabled =
+            get(chart, 'metadata.visualize.miniMap.enabled', false) &&
+            get(chart, 'metadata.visualize.miniMap.opt') === 'boundary';
+        const isHighlightEnabled = get(chart, 'metadata.visualize.highlight.enabled', false);
+
+        let minimap, highlight;
+
+        if (isMinimapBoundaryEnabled) {
+            minimap = await server.inject({
+                url: `/v3/charts/${chart.id}/assets/${chart.id}.minimap.json`,
+                auth
+            });
+        }
+
+        if (isHighlightEnabled) {
+            highlight = await server.inject({
+                url: `/v3/charts/${chart.id}/assets/${chart.id}.highlight.json`,
+                auth
+            });
+        }
+
+        data.minimap = minimap.result.replace(/(\d+.\d{1,3})\d+/g, '$1');
+        data.highlight = highlight.result.replace(/(\d+.\d{1,3})\d+/g, '$1');
+    }
+
+    return data;
+}
+
 async function getChart(request, h) {
-    const { url, params, auth, server } = request;
+    const { url, query, params, auth, server } = request;
     const isAdmin = server.methods.isAdmin(request);
 
     const options = {
@@ -617,8 +741,67 @@ async function getChart(request, h) {
         }
     }
 
+    const forkedFromId = chart.dataValues.is_fork ? chart.dataValues.forked_from : null;
+
+    const results = await server.app.events.emit(server.app.event.ADDITIONAL_CHART_DATA, {
+        chartId: chart.id,
+        forkedFromId
+    });
+
+    const additionalMetaData = results.reduce((obj, event) => {
+        if (event.status === 'success') {
+            Object.assign(obj, event.data);
+        }
+        return obj;
+    }, {});
+
+    if (forkedFromId) {
+        const forkedFromChart = await Chart.findByPk(forkedFromId);
+        const basedOnBylineText = get(forkedFromChart, 'dataValues.metadata.describe.byline', null);
+
+        if (basedOnBylineText) {
+            let basedOnUrl = '';
+
+            const sourceUrl = get(additionalMetaData, 'river.source_url', null);
+            if (sourceUrl) basedOnUrl = sourceUrl;
+            else {
+                const results = await server.app.events.emit(
+                    server.app.event.GET_CHART_DISPLAY_URL,
+                    {
+                        chartId: chart.id
+                    }
+                );
+
+                const chartDisplayData = results.reduce((obj, event) => {
+                    if (event.status === 'success') {
+                        Object.assign(obj, event.data);
+                    }
+                    return obj;
+                }, {});
+
+                const chartDisplayUrl = chartDisplayData.url;
+                if (chartDisplayUrl) basedOnUrl = chartDisplayUrl;
+            }
+
+            chart.dataValues.basedOnByline = basedOnUrl
+                ? `<a href='${basedOnUrl}' target='_blank'>${basedOnBylineText}</a>`
+                : basedOnBylineText;
+        }
+    }
+
+    let data;
+    if (query.withData) {
+        try {
+            data = await getBulkData(chart.dataValues, request);
+        } catch (error) {
+            request.server.logger().error(error);
+            data = null;
+        }
+    }
+
     return {
-        ...prepareChart(chart),
+        ...prepareChart(chart, additionalMetaData),
+        data,
         url: `${url.pathname}`
     };
 }
@@ -949,7 +1132,7 @@ async function writeChartAsset(request, h) {
 
         return h.response().code(code);
     } catch (error) {
-        request.logger.error(error);
+        request.logger.error(error.message);
         return Boom.notFound();
     }
 }
