@@ -28,18 +28,15 @@ async function getBasemap(request, h) {
     const { params, server } = request;
     const { api } = server.methods.config();
 
-    const { data } = await got(`plugin/simple-maps/${params.chartId}/basemap`, {
-        method: 'PUT',
+    const { data } = await got(`plugin/basemaps/${params.id}`, {
+        method: 'GET',
         headers: {
             cookie: request.headers.cookie,
             authorization: request.headers.authorization
         },
-        body: JSON.stringify({ basemap: params.id }),
         prefixUrl: `${api.https ? 'https' : 'http'}://${api.domain}`
     }).json();
 
-    data.content = JSON.parse(data.meta.topojson);
-    data.meta.topojson = undefined;
-
+    data.content = JSON.parse(data.content);
     return data;
 }
