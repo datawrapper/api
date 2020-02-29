@@ -522,6 +522,10 @@ async function deleteUser(request, h) {
         response.unstate(sessionID);
     }
 
+    await server.app.events.emit(request.server.app.event.USER_DELETED, {
+        id
+    });
+
     return response;
 }
 
