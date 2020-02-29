@@ -1,10 +1,10 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const bcrypt = require('bcryptjs');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
 const set = require('lodash/set');
 const keyBy = require('lodash/keyBy');
 const { setUserData } = require('@datawrapper/orm/utils/userData');
+const { logAction } = require('@datawrapper/orm/utils/action');
 const { User, Chart, Team } = require('@datawrapper/orm/models');
 const { queryUsers } = require('../utils/raw-queries');
 
@@ -19,6 +19,50 @@ const userResponse = createResponseConfig({
 
 const { Op } = require('@datawrapper/orm').db;
 const attributes = ['id', 'email', 'name', 'role', 'language'];
+
+const createUserPayloadValidation = [
+    // normal sign-up
+    Joi.object({
+        name: Joi.string()
+            .allow(null)
+            .example('Carol Danvers')
+            .description('Name of the user that should get created. This can be omitted.'),
+        email: Joi.string()
+            .email()
+            .required()
+            .example('cpt-marvel@shield.com')
+            .description('User email address'),
+        role: Joi.string()
+            .valid('editor', 'admin')
+            .description('User role. This can be omitted.'),
+        language: Joi.string()
+            .example('en_US')
+            .description('User language preference. This can be omitted.'),
+        password: Joi.string()
+            .example('13-binary-1968')
+            .min(8)
+            .required()
+            .description('Strong user password.'),
+        invitation: Joi.boolean()
+            .valid(false)
+            .allow(null)
+    }),
+    // for invitation sign-ups
+    Joi.object({
+        email: Joi.string()
+            .email()
+            .required()
+            .example('cpt-marvel@shield.com')
+            .description('User email address'),
+        invitation: Joi.boolean()
+            .valid(true)
+            .required(),
+        chartId: Joi.string(),
+        role: Joi.string()
+            .valid('editor', 'admin')
+            .description('User role. This can be omitted.')
+    })
+];
 
 module.exports = {
     name: 'users-routes',
@@ -107,7 +151,12 @@ module.exports = {
                             .allow(null)
                             .description(
                                 'Activate token, typically used to unset it when activating user.'
-                            )
+                            ),
+                        password: Joi.string()
+                            .example('13-binary-1968')
+                            .min(8)
+                            .description('Strong user password.'),
+                        oldPassword: Joi.string().description('The previous user password.')
                     })
                 },
                 response: userResponse
@@ -136,28 +185,7 @@ module.exports = {
             options: {
                 auth: false,
                 validate: {
-                    payload: Joi.object({
-                        name: Joi.string()
-                            .allow(null)
-                            .example('Carol Danvers')
-                            .description(
-                                'Name of the user that should get created. This can be omitted.'
-                            ),
-                        email: Joi.string()
-                            .email()
-                            .required()
-                            .example('cpt-marvel@shield.com')
-                            .description('User email address'),
-                        role: Joi.string()
-                            .valid('editor', 'admin')
-                            .description('User role. This can be omitted.'),
-                        language: Joi.string()
-                            .example('en_US')
-                            .description('User language preference. This can be omitted.'),
-                        password: Joi.string()
-                            .example('13-binary-1968')
-                            .description('Strong user password.')
-                    }).unknown()
+                    payload: createUserPayloadValidation
                 }
             },
             handler: createUser
@@ -178,9 +206,9 @@ module.exports = {
                     payload: Joi.object({
                         email: Joi.string()
                             .email()
-                            .required()
                             .example('james.barnes@shield.com')
-                            .description('User email address to confirm deletion.')
+                            .description('User email address to confirm deletion.'),
+                        password: Joi.string().description('User password to confirm deletion')
                     })
                 },
                 response: noContentResponse
@@ -218,10 +246,8 @@ module.exports = {
         });
 
         server.method('userIsDeleted', isDeleted);
-
-        const { hashRounds = 15 } = server.methods.config('api');
-        server.method('hashPassword', hashPassword(hashRounds));
-    }
+    },
+    createUserPayloadValidation
 };
 
 async function isDeleted(id) {
@@ -232,12 +258,6 @@ async function isDeleted(id) {
     if (!user || user.email === 'DELETED') {
         throw Boom.notFound();
     }
-}
-
-function hashPassword(hashRounds) {
-    return async function(password) {
-        return bcrypt.hash(password, hashRounds);
-    };
 }
 
 function serializeTeam(team) {
@@ -378,31 +398,93 @@ async function getUser(request, h) {
 }
 
 async function editUser(request, h) {
-    const { auth, params, payload } = request;
+    const { auth, params, payload, server } = request;
+    const {
+        generateToken,
+        isAdmin,
+        userIsDeleted,
+        hashPassword,
+        comparePassword,
+        config
+    } = server.methods;
     const userId = params.id;
 
-    await request.server.methods.userIsDeleted(userId);
+    await userIsDeleted(userId);
 
     if (userId !== auth.artifacts.id) {
-        request.server.methods.isAdmin(request, { throwError: true });
+        isAdmin(request, { throwError: true });
     }
 
     const data = {
-        email: payload.email,
         language: payload.language,
         name: payload.name
     };
 
-    if (payload.pwd) {
-        data.pwd =
-            payload.pwd === ''
-                ? payload.pwd
-                : await request.server.methods.hashPassword(payload.pwd);
+    if (payload.email) {
+        // see if there already is an existing user with that email address
+        const existingUser = await User.findOne({ where: { email: payload.email } });
+        if (existingUser) {
+            return Boom.conflict('email-already-exists');
+        }
     }
 
-    if (request.server.methods.isAdmin(request)) {
+    if (isAdmin(request) && userId !== auth.artifacts.id) {
+        // admins can update other users without confirmation
+        data.email = payload.email;
         data.activateToken = payload.activateToken;
         data.role = payload.role;
+        if (payload.password) {
+            data.pwd = await hashPassword(payload.password);
+        }
+    } else {
+        // all users need to confirm their email and password changes
+        if (payload.email) {
+            // check if email has changed
+            const oldUser = await User.findByPk(userId);
+            if (oldUser.email !== payload.email) {
+                const token = generateToken();
+                // set activate token (will be set in User.update call below)
+                data.activate_token = token;
+                // log new email to actions
+                await logAction(userId, 'email-change-request', {
+                    'old-email': oldUser.email,
+                    'new-email': payload.email,
+                    token
+                });
+                // send email-confirmation email
+                const { https, domain } = config('frontend');
+                await server.app.events.emit(request.server.app.event.SEND_EMAIL, {
+                    type: 'change-email',
+                    to: payload.email,
+                    language: oldUser.language,
+                    data: {
+                        old_email: oldUser.email,
+                        new_email: payload.email,
+                        confirmation_link: `${
+                            https ? 'https' : 'http'
+                        }://${domain}/account/profile?token=${token}`
+                    }
+                });
+            }
+        }
+        if (payload.password) {
+            if (!payload.oldPassword) {
+                return Boom.unauthorized(
+                    'You need to provide the current password in order to change it.'
+                );
+            }
+            // compare old password to current password
+            const oldUser = await User.findByPk(userId, { attributes: ['pwd'] });
+
+            const isValid = await comparePassword(payload.oldPassword, oldUser.pwd, {
+                userId
+            });
+
+            if (!isValid) {
+                return Boom.unauthorized('The old password is wrong');
+            }
+            data.pwd = await hashPassword(payload.password);
+        }
     }
 
     await User.update(decamelizeKeys(data), {
@@ -451,6 +533,7 @@ async function editUserSettings(request, h) {
 }
 
 async function createUser(request, h) {
+    const { hashPassword, isAdmin, generateToken, config } = request.server.methods;
     const { password = '', ...data } = request.payload;
 
     const existingUser = await User.findOne({ where: { email: data.email } });
@@ -459,29 +542,56 @@ async function createUser(request, h) {
         return Boom.conflict('User already exists');
     }
 
-    const hash = password === '' ? password : await request.server.methods.hashPassword(password);
-
+    const isInvitation = !!data.invitation;
     const newUser = {
         role: 'pending',
         name: data.name,
         email: data.email,
-        language: data.language,
-        pwd: hash
+        language: data.language, // session language?
+        activate_token: generateToken()
     };
 
-    if (data.role && request.server.methods.isAdmin(request)) {
+    if (!isInvitation) {
+        if (password === '') {
+            return Boom.badRequest('Password must not be empty');
+        }
+        const hash = await hashPassword(password);
+        newUser.pwd = hash;
+    } else {
+        newUser.pwd = '';
+    }
+
+    if (data.role && isAdmin(request)) {
+        // only admins are allowed to set a user role
         newUser.role = data.role;
     }
 
-    const { role, dataValues } = await User.create(newUser);
+    const user = await User.create(newUser);
 
-    const { pwd, ...user } = dataValues;
     const { count } = await Chart.findAndCountAll({ where: { author_id: user.id } });
+
+    const { https, domain } = config('frontend');
+    const accountBaseUrl = `${https ? 'https' : 'http'}://${domain}/account`;
+
+    // send activation/invitation link
+    await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
+        type: isInvitation ? 'new-invite' : 'activation',
+        to: newUser.email,
+        language: newUser.language,
+        data: isInvitation
+            ? {
+                  confirmation_link: `${accountBaseUrl}/invite/${newUser.activate_token}${
+                      data.chartId ? `?chart=${data.chartId}` : ''
+                  }`
+              }
+            : {
+                  activation_link: `${accountBaseUrl}/activate/${newUser.activate_token}`
+              }
+    });
 
     return h
         .response({
-            ...camelizeKeys(user),
-            role,
+            ...camelizeKeys(user.serialize()),
             url: `${request.url.pathname}/${user.id}`,
             chartCount: count,
             createdAt: request.server.methods.isAdmin(request) ? user.created_at : undefined
@@ -492,22 +602,41 @@ async function createUser(request, h) {
 async function deleteUser(request, h) {
     const { auth, server, payload } = request;
     const { id } = request.params;
+    const { isAdmin, userIsDeleted, comparePassword } = server.methods;
 
-    await server.methods.userIsDeleted(id);
+    await userIsDeleted(id);
 
     const isSameUser = id === auth.artifacts.id;
 
-    if (!server.methods.isAdmin(request) && !isSameUser) {
+    if (!isAdmin(request) && !isSameUser) {
         return Boom.forbidden('You can only delete your account');
     }
 
-    const user = await User.findByPk(id, { attributes: ['email', 'role'] });
-    if (payload.email !== user.email) {
-        return Boom.badRequest('Wrong email address');
+    if (!isAdmin(request) && (!payload.email || !payload.password)) {
+        return Boom.badRequest(
+            'You need to provide email and password to confirm account deletion.'
+        );
+    }
+
+    const user = await User.findByPk(id, { attributes: ['email', 'role', 'pwd'] });
+    if (!isAdmin(request)) {
+        // check email
+        if (payload.email !== user.email) {
+            return Boom.badRequest('Wrong email address');
+        }
+
+        // check password
+        const isValid = await comparePassword(payload.password, user.pwd, {
+            userId: user.id
+        });
+
+        if (!isValid) {
+            return Boom.badRequest('Wrong passsword');
+        }
     }
 
     if (user.role === 'admin') {
-        return Boom.forbidden('Can not delete admin account');
+        return Boom.forbidden('Cannot delete admin account');
     }
 
     await User.update(

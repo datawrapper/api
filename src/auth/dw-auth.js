@@ -3,6 +3,7 @@ const get = require('lodash/get');
 const AuthBearer = require('hapi-auth-bearer-token');
 const AuthCookie = require('./cookie-auth');
 const getUser = require('./get-user');
+const authUtils = require('./utils.js');
 const { AuthToken } = require('@datawrapper/orm/models');
 
 async function bearerValidation(request, token, h) {
@@ -72,7 +73,12 @@ const DWAuth = {
 
             return check;
         }
+
         server.method('isAdmin', isAdmin);
+        server.method('comparePassword', authUtils.createComparePassword(server));
+
+        const { hashRounds = 15 } = server.methods.config('api');
+        server.method('hashPassword', authUtils.createHashPassword(hashRounds));
 
         server.auth.scheme('dw-auth', dwAuth);
 

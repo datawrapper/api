@@ -50,7 +50,12 @@ module.exports = {
                             ),
                         language: Joi.string()
                             .example('en_US')
-                            .description('Your new language preference.')
+                            .description('Your new language preference.'),
+                        password: Joi.string()
+                            .min(8)
+                            .example('13-binary-1968')
+                            .description('Strong user password.'),
+                        oldPassword: Joi.string().description('The previous user password.')
                     })
                 },
                 response: meResponse
@@ -98,7 +103,10 @@ module.exports = {
                         email: Joi.string()
                             .email()
                             .example('zola@hydra.com')
-                            .description('User email address to confirm deletion.')
+                            .description('User email address to confirm deletion.'),
+                        password: Joi.string()
+                            .required()
+                            .description('User password to confirm deletion')
                     })
                 },
                 response: noContentResponse

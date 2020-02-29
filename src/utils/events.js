@@ -32,7 +32,10 @@ class ApiEventEmitter extends EventEmitter {
                 const result = await func(data);
                 return { status: 'success', data: result };
             } catch (error) {
-                this.logger().error(error, `[Event] ${event}`);
+                if (error.name !== 'CodedError') {
+                    // only log unknown errors
+                    this.logger().error(error, `[Event] ${event}`);
+                }
                 return { status: 'error', error };
             }
         });

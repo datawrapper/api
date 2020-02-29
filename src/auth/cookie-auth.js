@@ -32,7 +32,7 @@ function cookieAuth(server, options) {
         ttl: cookieTTL(90),
         isSecure: process.env.NODE_ENV === 'production',
         strictHeader: false,
-        domain: api.domain,
+        domain: `.${api.domain}`,
         isSameSite: false,
         path: '/'
     });
