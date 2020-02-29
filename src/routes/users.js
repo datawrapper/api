@@ -651,7 +651,7 @@ async function deleteUser(request, h) {
         response.unstate(sessionID);
     }
 
-    await server.app.events.emit(request.server.app.event.USER_DELETED, {
+    await server.app.events.emit(server.app.event.USER_DELETED, {
         id
     });
 
