@@ -2,7 +2,7 @@ const { Op } = require('@datawrapper/orm').db;
 const { camelizeKeys } = require('humps');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { User, Session, AuthToken, Chart } = require('@datawrapper/orm/models');
+const { Action, User, Session, AuthToken, Chart } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const get = require('lodash/get');
 const { cookieTTL } = require('../utils');
@@ -610,12 +610,31 @@ async function resendActivation(request, h) {
 
     const user = await User.findOne({
         where: { email: request.payload.email, activate_token: { [Op.not]: null } },
-        attributes: ['email', 'language', 'activate_token']
+        attributes: ['id', 'email', 'language', 'activate_token']
     });
 
     if (!user || !user.activate_token) {
         return Boom.resourceGone('User is already activated');
     }
+
+    if (!isAdmin) {
+        const maxResendAttempts = 2;
+
+        const resendAttempts = await Action.count({
+            where: {
+                user_id: user.id,
+                key: 'resend-activation'
+            }
+        });
+
+        if (resendAttempts >= maxResendAttempts) {
+            return Boom.tooManyRequests(
+                `User has already requested to resend the link ${maxResendAttempts} times. To avoid spamming, please contact support to activate your account.`
+            );
+        }
+    }
+
+    await request.server.methods.logAction(user.id, 'resend-activation');
 
     await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
         type: 'activation',
