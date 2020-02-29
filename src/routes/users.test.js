@@ -621,31 +621,28 @@ test('It should be possible to resend the activation link up to two times', asyn
     res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/resend-activation',
-        payload: { email: credentials.email },
         headers: {
             cookie: cookieString
         }
     });
 
-    t.is(res.statusCode, 200);
+    t.is(res.statusCode, 204);
 
     /* resend twice */
     res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/resend-activation',
-        payload: { email: credentials.email },
         headers: {
             cookie: cookieString
         }
     });
 
-    t.is(res.statusCode, 200);
+    t.is(res.statusCode, 204);
 
     /* resend thrice, should fail now */
     res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/resend-activation',
-        payload: { email: credentials.email },
         headers: {
             cookie: cookieString
         }

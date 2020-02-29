@@ -168,10 +168,10 @@ module.exports = {
                     payload: Joi.object({
                         email: Joi.string()
                             .email()
-                            .required()
+                            .optional()
                             .example('strange@kamar-taj.com.np')
                             .description('Email address of the user.')
-                    })
+                    }).allow(null)
                 }
             },
             handler: resendActivation
@@ -600,16 +600,22 @@ async function changePassword(request, h) {
 }
 
 async function resendActivation(request, h) {
-    const { email } = get(request, ['auth', 'artifacts'], {});
     const isAdmin = request.server.methods.isAdmin(request);
     const { domain, https } = request.server.methods.config('frontend');
 
-    if (!isAdmin && request.payload.email !== email) {
-        return Boom.forbidden();
+    const email =
+        isAdmin && request.payload && request.payload.email
+            ? request.payload.email
+            : get(request, ['auth', 'artifacts', 'email'], {});
+
+    if (!email) {
+        return Boom.badRequest(
+            'Please provide an email or a valid session to resend the activation link.'
+        );
     }
 
     const user = await User.findOne({
-        where: { email: request.payload.email, activate_token: { [Op.not]: null } },
+        where: { email: email, activate_token: { [Op.not]: null } },
         attributes: ['id', 'email', 'language', 'activate_token']
     });
 
