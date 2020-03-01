@@ -5,7 +5,7 @@ const set = require('lodash/set');
 const keyBy = require('lodash/keyBy');
 const { setUserData } = require('@datawrapper/orm/utils/userData');
 const { logAction } = require('@datawrapper/orm/utils/action');
-const { User, Chart, Team } = require('@datawrapper/orm/models');
+const { User, Chart, Team, UserTeam, Session } = require('@datawrapper/orm/models');
 const { queryUsers } = require('../utils/raw-queries');
 
 const { createResponseConfig, noContentResponse, listResponse } = require('../schemas/response.js');
@@ -639,16 +639,40 @@ async function deleteUser(request, h) {
         return Boom.forbidden('Cannot delete admin account');
     }
 
+    const teams = await UserTeam.count({
+        where: {
+            team_role: 'owner',
+            user_id: id
+        }
+    });
+
+    if (teams > 0) {
+        return Boom.conflict(
+            `You currently have ownership of one or more teams. ` +
+                `Please <a href="/account/teams">delete them or transfer team ownership</a> before deleting your account.`
+        );
+    }
+
     await User.update(
         { email: 'DELETED', name: 'DELETED', pwd: 'DELETED', website: 'DELETED', deleted: true },
         { where: { id } }
     );
+
+    await request.server.methods.logAction(id, 'user-deleted');
 
     const response = h.response().code(204);
 
     if (isSameUser) {
         const { sessionID } = server.methods.config('api');
         response.unstate(sessionID);
+
+        const session = await Session.findByPk(request.auth.credentials.session, {
+            attributes: ['id']
+        });
+
+        if (session) {
+            await session.destroy();
+        }
     }
 
     return response;
