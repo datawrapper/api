@@ -655,3 +655,21 @@ test('User cannot delete their account while owning team', async t => {
 
     t.is(res3.statusCode, 204);
 });
+
+test('User can delete their account if only admin of a team', async t => {
+    const { user, session } = await t.context.getTeamWithUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'DELETE',
+        url: '/v3/me',
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    t.is(res.statusCode, 204);
+});
