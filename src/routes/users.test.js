@@ -593,7 +593,7 @@ test('It should be possible to resend the activation link up to two times', asyn
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/users',
-        payload: { ...credentials }
+        payload: credentials
     });
 
     t.log('User created', res.result.email);
