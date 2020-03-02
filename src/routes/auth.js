@@ -2,7 +2,7 @@ const { Op } = require('@datawrapper/orm').db;
 const { camelizeKeys } = require('humps');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { User, Session, AuthToken, Chart } = require('@datawrapper/orm/models');
+const { Action, User, Session, AuthToken, Chart } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const get = require('lodash/get');
 const { cookieTTL } = require('../utils');
@@ -168,10 +168,10 @@ module.exports = {
                     payload: Joi.object({
                         email: Joi.string()
                             .email()
-                            .required()
+                            .optional()
                             .example('strange@kamar-taj.com.np')
                             .description('Email address of the user.')
-                    })
+                    }).allow(null)
                 }
             },
             handler: resendActivation
@@ -600,22 +600,47 @@ async function changePassword(request, h) {
 }
 
 async function resendActivation(request, h) {
-    const { email } = get(request, ['auth', 'artifacts'], {});
     const isAdmin = request.server.methods.isAdmin(request);
     const { domain, https } = request.server.methods.config('frontend');
 
-    if (!isAdmin && request.payload.email !== email) {
-        return Boom.forbidden();
+    const email =
+        isAdmin && get(request, ['payload', 'email'])
+            ? request.payload.email
+            : get(request, ['auth', 'artifacts', 'email']);
+
+    if (!email) {
+        return Boom.badRequest(
+            'Please provide an email or a valid session to resend the activation link.'
+        );
     }
 
     const user = await User.findOne({
-        where: { email: request.payload.email, activate_token: { [Op.not]: null } },
-        attributes: ['email', 'language', 'activate_token']
+        where: { email: email, activate_token: { [Op.not]: null } },
+        attributes: ['id', 'email', 'language', 'activate_token']
     });
 
     if (!user || !user.activate_token) {
         return Boom.resourceGone('User is already activated');
     }
+
+    if (!isAdmin) {
+        const maxResendAttempts = 2;
+
+        const resendAttempts = await Action.count({
+            where: {
+                user_id: user.id,
+                key: 'resend-activation'
+            }
+        });
+
+        if (resendAttempts >= maxResendAttempts) {
+            return Boom.tooManyRequests(
+                `User has already requested to resend the link ${maxResendAttempts} times. To avoid spamming, please contact support to activate your account.`
+            );
+        }
+    }
+
+    await request.server.methods.logAction(user.id, 'resend-activation');
 
     await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
         type: 'activation',
