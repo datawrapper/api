@@ -673,6 +673,8 @@ async function deleteUser(request, h) {
         if (session) {
             await session.destroy();
         }
+
+        response.header('Clear-Site-Data', '"cookies", "storage", "executionContexts"');
     }
 
     return response;
