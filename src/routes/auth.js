@@ -604,9 +604,9 @@ async function resendActivation(request, h) {
     const { domain, https } = request.server.methods.config('frontend');
 
     const email =
-        isAdmin && request.payload && request.payload.email
+        isAdmin && get(request, ['payload', 'email'])
             ? request.payload.email
-            : get(request, ['auth', 'artifacts', 'email'], {});
+            : get(request, ['auth', 'artifacts', 'email']);
 
     if (!email) {
         return Boom.badRequest(
