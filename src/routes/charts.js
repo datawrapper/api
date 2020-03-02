@@ -652,7 +652,7 @@ async function getBasemap(chart, request) {
         basemap.meta.keys = keys;
     } else {
         const { result } = await server.inject({
-            url: `/v3/basemaps/${chart.id}/${basemapId}`,
+            url: `/v3/basemaps/${basemapId}`,
             auth
         });
         basemap = result;

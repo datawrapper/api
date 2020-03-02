@@ -7,7 +7,7 @@ module.exports = {
     register: (server, options) => {
         server.route({
             method: 'GET',
-            path: '/{chartId}/{id}',
+            path: '/{id}',
             options: {
                 tags: ['api'],
                 validate: {
