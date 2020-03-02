@@ -903,6 +903,11 @@ async function createTeam(request, h) {
             team_role: 'owner'
         });
 
+        await server.app.events.emit(server.app.event.TEAM_CREATED, {
+            id: team.id,
+            owner_id: auth.artifacts.id
+        });
+
         return h
             .response({
                 id: team.id,
@@ -1052,7 +1057,7 @@ async function inviteTeamMember(request, h) {
  * handles POST /v3/teams/:id/invites/:token
  */
 async function acceptTeamInvitation(request, h) {
-    const { auth, params } = request;
+    const { auth, params, server } = request;
 
     const user = auth.artifacts;
 
@@ -1068,19 +1073,19 @@ async function acceptTeamInvitation(request, h) {
         return Boom.notFound();
     }
 
-    if (userTeam.team_role === 'owner') {
+    if (userTeam.team_role === ROLE_OWNER) {
         // we're invited as owner, turn former owner
         // into team admin
         await UserTeam.update(
             {
-                team_role: 'admin'
+                team_role: ROLE_ADMIN
             },
             {
                 where: {
                     user_id: {
                         [Op.not]: user.id
                     },
-                    team_role: 'owner',
+                    team_role: ROLE_OWNER,
                     organization_id: params.id
                 }
             }
@@ -1089,6 +1094,13 @@ async function acceptTeamInvitation(request, h) {
     await userTeam.update({
         invite_token: ''
     });
+
+    if (userTeam.team_role === ROLE_OWNER) {
+        await server.app.events.emit(server.app.event.TEAM_OWNER_CHANGED, {
+            id: params.id,
+            owner_id: user.id
+        });
+    }
 
     // clear user plugin cache as user might have
     // access to new products now
@@ -1192,6 +1204,14 @@ async function addTeamMember(request, h) {
     await clearPluginCache(user.id);
 
     await UserTeam.create(data);
+
+    if (data.team_role === ROLE_OWNER) {
+        await server.app.events.emit(server.app.event.TEAM_OWNER_CHANGED, {
+            id: data.organization_id,
+            owner_id: data.user_id
+        });
+    }
+
     return h.response().code(201);
 }
 
@@ -1260,6 +1280,13 @@ async function changeMemberStatus(request, h) {
     await userTeam.update({
         team_role: payload.status
     });
+
+    if (payload.status === ROLE_OWNER) {
+        await server.app.events.emit(server.app.event.TEAM_OWNER_CHANGED, {
+            id: params.id,
+            owner_id: params.userId
+        });
+    }
 
     return h.response().code(204);
 }
