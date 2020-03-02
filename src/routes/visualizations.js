@@ -66,7 +66,9 @@ module.exports = {
             try {
                 if (!responseData) {
                     const { data } = await got(url, {
-                        prefixUrl: `${api.https ? 'https' : 'http'}://${api.domain}`
+                        prefixUrl: `${api.https ? 'https' : 'http'}://${api.subdomain}.${
+                            api.domain
+                        }`
                     }).json();
 
                     responseData = data;
