@@ -34,7 +34,7 @@ async function getBasemap(request, h) {
             cookie: request.headers.cookie,
             authorization: request.headers.authorization
         },
-        prefixUrl: `${api.https ? 'https' : 'http'}://${api.domain}`
+        prefixUrl: `${api.https ? 'https' : 'http'}://${api.subdomain}.${api.domain}`
     }).json();
 
     data.content = JSON.parse(data.content);

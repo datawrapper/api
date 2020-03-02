@@ -8,7 +8,14 @@ const get = require('lodash/get');
 const set = require('lodash/set');
 const assign = require('assign-deep');
 const mime = require('mime');
-const { Chart, ChartPublic, User, Folder, Plugin } = require('@datawrapper/orm/models');
+const {
+    Chart,
+    ChartPublic,
+    ChartAccessToken,
+    User,
+    Folder,
+    Plugin
+} = require('@datawrapper/orm/models');
 const CodedError = require('@datawrapper/shared/CodedError');
 const { promisify } = require('util');
 const mkdirAsync = promisify(fs.mkdir);
@@ -94,6 +101,31 @@ function register(server, options) {
             response: chartResponse
         },
         handler: getChart
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/{id}/{token}',
+        options: {
+            auth: false,
+            description: 'Fetch chart metadata with one time token',
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                        .description('5 character long chart ID.'),
+                    token: Joi.string()
+                        .required()
+                        .description('One time access token.')
+                }),
+                query: Joi.object({
+                    withData: Joi.boolean()
+                })
+            },
+            response: chartResponse
+        },
+        handler: getChartWithToken
     });
 
     server.route({
@@ -725,9 +757,12 @@ async function getChart(request, h) {
     }
 
     const isGuestChart = chart.guest_session === auth.credentials.session;
+    const isOneTimeAccess = auth.isInjected && auth.strategy === 'one_time_token';
 
     const isEditable =
-        isGuestChart || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
+        isOneTimeAccess ||
+        isGuestChart ||
+        (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
 
     if (!isEditable) {
         if (chart.published_at) {
@@ -804,6 +839,35 @@ async function getChart(request, h) {
         data,
         url: `${url.pathname}`
     };
+}
+
+async function getChartWithToken(request, h) {
+    const { params, url, server } = request;
+
+    const row = await ChartAccessToken.findOne({
+        where: {
+            chart_id: params.id,
+            token: params.token
+        }
+    });
+
+    if (!row) {
+        return Boom.unauthorized();
+    }
+
+    const response = await server.inject({
+        url: `/v3/charts/${params.id}${url.search}`,
+        auth: {
+            strategy: 'one_time_token',
+            credentials: {
+                token: params.token
+            }
+        }
+    });
+
+    await row.destroy();
+
+    return response.result;
 }
 
 async function createChart(request, h) {
