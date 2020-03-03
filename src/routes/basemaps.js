@@ -14,8 +14,7 @@ module.exports = {
                     params: Joi.object().keys({
                         id: Joi.string()
                             .required()
-                            .description('Basemap ID.'),
-                        chartId: Joi.string()
+                            .description('Basemap ID.')
                     })
                 }
             },
