@@ -674,6 +674,10 @@ async function deleteUser(request, h) {
         response.header('Clear-Site-Data', '"cookies", "storage", "executionContexts"');
     }
 
+    await server.app.events.emit(server.app.event.USER_DELETED, {
+        id
+    });
+
     return response;
 }
 

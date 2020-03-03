@@ -673,3 +673,68 @@ test('User can delete their account if only admin of a team', async t => {
 
     t.is(res.statusCode, 204);
 });
+
+test('It should be possible to resend the activation link up to two times', async t => {
+    const credentials = t.context.getCredentials();
+
+    /* create user with email */
+    let res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/users',
+        payload: credentials
+    });
+
+    t.log('User created', res.result.email);
+    await t.context.addToCleanup('user', res.result.id);
+
+    t.is(res.statusCode, 201);
+    t.is(res.result.email, credentials.email);
+
+    /* Login as newly created user */
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/login',
+        payload: credentials
+    });
+
+    t.log('Logged in', credentials.email);
+
+    const session = res.result['DW-SESSION'];
+    const cookieString = `DW-SESSION=${session}`;
+    t.is(typeof session, 'string');
+    t.is(res.statusCode, 200);
+    t.true(res.headers['set-cookie'].join().includes(cookieString));
+
+    /* resend once */
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/resend-activation',
+        headers: {
+            cookie: cookieString
+        }
+    });
+
+    t.is(res.statusCode, 204);
+
+    /* resend twice */
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/resend-activation',
+        headers: {
+            cookie: cookieString
+        }
+    });
+
+    t.is(res.statusCode, 204);
+
+    /* resend thrice, should fail now */
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/resend-activation',
+        headers: {
+            cookie: cookieString
+        }
+    });
+
+    t.is(res.statusCode, 429);
+});
