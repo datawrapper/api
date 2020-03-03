@@ -586,6 +586,94 @@ test('User cannot change password without old password', async t => {
     t.is(res.statusCode, 200);
 });
 
+test('User can delete their account and are logged out', async t => {
+    const { user, session } = await t.context.getUser();
+
+    const res1 = await t.context.server.inject({
+        method: 'DELETE',
+        url: '/v3/me',
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    t.is(res1.statusCode, 204);
+
+    const res2 = await t.context.server.inject({
+        method: 'GET',
+        url: '/v3/me',
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        }
+    });
+
+    t.is(res2.statusCode, 401);
+});
+
+test('User cannot delete their account while owning team', async t => {
+    const { user, team, session } = await t.context.getTeamWithUser('owner');
+
+    const res1 = await t.context.server.inject({
+        method: 'DELETE',
+        url: '/v3/me',
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    t.is(res1.statusCode, 409);
+
+    const res2 = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/teams/${team.id}`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        }
+    });
+
+    t.is(res2.statusCode, 204);
+
+    const res3 = await t.context.server.inject({
+        method: 'DELETE',
+        url: '/v3/me',
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    t.is(res3.statusCode, 204);
+});
+
+test('User can delete their account if only admin of a team', async t => {
+    const { user, session } = await t.context.getTeamWithUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'DELETE',
+        url: '/v3/me',
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    t.is(res.statusCode, 204);
+});
+
 test('It should be possible to resend the activation link up to two times', async t => {
     const credentials = t.context.getCredentials();
 
