@@ -647,10 +647,7 @@ async function deleteUser(request, h) {
     });
 
     if (teams > 0) {
-        return Boom.conflict(
-            `You currently have ownership of one or more teams. ` +
-                `Please <a href="/account/teams">delete them or transfer team ownership</a> to delete your account.`
-        );
+        return Boom.conflict('delete-or-transfer-teams-first');
     }
 
     await User.update(
