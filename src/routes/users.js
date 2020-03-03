@@ -655,7 +655,7 @@ async function deleteUser(request, h) {
         { where: { id } }
     );
 
-    await request.server.methods.logAction(id, 'user-deleted');
+    await request.server.methods.logAction(id, 'user/delete');
 
     const response = h.response().code(204);
 
