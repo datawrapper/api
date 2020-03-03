@@ -76,7 +76,7 @@ function register(server, options) {
         }
 
         if (!api.githubToken) {
-            return Boom.notImplemented('configure_github_token');
+            return Boom.notImplemented('github-token-not-configured');
         }
 
         const tarball = get(registration, 'options.tarball');
