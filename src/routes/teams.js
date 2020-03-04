@@ -1300,14 +1300,17 @@ function convertKeys(input, method) {
 }
 
 async function getMaxTeamInvites({ teamId, server }) {
-    const maxTeamInvitesRes = await server.app.events.emit(server.app.event.MAX_TEAM_INVITES, {
-        teamId
-    });
+    const maxTeamInvitesRes = await server.app.events.emit(
+        server.app.event.MAX_TEAM_INVITES,
+        { teamId },
+        { filter: 'success' }
+    );
+
     const maxTeamInvites = maxTeamInvitesRes
-        .filter(d => d.status === 'success')
         .map(({ data }) => data.maxInvites)
         .sort()
         .pop();
+
     return maxTeamInvites !== undefined ? maxTeamInvites : false;
 }
 
