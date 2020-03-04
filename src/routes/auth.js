@@ -475,6 +475,8 @@ async function signup(request, h) {
         /* associate guest session with newly created user */
         await Promise.all([
             session.update({
+                user_id: res.result.id,
+                persistent: true,
                 data: {
                     ...session.data,
                     'dw-user-id': res.result.id,
@@ -527,6 +529,8 @@ async function activateAccount(request, h) {
         // associate guest session with the activated user
         session = request.auth.credentials.data;
         await session.update({
+            user_id: user.id,
+            persistent: true,
             data: {
                 ...session.data,
                 'dw-user-id': user.id,
