@@ -45,9 +45,9 @@ html(lang="en")
       $loadjs(!{JSON.stringify(js)})
       function $loadjs(js,s,p) {
         s = document.createElement('script')
-        if ('noModule' in s) s.type = 'module', s.src = js.module
+        if ('noModule' in s) s.type = 'module', s.src = js['main.js']
         else {
-          s.src = js.nomodule
+          s.src = js['main.legacy.js']
           p = document.createElement('script')
           /* polyfill needed for svelte 3 code in IE11 */
           p.src = "document-register-element.js"

@@ -28,14 +28,7 @@ const vendorDir = path.join(corePath, '/dist/core');
 const localeDir = path.join(vendorDir, '/locale');
 
 const render = pug.compileFile(path.resolve(__dirname, './index.pug'));
-
 const coreManifest = readJSONSync(path.join(vendorDir, 'manifest.json'));
-const coreLegacyManifest = readJSONSync(path.join(vendorDir, 'manifest.legacy.json'));
-
-const MAIN_JS = {
-    module: coreManifest['main.js'],
-    nomodule: coreLegacyManifest['main.legacy.js']
-};
 
 async function moveChartAssets({ outDir, chartId, version, server }) {
     const { events, event } = server.app;
@@ -134,7 +127,11 @@ Supported types: ${SUPPORTED_TYPES.join(',')}`
     });
 
     const filePromises = deps
-        .concat(['document-register-element.js', MAIN_JS.module, MAIN_JS.nomodule])
+        .concat([
+            'document-register-element.js',
+            coreManifest['main.js'],
+            coreManifest['main.legacy.js']
+        ])
         .map(copyVendorFile);
 
     const script = await fs.readFile(visSrc, { encoding: 'utf-8' });
@@ -204,9 +201,10 @@ Supported types: ${SUPPORTED_TYPES.join(',')}`
             __DW_THEME__: stringify(theme),
             __DW_TRANSLATIONS__,
             css: jsesc(css, { isScriptContext: true, minimal: true }),
-            js: MAIN_JS,
+            js: coreManifest,
             deps: deps.map(d => d.split('/').pop()),
             libraries: vis.libraries.map(
+                /* @todo: local <> cdn switch */
                 lib => `//${frontend.domain}${vis.__static_path}${lib.local}`
             ),
             scriptName,
