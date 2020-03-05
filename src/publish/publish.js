@@ -134,13 +134,7 @@ Supported types: ${SUPPORTED_TYPES.join(',')}`
     });
 
     const filePromises = deps
-        .concat([
-            'document-register-element.js',
-            MAIN_JS.module,
-            MAIN_JS.nomodule,
-            `${MAIN_JS.module}.map`,
-            `${MAIN_JS.nomodule}.map`
-        ])
+        .concat(['document-register-element.js', MAIN_JS.module, MAIN_JS.nomodule])
         .map(copyVendorFile);
 
     const script = await fs.readFile(visSrc, { encoding: 'utf-8' });
@@ -192,9 +186,18 @@ Supported types: ${SUPPORTED_TYPES.join(',')}`
         `vis-${get(vis, 'id')}`
     ];
 
+    const APP = require(path.join(vendorDir, 'Chart_SSR.js'));
+
+    const { html } = APP.render({
+        data: data,
+        theme: theme,
+        translations: __DW_TRANSLATIONS__
+    });
+
     await fs.writeFile(
         path.join(outDir, 'index.html'),
         render({
+            SSR: html,
             title: chart.title,
             description: chart.metadata.describe.intro,
             __DW_DATA__: stringify(data),

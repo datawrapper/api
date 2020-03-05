@@ -732,6 +732,16 @@ async function getBulkData(chart, request) {
         data.highlight = highlight.result.replace(/(\d+.\d{1,3})\d+/g, '$1');
     }
 
+    const htmlResults = await server.app.events.emit(
+        server.app.event.CHART_AFTER_BODY_HTML,
+        {
+            chart
+        },
+        { filter: 'success' }
+    );
+
+    data.chartAfterBodyHTML = htmlResults.join('\n');
+
     return data;
 }
 
