@@ -79,5 +79,15 @@ ${dataValues.less || ''}
     }
 
     const { created_at, ...theme } = dataValues;
-    return { createdAt: created_at, ...theme };
+    const fonts = getThemeFonts(theme);
+    return { ...theme, fonts, createdAt: created_at };
+}
+
+function getThemeFonts(theme) {
+    const fonts = {};
+
+    for (const [key, value] of Object.entries(theme.assets)) {
+        if (theme.assets[key].type === 'font') fonts[key] = value;
+    }
+    return fonts;
 }

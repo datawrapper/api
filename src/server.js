@@ -1,7 +1,6 @@
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
-const CatboxMemory = require('@hapi/catbox-memory');
 const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
@@ -69,15 +68,7 @@ const server = Hapi.server({
             origin: config.api.cors,
             credentials: true
         }
-    },
-    cache: [
-        {
-            name: 'dw_cache',
-            provider: {
-                constructor: CatboxMemory
-            }
-        }
-    ]
+    }
 });
 
 function getLogLevel() {
@@ -153,7 +144,6 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     server.app.event = eventList;
     server.app.events = new ApiEventEmitter({ logger: server.logger });
-    server.app.visualization = new Set();
 
     server.method('getModel', name => ORM.db.models[name]);
     server.method('config', key => (key ? config[key] : config));
@@ -182,11 +172,11 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         await server.register(OpenAPI, routeOptions);
     }
 
+    await server.register([require('./routes')], routeOptions);
+
     if (options.usePlugins) {
         await server.register([require('./plugin-loader')], routeOptions);
     }
-
-    await server.register([require('./routes')], routeOptions);
 
     server.route({
         method: '*',

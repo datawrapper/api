@@ -1,15 +1,12 @@
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
-const util = require('util');
 const less = require('less');
 const postcssLess = require('postcss-less');
 const pCSS = require('postcss');
 
 /* needed for variable parsing, otherwise postcss logs annoying messages we don't care about */
-const noopPlugin = () => {};
+const { noop } = require('../utils/index.js');
 const CSS_ELIMINATION_KEYWORD = '__UNDEFINED__';
-
-const readFile = util.promisify(fs.readFile);
 
 const postcss = pCSS([
     /* removes all declarations with value of CSS_ELIMINATION_KEYWORD */
@@ -34,115 +31,20 @@ module.exports = { compileCSS };
  * @param {string[]} options.paths List of paths to look in for less `@import` statements
  * @returns {string} CSS string
  */
-async function compileCSS({ fonts, theme, filePaths, paths }) {
-    let inputLess = createFontEntries(fonts);
-    const [lessString, lessVariables] = await Promise.all([
-        loadLess(filePaths, theme.less),
-        findLessVariables({ files: filePaths, customLess: theme.less, paths })
-    ]);
+async function compileCSS({ theme, filePaths }) {
+    const paths = filePaths.map(path.dirname);
 
-    const varString = Array.from(lessVariables)
-        .map(variable => `${variable}: ${CSS_ELIMINATION_KEYWORD};`)
-        .join('\n');
+    const lessString = (await Promise.all(filePaths.map(saveReadFile))).join('');
 
-    inputLess = [varString, inputLess, lessString].join('\n');
-    let css = await compileLess(inputLess, theme, paths);
-    css = (await postcss.process(css, { from: undefined })).css;
-
-    return css;
-}
-
-function createFontFaceRule(font, attr) {
-    return `@font-face {
-  font-family: '${font}';
-  src: url('${attr.files.woff2}') format('woff2'),     /* Super Modern Browsers */
-       url('${attr.files.woff}')  format('woff'),      /* Pretty Modern Browsers */
-       url('${attr.files.ttf}')   format('truetype');  /* Safari, Android, iOS */
-  }`;
-}
-
-function createFontEntries(fonts) {
-    return Object.entries(fonts)
-        .map(([font, attr]) => {
-            switch (attr.method) {
-                case 'file':
-                case 'url':
-                    return createFontFaceRule(font, attr);
-                case 'import':
-                    return `@import '${attr.import}';`;
-                default:
-                    return '';
-            }
-        })
-        .join('\n');
-}
-
-async function loadLess(filePaths, customLess) {
-    const lessStyles = await Promise.all(filePaths.map(p => readFile(p, { encoding: 'utf-8' })));
-
-    lessStyles.push(customLess);
-    return lessStyles.join('\n');
-}
-
-function saveReadFile(filePath) {
-    return readFile(filePath, { encoding: 'utf-8' }).catch(() => '');
-}
-
-async function findLessVariables({ files, customLess, paths }) {
-    const lessVariables = new Set();
-    const lessStyles = files.length ? await Promise.all(files.map(saveReadFile)) : [];
-
-    if (customLess) {
-        lessStyles.push(customLess);
+    const lessVariables = await findLessVariables(lessString, { paths });
+    let varString = '';
+    for (const variable of lessVariables) {
+        varString = varString.concat(`${variable}: ${CSS_ELIMINATION_KEYWORD};`);
     }
 
-    function matchLessVariable(string) {
-        const varRegex = /@[\w\d{}-]*/g;
-        const match = string.match(varRegex);
-        if (match) {
-            /* variable name doesn't have curly braces, replace them */
-            const variables = match.map(v => v.replace(/[{}]/g, ''));
-            /* build a unique array of variables from this declaration and add them all to lessVariables */
-            Array.from(new Set(variables)).forEach(variable => lessVariables.add(variable));
-        }
-    }
+    const inputLess = [varString, createFontEntries(theme.fonts), lessString, theme.less].join('');
 
-    /* Search for variables and other imports in all passed less files */
-    for (const lessString of lessStyles) {
-        const { root } = pCSS([noopPlugin]).process(lessString, {
-            syntax: postcssLess
-        }).result;
-        const files = [];
-
-        root.walkDecls(decl => matchLessVariable(decl.value));
-        root.walkRules(rule => matchLessVariable(rule.selector));
-        root.walkAtRules(rule => {
-            /* when we find an @import rule we push it into the files array to search more variables */
-            if (rule.name === 'import') {
-                const file = path.join(
-                    paths[0],
-                    rule.params /* eg.: `'common.less'` or `(less) 'common.less'` */
-                        .split(' ')
-                        .pop() /* remove `(less)` part and only return the file name in single quotes */
-                        .replace(/'/g, '') /* remove single quotes */
-                );
-
-                files.push(file);
-            }
-        });
-        if (files.length) {
-            /* search more variables in imported files */
-            const importedFiles = await findLessVariables({ files, paths });
-            /* add them to the less variables Set */
-            importedFiles.forEach(v => lessVariables.add(v));
-        }
-    }
-
-    return lessVariables;
-}
-
-async function compileLess(lessString, theme, paths) {
-    const { css } = await less.render(lessString, {
+    let { css } = await less.render(inputLess, {
         paths: paths,
         modifyVars: flatten({
             typography: theme.data.typography,
@@ -153,7 +55,89 @@ async function compileLess(lessString, theme, paths) {
         })
     });
 
+    css = (await postcss.process(css, { from: undefined })).css;
+
     return css;
+}
+
+function createFontEntries(fonts) {
+    return Object.entries(fonts)
+        .map(([font, attr]) => {
+            switch (attr.method) {
+                case 'file':
+                case 'url':
+                    return `
+@font-face {
+    font-family: '${font}';
+    src: url('${attr.files.woff2}') format('woff2'),     /* Super Modern Browsers */
+         url('${attr.files.woff}')  format('woff'),      /* Pretty Modern Browsers */
+         url('${attr.files.ttf}')   format('truetype');  /* Safari, Android, iOS */
+}`;
+                case 'import':
+                    return `@import '${attr.import}';`;
+                default:
+                    return '';
+            }
+        })
+        .join('\n');
+}
+
+function saveReadFile(filePath) {
+    return fs.readFile(filePath, { encoding: 'utf-8' }).catch(() => '');
+}
+
+async function findLessVariables(less, { files = [], paths } = {}) {
+    const lessVariables = new Set();
+    let lessStyles = [less];
+
+    if (files.length) {
+        const importedLess = await Promise.all(files.map(saveReadFile));
+        lessStyles = lessStyles.concat(importedLess);
+    }
+
+    function matchLessVariable(string) {
+        const varRegex = /@[\w\d{}-]*/g;
+        const match = string.match(varRegex);
+        if (match) {
+            match.forEach(variable => {
+                /* variable name doesn't have curly braces, replace them */
+                lessVariables.add(variable.replace(/[{}]/g, ''));
+            });
+        }
+    }
+
+    /* Search for variables and other imports in all passed less files */
+    for (const lessString of lessStyles) {
+        const { root } = pCSS([noop]).process(lessString, { syntax: postcssLess }).result;
+        const files = [];
+
+        root.walkDecls(decl => matchLessVariable(decl.value));
+        root.walkRules(rule => matchLessVariable(rule.selector));
+        root.walkAtRules(rule => {
+            /* when we find an @import rule we push it into the files array to search more variables */
+            if (rule.name === 'import') {
+                /*
+                 * Capture file name in import path
+                 *
+                 * "'common.less'" -> "common.less"
+                 * "(less) 'common.less'" -> "common.less"
+                 */
+                paths.forEach(p => {
+                    const file = path.join(p, rule.params.replace(/(?:.*'(.*)')/g, '$1'));
+                    files.push(file);
+                });
+            }
+        });
+
+        if (files.length) {
+            /* search more variables in imported files */
+            const importedFiles = await findLessVariables('', { files, paths });
+            /* add them to the less variables Set */
+            importedFiles.forEach(v => lessVariables.add(v));
+        }
+    }
+
+    return lessVariables;
 }
 
 /**
