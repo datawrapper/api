@@ -727,8 +727,8 @@ async function getBulkData(chart, request) {
             });
         }
 
-        data.minimap = minimap.result.replace(/(\d+.\d{1,3})\d+/g, '$1');
-        data.highlight = highlight.result.replace(/(\d+.\d{1,3})\d+/g, '$1');
+        data.minimap = JSON.parse(minimap.result.replace(/(\d+.\d{1,3})\d+/g, '$1'));
+        data.highlight = JSON.parse(highlight.result.replace(/(\d+.\d{1,3})\d+/g, '$1'));
     }
 
     const htmlResults = await server.app.events.emit(

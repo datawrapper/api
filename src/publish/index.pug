@@ -3,46 +3,22 @@ html(lang="en")
   head
     meta(charset="UTF-8")
     meta(name="viewport", content="width=device-width, initial-scale=1.0")
-    meta(http-equiv="X-UA-Compatible", content="ie=edge")
-    title=title
-    meta(name="Description" content=description)
-    script.
-      if (window.parent && window.parent.postMessage) {
-        window.parent.postMessage('datawrapper:vis:reload', '*');
-      }
-    style!=css
+    style!=CSS
+    | !{CHART_HEAD}
 
-  body(class="dw-chart chart" class=dwChartClasses data-id="__svelte-dw")
-    script.
-      window.__DW_THEME__ = !{__DW_THEME__};
-      window.__DW_DATA__ = !{__DW_DATA__};
-      window.__DW_TRANSLATIONS__ = !{__DW_TRANSLATIONS__};
+  body(class="dw-chart chart" class=CHART_CLASS data-id="__svelte-dw")
+    //- https://v8.dev/blog/cost-of-javascript-2019#json
+    script window.__DW_SVELTE_PROPS__ = JSON.parse(!{__DW_SVELTE_PROPS__});
 
-    each src in deps
+    each src in SCRIPTS
       script(src=src)
-    each src in libraries
-      script(src=src)
-    script(src=scriptName)
 
-    .
-      !{SSR}
+    | !{CHART_HTML}
 
     script.
-      window.__dwParams = {};
-    if basemap
-      script.
-        __dwParams.d3maps_basemap = {};
-        __dwParams.d3maps_basemap['!{basemap.__id}'] = !{JSON.stringify(basemap)};
-
-    if (minimap || highlight)
-      script.
-        __dwParams.locatorMap = {};
-        __dwParams.locatorMap.minimapGeom = !{minimap};
-        __dwParams.locatorMap.highlightGeom = !{highlight === minimap ? '__dwParams.locatorMap.minimapGeom' : highlight};
-
-    script.
+      window.parent.postMessage('datawrapper:vis:reload', '*');
       /* Modified version of https://jasonformat.com/modern-script-loading/ */
-      $loadjs(!{JSON.stringify(js)})
+      $loadjs(JSON.parse(!{CORE_SCRIPT}))
       function $loadjs(js,s,p) {
         s = document.createElement('script')
         if ('noModule' in s) s.type = 'module', s.src = js['main.js']

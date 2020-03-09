@@ -29,6 +29,7 @@ async function getBasemap(request, h) {
 
     const { data } = await got(`plugin/basemaps/${params.id}`, {
         method: 'GET',
+        /* TODO: remove headers */
         headers: {
             cookie: request.headers.cookie,
             authorization: request.headers.authorization
