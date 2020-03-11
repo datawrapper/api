@@ -718,6 +718,7 @@ async function getBulkData(chart, request) {
                 url: `/v3/charts/${chart.id}/assets/${chart.id}.minimap.json`,
                 auth
             });
+            data.minimap = JSON.parse(minimap.result);
         }
 
         if (isHighlightEnabled) {
@@ -725,10 +726,8 @@ async function getBulkData(chart, request) {
                 url: `/v3/charts/${chart.id}/assets/${chart.id}.highlight.json`,
                 auth
             });
+            data.highlight = JSON.parse(highlight.result);
         }
-
-        data.minimap = JSON.parse(minimap.result.replace(/(\d+.\d{1,3})\d+/g, '$1'));
-        data.highlight = JSON.parse(highlight.result.replace(/(\d+.\d{1,3})\d+/g, '$1'));
     }
 
     const htmlResults = await server.app.events.emit(
