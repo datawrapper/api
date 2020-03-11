@@ -95,7 +95,8 @@ function register(server, options) {
                         .description('5 character long chart ID.')
                 }),
                 query: Joi.object({
-                    withData: Joi.boolean()
+                    withData: Joi.boolean(),
+                    published: Joi.boolean()
                 })
             },
             response: chartResponse
@@ -560,6 +561,8 @@ function prepareChart(chart) {
     const { user, in_folder, ...dataValues } = chart.dataValues;
 
     return {
+        language: 'en_US',
+        theme: 'datawrapper',
         ...camelizeKeys(dataValues),
         folderId: in_folder,
         metadata: dataValues.metadata,
@@ -773,7 +776,7 @@ async function getChart(request, h) {
         isGuestChart ||
         (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
 
-    if (!isEditable) {
+    if (query.published || !isEditable) {
         if (chart.published_at) {
             chart = await ChartPublic.findOne({
                 where: {
