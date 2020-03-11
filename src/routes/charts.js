@@ -742,6 +742,15 @@ async function getBulkData(chart, request) {
         { filter: 'success' }
     );
 
+    const chartBlocks = await server.app.events.emit(
+        server.app.event.CHART_BLOCKS,
+        {
+            chart
+        },
+        { filter: 'success' }
+    );
+
+    data.blocks = chartBlocks.filter(d => d);
     data.chartAfterBodyHTML = htmlResults.join('\n');
 
     return data;
