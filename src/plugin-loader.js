@@ -65,5 +65,7 @@ Is it available in "plugins/"?
 Possible mistakes:
     * Plugin config key doesn't match the plugin folder.
     * Plugin is missing from ${root}.
-`;
+
+Maybe this error is helpful:
+${error.stack}`;
 }
