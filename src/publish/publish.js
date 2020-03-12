@@ -76,7 +76,7 @@ async function publishChart(request, h) {
     }
 
     // no need to await this...
-    logPublishStatus('loading-theme');
+    logPublishStatus('preparing');
 
     /**
      * Load theme information
@@ -85,9 +85,6 @@ async function publishChart(request, h) {
         url: `/v3/themes/${chart.theme}?extend=true`,
         auth
     });
-
-    // no need to await this...
-    logPublishStatus('loading-assets');
 
     /**
      * Load assets like CSS, Javascript and translations
@@ -119,22 +116,16 @@ async function publishChart(request, h) {
         theme,
         translations
     };
-    // no need to await this...
-    logPublishStatus('preparing');
-    await delay(4000);
+
+    logPublishStatus('rendering');
 
     const { html, head } = chartCore.svelte.render(props);
-
-    logPublishStatus('loading-dependencies');
-    await delay(2000);
 
     const dependencies = getDependencies({
         locale: chart.language,
         dependencies: vis.dependencies
     });
 
-    logPublishStatus('rendering');
-    await delay(4000);
     /**
      * Render the visualizations entry: "index.html"
      */
@@ -194,7 +185,6 @@ async function publishChart(request, h) {
     const newPublicVersion = chart.publicVersion + 1;
 
     logPublishStatus('uploading');
-    await delay(5000);
 
     /* move assets to publish location */
     let destination, eventError;
@@ -288,9 +278,3 @@ async function publishChartStatus(request, h) {
 }
 
 module.exports = { publishChart, publishChartStatus };
-
-async function delay(ms) {
-    return new Promise(resolve => {
-        setTimeout(() => resolve(), ms * 0.3);
-    });
-}
