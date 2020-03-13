@@ -1,4 +1,3 @@
-const fs = require('fs-extra');
 const path = require('path');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
@@ -16,12 +15,6 @@ const {
     Folder,
     Plugin
 } = require('@datawrapper/orm/models');
-const CodedError = require('@datawrapper/shared/CodedError');
-const { promisify } = require('util');
-const mkdirAsync = promisify(fs.mkdir);
-const writeFileAsync = promisify(fs.writeFile);
-const accessAsync = promisify(fs.access);
-
 const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
 
 const chartResponse = createResponseConfig({
@@ -500,67 +493,13 @@ function register(server, options) {
 
         return h.response(res.result).code(res.statusCode);
     }
-
-    const { events, event } = server.app;
-    const { general, frontend } = server.methods.config();
-    const { localChartAssetRoot } = general;
-    const eventList = events.eventNames();
-    const hasRegisteredDataPlugins =
-        eventList.includes(event.GET_CHART_ASSET) && eventList.includes(event.PUT_CHART_ASSET);
-
-    if (localChartAssetRoot === undefined && !hasRegisteredDataPlugins) {
-        server
-            .logger()
-            .error(
-                '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
-            );
-        process.exit(1);
-    }
-
-    if (!hasRegisteredDataPlugins) {
-        events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
-            const filePath = path.join(
-                localChartAssetRoot,
-                getDataPath(chart.dataValues.created_at),
-                filename
-            );
-            try {
-                await accessAsync(filePath, fs.constants.R_OK);
-            } catch (e) {
-                throw new CodedError('notFound', 'chart asset not found');
-            }
-            return fs.createReadStream(filePath);
-        });
-
-        events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
-            const outPath = path.join(
-                localChartAssetRoot,
-                getDataPath(chart.dataValues.created_at)
-            );
-
-            await mkdirAsync(outPath, { recursive: true });
-            await writeFileAsync(path.join(outPath, filename), data);
-            return { code: 200 };
-        });
-    }
-
-    const hasRegisteredPublishPlugin = eventList.includes(event.PUBLISH_CHART);
-
-    if (!hasRegisteredPublishPlugin) {
-        const protocol = frontend.https ? 'https' : 'http';
-        events.on(event.PUBLISH_CHART, async ({ chart, outDir }) => {
-            const dest = path.resolve(general.localChartPublishRoot, chart.id);
-            await fs.move(outDir, dest, { overwrite: true });
-
-            return `${protocol}://${general.chart_domain}/${chart.id}`;
-        });
-    }
 }
 
 function prepareChart(chart) {
     const { user, in_folder, ...dataValues } = chart.dataValues;
 
     return {
+        publicId: chart.publicId,
         language: 'en_US',
         theme: 'datawrapper',
         ...camelizeKeys(dataValues),
@@ -1210,10 +1149,4 @@ async function writeChartAsset(request, h) {
         request.logger.error(error.message);
         return Boom.notFound();
     }
-}
-
-function getDataPath(date) {
-    const year = date.getUTCFullYear();
-    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-    return `${year}${month}`;
 }
