@@ -664,53 +664,6 @@ async function getAllCharts(request, h) {
     return chartList;
 }
 
-async function getBasemap(chart, request) {
-    const { server, auth } = request;
-    // TO DO: set default basemap as fallback
-    const basemapId = get(chart, 'metadata.visualize.basemap');
-
-    let basemap = {};
-    if (basemapId === 'custom_upload') {
-        const { result: content } = await server.inject({
-            url: `/v3/charts/${chart.id}/assets/${chart.id}.map.json`,
-            auth
-        });
-        basemap = {
-            content,
-            meta: {
-                regions: get(chart, 'metadata.visualize.basemapRegions'),
-                projection: {
-                    type: get(chart, 'metadata.visualize.basemapProjection')
-                },
-                extent: {
-                    padding: false,
-                    exclude: {}
-                }
-            }
-        };
-
-        // gather all unique keys from basemap and include them in metadata
-        const keyIds = [];
-        basemap.content.objects[basemap.meta.regions].geometries.forEach(geo => {
-            for (const key in geo.properties) {
-                if (key !== 'cx' && key !== 'cy' && !keyIds.includes(key)) {
-                    keyIds.push(key);
-                }
-            }
-        });
-        const keys = keyIds.map(key => ({ value: key, label: key }));
-        basemap.meta.keys = keys;
-    } else {
-        const { result } = await server.inject({
-            url: `/v3/basemaps/${basemapId}`,
-            auth
-        });
-        basemap = result;
-    }
-    basemap.__id = basemapId;
-    return basemap;
-}
-
 async function getBulkData(chart, request) {
     const { params, server, auth } = request;
     const res = await request.server.inject({
@@ -720,35 +673,6 @@ async function getBulkData(chart, request) {
 
     const data = { chart: res.result };
 
-    if (chart.type === 'd3-maps-choropleth' || chart.type === 'd3-maps-symbols') {
-        data.basemap = await getBasemap(chart, request);
-    }
-
-    if (chart.type === 'locator-map') {
-        const isMinimapBoundaryEnabled =
-            get(chart, 'metadata.visualize.miniMap.enabled', false) &&
-            get(chart, 'metadata.visualize.miniMap.opt') === 'boundary';
-        const isHighlightEnabled = get(chart, 'metadata.visualize.highlight.enabled', false);
-
-        let minimap, highlight;
-
-        if (isMinimapBoundaryEnabled) {
-            minimap = await server.inject({
-                url: `/v3/charts/${chart.id}/assets/${chart.id}.minimap.json`,
-                auth
-            });
-            data.minimap = JSON.parse(minimap.result);
-        }
-
-        if (isHighlightEnabled) {
-            highlight = await server.inject({
-                url: `/v3/charts/${chart.id}/assets/${chart.id}.highlight.json`,
-                auth
-            });
-            data.highlight = JSON.parse(highlight.result);
-        }
-    }
-
     const htmlResults = await server.app.events.emit(
         server.app.event.CHART_AFTER_BODY_HTML,
         {
@@ -757,6 +681,12 @@ async function getBulkData(chart, request) {
         },
         { filter: 'success' }
     );
+
+    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
+        chart,
+        auth,
+        data
+    });
 
     const chartBlocks = await server.app.events.emit(
         server.app.event.CHART_BLOCKS,
