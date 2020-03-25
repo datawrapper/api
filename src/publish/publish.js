@@ -112,7 +112,8 @@ async function publishChart(request, h) {
             themeId: theme.id,
             fontsJSON: theme.fonts,
             typographyJSON: theme.data.typography,
-            templateJS: false
+            templateJS: false,
+            polyfillUri: `../../lib/vendor`
         },
         theme,
         translations
@@ -125,17 +126,26 @@ async function publishChart(request, h) {
     let dependencies = getDependencies({
         locale: chart.language,
         dependencies: vis.dependencies
-    });
+    }).map(file => path.join(chartCore.path.vendor, file));
 
     /* Create a temporary directory */
     const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
 
     /* Copy dependencies into temporary directory and hash them on the way */
-    const dependencyPromises = dependencies.map(filePath => {
-        return copyFileHashed(path.join(chartCore.path.vendor, filePath), outDir);
-    });
+    const dependencyPromises = [dependencies, vis.libraries.map(lib => lib.file)]
+        .flat()
+        .map(filePath => copyFileHashed(filePath, outDir));
 
-    dependencies = await Promise.all(dependencyPromises);
+    dependencies = (await Promise.all(dependencyPromises)).map(file =>
+        path.join('lib/vendor/', file)
+    );
+
+    const [coreScript] = await Promise.all([
+        copyFileHashed(path.join(chartCore.path.vendor, 'main.js'), path.join(outDir)),
+        fs.writeFile(path.join(outDir, fileName), content)
+    ]);
+
+    dependencies.push(path.join('lib/vis/', fileName));
 
     /**
      * Render the visualizations entry: "index.html"
@@ -144,16 +154,9 @@ async function publishChart(request, h) {
         __DW_SVELTE_PROPS__: stringify(props),
         CHART_HTML: html,
         CHART_HEAD: head,
-        CORE_SCRIPT: stringify(chartCore.script),
+        CORE_SCRIPT: `../../lib/${coreScript}`,
         CSS: css,
-        SCRIPTS: [
-            dependencies.map(d => d.split('/').pop()),
-            vis.libraries.map(lib =>
-                /* TODO: local <> cdn switch */
-                lib.cdn.replace('%asset_domain%', 'datawrapper-stg.dwcdn.net')
-            ),
-            fileName
-        ].flat(),
+        SCRIPTS: dependencies.map(file => `../../${file}`),
         CHART_CLASS: [
             `vis-height-${get(vis, 'height', 'fit')}`,
             `theme-${get(theme, 'id')}`,
@@ -161,23 +164,23 @@ async function publishChart(request, h) {
         ]
     });
 
-    const filePromises = [
-        'document-register-element.js' /* TODO: check if this can move into main.legacy.js */,
-        chartCore.script['main.js'],
-        chartCore.script['main.legacy.js']
-    ].map(filePath =>
-        fs.copyFile(
-            path.join(chartCore.path.vendor, filePath),
-            path.join(outDir, path.basename(filePath))
-        )
-    );
+    /* Copy polyfills to destination */
+    const polyfillPromises = chartCore.polyfills.map(async filePath => {
+        const file = path.basename(filePath);
+        await fs.copyFile(filePath, path.join(outDir, file));
+        return path.join('lib/vendor/', file);
+    });
+
+    const polyfillFiles = await Promise.all(polyfillPromises);
 
     /* write "index.html", visualization Javascript and other assets */
-    await Promise.all([
-        fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' }),
-        fs.writeFile(path.join(outDir, fileName), content),
-        ...filePromises
-    ]);
+    await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
+    const fileMap = [
+        ...dependencies,
+        ...polyfillFiles,
+        path.join('lib/', coreScript),
+        'index.html'
+    ];
 
     /**
      * The hard work is done!
@@ -192,12 +195,15 @@ async function publishChart(request, h) {
 
     /* move assets to publish location */
     let destination, eventError;
+
     try {
         destination = await events.emit(
             event.PUBLISH_CHART,
             {
                 outDir,
-                chart
+                fileMap,
+                chart,
+                newPublicVersion
             },
             { filter: 'first' }
         );
