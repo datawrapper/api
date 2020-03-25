@@ -67,11 +67,5 @@ module.exports = {
                 prefix: '/visualizations'
             }
         });
-
-        server.register(require('./basemaps'), {
-            routes: {
-                prefix: '/basemaps'
-            }
-        });
     }
 };
