@@ -197,6 +197,8 @@ async function publishChart(request, h) {
     let destination, eventError;
 
     try {
+        /* NOTE: temp fix until we change the bulkData implementation */
+        const dbChart = await Chart.findByPk(chart.id);
         destination = await events.emit(
             event.PUBLISH_CHART,
             {
