@@ -228,14 +228,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         events.on(event.PUBLISH_CHART, async ({ chart, outDir, fileMap }) => {
             const dest = path.resolve(general.localChartPublishRoot, chart.publicId);
 
-            for (const file of fileMap) {
-                const basename = path.basename(file);
-                const dir = path.dirname(file);
-
-                const out = dir
-                    ? path.resolve(dest, '..', dir, basename)
-                    : path.resolve(dest, basename);
-                await fs.copy(path.join(outDir, basename), out, { overwrite: !dir });
+            for (const [file, dir] of fileMap) {
+                const out = dir ? path.resolve(dest, '..', dir, file) : path.resolve(dest, file);
+                await fs.copy(path.join(outDir, file), out, { overwrite: !dir });
             }
 
             await fs.remove(outDir);
