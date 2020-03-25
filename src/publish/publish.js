@@ -9,6 +9,7 @@ const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
 const { stringify, readFileAndHash, copyFileHashed } = require('../utils/index.js');
+const { getScope } = require('../utils/l10n');
 
 const { compileCSS } = require('./compile-css');
 const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
@@ -318,6 +319,9 @@ async function publishData(request, h) {
         { filter: 'success' }
     );
     data.blocks = chartBlocks.filter(d => d);
+
+    // chart locales
+    data.locales = getScope('chart', chart.language);
 
     await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
         chart,
