@@ -43,7 +43,7 @@ async function publishChart(request, h) {
      * Load chart information
      * (including metadata, data, basemaps, etc.)
      */
-    const data = await server.inject({
+    const { result: data } = await server.inject({
         url: `/v3/charts/${params.id}/publish/data`,
         auth
     });
@@ -103,6 +103,7 @@ async function publishChart(request, h) {
         data: {
             visJSON: vis,
             chartJSON: chart,
+            publishData: data,
             chartData: csv,
             isPreview: false,
             chartLocale: chart.language,
