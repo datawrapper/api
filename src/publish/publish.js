@@ -15,12 +15,28 @@ const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
 
 async function publishChart(request, h) {
     const startTiming = process.hrtime();
+
     const { params, auth, server } = request;
     const { events, event, visualizations } = server.app;
+    const user = auth.artifacts;
 
     const c = await Chart.findByPk(params.id);
     if (!(await c.isPublishableBy(auth.artifacts))) {
         return Boom.unauthorized();
+    }
+
+    const publishStatus = [];
+    const publishStatusAction = await request.server.methods.logAction(
+        user.id,
+        `chart/${params.id}/publish`,
+        ''
+    );
+
+    async function logPublishStatus(action) {
+        publishStatus.push(action);
+        return publishStatusAction.update({
+            details: publishStatus.join(',')
+        });
     }
 
     /**
@@ -34,22 +50,6 @@ async function publishChart(request, h) {
 
     if (chart.error) {
         return Boom.notFound();
-    }
-
-    const user = auth.artifacts;
-
-    const publishStatus = [];
-    const publishStatusAction = await request.server.methods.logAction(
-        user.id,
-        `chart/${chart.id}/publish`,
-        ''
-    );
-
-    async function logPublishStatus(action) {
-        publishStatus.push(action);
-        return publishStatusAction.update({
-            details: publishStatus.join(',')
-        });
     }
 
     const csv = chart.data.chart;
