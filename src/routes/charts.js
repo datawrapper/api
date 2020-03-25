@@ -15,6 +15,13 @@ const {
     Folder,
     Plugin
 } = require('@datawrapper/orm/models');
+const CodedError = require('@datawrapper/shared/CodedError');
+const { promisify } = require('util');
+const { getScope } = require('../utils/l10n');
+const mkdirAsync = promisify(fs.mkdir);
+const writeFileAsync = promisify(fs.writeFile);
+const accessAsync = promisify(fs.access);
+
 const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
 
 const chartResponse = createResponseConfig({
@@ -618,6 +625,7 @@ async function getAllCharts(request, h) {
 
     return chartList;
 }
+
 
 async function getChart(request, h) {
     const { url, query, params, auth, server } = request;
