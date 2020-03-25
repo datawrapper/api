@@ -4,13 +4,13 @@ const Joi = require('@hapi/joi');
 const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
-const fs = require('fs');
-const { promisify } = require('util');
+const fs = require('fs-extra');
+const path = require('path');
 const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/schemas/config');
 const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
 
-const readFile = promisify(fs.readFile);
+const CodedError = require('@datawrapper/shared/CodedError');
 
 const { generateToken } = require('./utils');
 const { ApiEventEmitter, eventList } = require('./utils/events');
@@ -148,7 +148,6 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.method('config', key => (key ? config[key] : config));
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
-    server.method('readJSON', (path, options) => readFile(path, options).then(JSON.parse));
 
     const { validateThemeData } = schemas.initialize({
         getSchema: config.api.schemaBaseUrl
@@ -175,6 +174,73 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     if (options.usePlugins) {
         await server.register([require('./plugin-loader')], routeOptions);
+    }
+
+    const { events, event } = server.app;
+    const { general, frontend } = server.methods.config();
+    const { localChartAssetRoot } = general;
+    const registeredEvents = events.eventNames();
+    const hasRegisteredDataPlugins =
+        registeredEvents.includes(event.GET_CHART_ASSET) &&
+        registeredEvents.includes(event.PUT_CHART_ASSET);
+
+    if (localChartAssetRoot === undefined && !hasRegisteredDataPlugins) {
+        server
+            .logger()
+            .error(
+                '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
+            );
+        process.exit(1);
+    }
+
+    if (!hasRegisteredDataPlugins) {
+        events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
+            const filePath = path.join(
+                localChartAssetRoot,
+                getDataPath(chart.dataValues.created_at),
+                filename
+            );
+            try {
+                await fs.access(filePath, fs.constants.R_OK);
+            } catch (e) {
+                throw new CodedError('notFound', 'chart asset not found');
+            }
+            return fs.createReadStream(filePath);
+        });
+
+        events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
+            const outPath = path.join(
+                localChartAssetRoot,
+                getDataPath(chart.dataValues.created_at)
+            );
+
+            await fs.mkdir(outPath, { recursive: true });
+            await fs.writeFile(path.join(outPath, filename), data);
+            return { code: 200 };
+        });
+    }
+
+    const hasRegisteredPublishPlugin = registeredEvents.includes(event.PUBLISH_CHART);
+
+    if (!hasRegisteredPublishPlugin) {
+        const protocol = frontend.https ? 'https' : 'http';
+        events.on(event.PUBLISH_CHART, async ({ chart, outDir, fileMap }) => {
+            const dest = path.resolve(general.localChartPublishRoot, chart.publicId);
+
+            for (const file of fileMap) {
+                const basename = path.basename(file);
+                const dir = path.dirname(file);
+
+                const out = dir
+                    ? path.resolve(dest, '..', dir, basename)
+                    : path.resolve(dest, basename);
+                await fs.copy(path.join(outDir, basename), out, { overwrite: !dir });
+            }
+
+            await fs.remove(outDir);
+
+            return `${protocol}://${general.chart_domain}/${chart.publicId}`;
+        });
     }
 
     server.route({
@@ -235,6 +301,12 @@ function loadSchemaFromUrl(baseUrl) {
 
         return body;
     };
+}
+
+function getDataPath(date) {
+    const year = date.getUTCFullYear();
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    return `${year}${month}`;
 }
 
 module.exports = { init, start };
