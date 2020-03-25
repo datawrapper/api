@@ -2,27 +2,41 @@ const assign = require('assign-deep');
 const scopes = {};
 const defaultLanguage = 'en_US';
 
-module.exports.addScope = function(scope, messages) {
+function getScope(scope, locale = defaultLanguage) {
+    if (!scopes[scope]) {
+        throw new Error(`Unknown localization scope "${scope}"`);
+    }
+
+    if (!scopes[scope][locale]) {
+        // try to find locale of same language
+        const lang = locale.substr(0, 2);
+        locale = Object.keys(scopes[scope]).find(loc => loc.startsWith(lang)) || defaultLanguage;
+    }
+    if (scopes[scope][locale]) {
+        return scopes[scope][locale];
+    }
+    throw new Error(`Unknown locale "${locale}"`);
+}
+
+function addScope(scope, messages) {
     if (!scopes[scope]) {
         scopes[scope] = messages;
     } else {
         scopes[scope] = assign(scopes[scope], messages);
     }
-};
+}
 
-module.exports.getScope = function(scope, language = 'en_US') {
-    if (scopes[scope] && scopes[scope][language]) {
-        return scopes[scope][language];
+function translate(key, { scope = 'core', language = 'en_US' }) {
+    try {
+        const messages = getScope(scope, language);
+        return messages[key] || key;
+    } catch (e) {
+        return key;
     }
-    throw new Error(`Unknown ${scopes[scope] ? 'language' : 'scope'}`);
-};
+}
 
-module.exports.translate = function(key, { scope = 'core', language = 'en_US' }) {
-    if (scopes[scope]) {
-        if (!scopes[scope][language]) {
-            language = defaultLanguage;
-        }
-        return scopes[scope][language][key] || key;
-    }
-    return key;
+module.exports = {
+    getScope,
+    addScope,
+    translate
 };
