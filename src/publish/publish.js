@@ -18,9 +18,8 @@ async function publishChart(request, h) {
     const { params, auth, server } = request;
     const { events, event, visualizations } = server.app;
 
-    // @todo: check if the user is allowed to publish this chart!
     const c = await Chart.findByPk(params.id);
-    if (!(await c.isEditableBy(auth.artifacts))) {
+    if (!(await c.isPublishableBy(auth.artifacts))) {
         return Boom.unauthorized();
     }
 
