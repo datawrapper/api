@@ -17,17 +17,5 @@ html(lang="en")
 
     script.
       window.parent.postMessage('datawrapper:vis:reload', '*');
-      /* Modified version of https://jasonformat.com/modern-script-loading/ */
-      $loadjs(JSON.parse(!{CORE_SCRIPT}))
-      function $loadjs(js,s,p) {
-        s = document.createElement('script')
-        if ('noModule' in s) s.type = 'module', s.src = js['main.js']
-        else {
-          s.src = js['main.legacy.js']
-          p = document.createElement('script')
-          /* polyfill needed for svelte 3 code in IE11 */
-          p.src = "document-register-element.js"
-          document.head.appendChild(p)
-        }
-        document.head.appendChild(s)
-      }
+
+    script(src=CORE_SCRIPT)
