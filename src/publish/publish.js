@@ -197,10 +197,7 @@ async function publishChart(request, h) {
             event.PUBLISH_CHART,
             {
                 outDir,
-                chart: {
-                    id: chart.id,
-                    public_version: newPublicVersion
-                }
+                chart
             },
             { filter: 'first' }
         );
