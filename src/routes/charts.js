@@ -32,7 +32,7 @@ const chartResponse = createResponseConfig({
     }).unknown()
 });
 
-const { publishChart } = require('../publish/publish');
+const { publishChart, publishChartStatus } = require('../publish/publish');
 
 module.exports = {
     name: 'chart-routes',
@@ -486,6 +486,22 @@ function register(server, options) {
             }
         },
         handler: publishChart
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/{id}/publish/status',
+        options: {
+            tags: ['api'],
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                })
+            }
+        },
+        handler: publishChartStatus
     });
 
     async function writeChartData(request, h) {

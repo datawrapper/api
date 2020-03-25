@@ -4,7 +4,7 @@ const process = require('process');
 const fs = require('fs-extra');
 const os = require('os');
 const pug = require('pug');
-const { Chart, ChartPublic } = require('@datawrapper/orm/models');
+const { Chart, ChartPublic, Action } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
@@ -15,8 +15,29 @@ const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
 
 async function publishChart(request, h) {
     const startTiming = process.hrtime();
+
     const { params, auth, server } = request;
     const { events, event, visualizations } = server.app;
+    const user = auth.artifacts;
+
+    const c = await Chart.findByPk(params.id);
+    if (!(await c.isPublishableBy(auth.artifacts))) {
+        return Boom.unauthorized();
+    }
+
+    const publishStatus = [];
+    const publishStatusAction = await request.server.methods.logAction(
+        user.id,
+        `chart/${params.id}/publish`,
+        ''
+    );
+
+    async function logPublishStatus(action) {
+        publishStatus.push(action);
+        return publishStatusAction.update({
+            details: publishStatus.join(',')
+        });
+    }
 
     /**
      * Load chart information
@@ -34,6 +55,7 @@ async function publishChart(request, h) {
     const csv = chart.data.chart;
     chart.data.chart = undefined;
     if (!csv) {
+        await logPublishStatus('error-data');
         return Boom.conflict('No chart data available.');
     }
 
@@ -42,6 +64,7 @@ async function publishChart(request, h) {
      */
     const vis = visualizations.get(chart.type);
     if (!vis) {
+        await logPublishStatus('error-vis-not-supported');
         return Boom.notImplemented(`"${chart.type}" is currently not supported.`);
     }
 
@@ -50,6 +73,9 @@ async function publishChart(request, h) {
             vis.locale[key] = value[chart.language];
         });
     }
+
+    // no need to await this...
+    logPublishStatus('preparing');
 
     /**
      * Load theme information
@@ -89,6 +115,9 @@ async function publishChart(request, h) {
         theme,
         translations
     };
+
+    logPublishStatus('rendering');
+
     const { html, head } = chartCore.svelte.render(props);
 
     let dependencies = getDependencies({
@@ -130,7 +159,6 @@ async function publishChart(request, h) {
         ]
     });
 
-    /* start writing static assets adn global dependencies */
     const filePromises = [
         'document-register-element.js' /* TODO: check if this can move into main.legacy.js */,
         chartCore.script['main.js'],
@@ -157,6 +185,8 @@ async function publishChart(request, h) {
 
     /* increment public version */
     const newPublicVersion = chart.publicVersion + 1;
+
+    logPublishStatus('uploading');
 
     /* move assets to publish location */
     let destination, eventError;
@@ -215,6 +245,11 @@ async function publishChart(request, h) {
 
     const endTiming = process.hrtime(startTiming);
 
+    // log action that chart has been published
+    await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
+
+    await publishStatusAction.destroy();
+
     return {
         version: newPublicVersion,
         url: destination,
@@ -222,4 +257,26 @@ async function publishChart(request, h) {
     };
 }
 
-module.exports = { publishChart };
+async function publishChartStatus(request, h) {
+    const { params, auth } = request;
+
+    const chart = await Chart.findByPk(params.id);
+    if (!(await chart.isEditableBy(auth.artifacts))) {
+        return Boom.unauthorized();
+    }
+
+    const publishAction = await Action.findOne({
+        where: {
+            key: `chart/${chart.id}/publish`
+        },
+        order: [['id', 'DESC']]
+    });
+
+    if (!publishAction) return Boom.notFound();
+
+    return {
+        progress: publishAction.details.split(',')
+    };
+}
+
+module.exports = { publishChart, publishChartStatus };
