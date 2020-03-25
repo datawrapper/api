@@ -753,7 +753,8 @@ async function getBulkData(chart, request) {
     const htmlResults = await server.app.events.emit(
         server.app.event.CHART_AFTER_BODY_HTML,
         {
-            chart
+            chart,
+            data
         },
         { filter: 'success' }
     );
@@ -761,7 +762,8 @@ async function getBulkData(chart, request) {
     const chartBlocks = await server.app.events.emit(
         server.app.event.CHART_BLOCKS,
         {
-            chart
+            chart,
+            data
         },
         { filter: 'success' }
     );

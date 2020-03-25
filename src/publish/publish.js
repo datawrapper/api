@@ -8,7 +8,7 @@ const { Chart, ChartPublic, Action } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
-const { stringify, hashFile } = require('../utils/index.js');
+const { stringify, readFileAndHash, copyFileHashed } = require('../utils/index.js');
 
 const { compileCSS } = require('./compile-css');
 const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
@@ -91,7 +91,7 @@ async function publishChart(request, h) {
     const [css, translations, { fileName, content }] = await Promise.all([
         compileCSS({ theme, filePaths: [chartCore.less, vis.less] }),
         fs.readJSON(path.join(chartCore.path.locale, `${chart.language.replace('_', '-')}.json`)),
-        hashFile(vis.script)
+        readFileAndHash(vis.script)
     ]);
     theme.less = ''; /* reset "theme.less" to not inline it twice into the HTML */
 
@@ -120,10 +120,20 @@ async function publishChart(request, h) {
 
     const { html, head } = chartCore.svelte.render(props);
 
-    const dependencies = getDependencies({
+    let dependencies = getDependencies({
         locale: chart.language,
         dependencies: vis.dependencies
     });
+
+    /* Create a temporary directory */
+    const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
+
+    /* Copy dependencies into temporary directory and hash them on the way */
+    const dependencyPromises = dependencies.map(filePath => {
+        return copyFileHashed(path.join(chartCore.path.vendor, filePath), outDir);
+    });
+
+    dependencies = await Promise.all(dependencyPromises);
 
     /**
      * Render the visualizations entry: "index.html"
@@ -154,10 +164,8 @@ async function publishChart(request, h) {
      */
     const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
 
-    /* start writing static assets and global dependencies */
     const filePromises = [
-        ...dependencies,
-        'document-register-element.js',
+        'document-register-element.js' /* TODO: check if this can move into main.legacy.js */,
         chartCore.script['main.js'],
         chartCore.script['main.legacy.js']
     ].map(filePath =>
