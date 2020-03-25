@@ -20,8 +20,8 @@ async function publishChart(request, h) {
     const { events, event, visualizations } = server.app;
     const user = auth.artifacts;
 
-    const c = await Chart.findByPk(params.id);
-    if (!(await c.isPublishableBy(auth.artifacts))) {
+    const chart = await Chart.findByPk(params.id);
+    if (!(await chart.isPublishableBy(auth.artifacts))) {
         return Boom.unauthorized();
     }
 
@@ -43,8 +43,8 @@ async function publishChart(request, h) {
      * Load chart information
      * (including metadata, data, basemaps, etc.)
      */
-    const { result: chart } = await server.inject({
-        url: `/v3/charts/${params.id}?withData=true`,
+    const data = await server.inject({
+        url: `/v3/charts/${params.id}/publish/data`,
         auth
     });
 
@@ -52,8 +52,9 @@ async function publishChart(request, h) {
         return Boom.notFound();
     }
 
-    const csv = chart.data.chart;
-    chart.data.chart = undefined;
+    const csv = data.chart;
+    delete data.chart;
+
     if (!csv) {
         await logPublishStatus('error-data');
         return Boom.conflict('No chart data available.');
@@ -279,4 +280,48 @@ async function publishChartStatus(request, h) {
     };
 }
 
-module.exports = { publishChart, publishChartStatus };
+async function publishData(request, h) {
+    const { params, server, auth } = request;
+    // the csv dataset
+    const res = await request.server.inject({
+        url: `/v3/charts/${params.id}/data`,
+        auth
+    });
+
+    const chart = await Chart.findByPk(params.id);
+    if (!(await chart.isPublishableBy(auth.artifacts))) {
+        return Boom.unauthorized();
+    }
+
+    const data = { chart: res.result };
+
+    const htmlResults = await server.app.events.emit(
+        server.app.event.CHART_AFTER_BODY_HTML,
+        {
+            chart,
+            data
+        },
+        { filter: 'success' }
+    );
+    data.chartAfterBodyHTML = htmlResults.join('\n');
+
+    const chartBlocks = await server.app.events.emit(
+        server.app.event.CHART_BLOCKS,
+        {
+            chart,
+            data
+        },
+        { filter: 'success' }
+    );
+    data.blocks = chartBlocks.filter(d => d);
+
+    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
+        chart,
+        auth,
+        data
+    });
+
+    return data;
+}
+
+module.exports = { publishChart, publishChartStatus, publishData };

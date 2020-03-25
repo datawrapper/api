@@ -32,7 +32,7 @@ const chartResponse = createResponseConfig({
     }).unknown()
 });
 
-const { publishChart, publishChartStatus } = require('../publish/publish');
+const { publishChart, publishChartStatus, publishData } = require('../publish/publish');
 
 module.exports = {
     name: 'chart-routes',
@@ -95,7 +95,6 @@ function register(server, options) {
                         .description('5 character long chart ID.')
                 }),
                 query: Joi.object({
-                    withData: Joi.boolean(),
                     published: Joi.boolean()
                 })
             },
@@ -503,6 +502,22 @@ function register(server, options) {
         handler: publishChartStatus
     });
 
+    server.route({
+        method: 'GET',
+        path: '/{id}/publish/data',
+        options: {
+            tags: ['api'],
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                })
+            }
+        },
+        handler: publishData
+    });
+
     async function writeChartData(request, h) {
         const { params } = request;
 
@@ -664,45 +679,6 @@ async function getAllCharts(request, h) {
     return chartList;
 }
 
-async function getBulkData(chart, request) {
-    const { params, server, auth } = request;
-    const res = await request.server.inject({
-        url: `/v3/charts/${params.id}/data`,
-        auth
-    });
-
-    const data = { chart: res.result };
-
-    const htmlResults = await server.app.events.emit(
-        server.app.event.CHART_AFTER_BODY_HTML,
-        {
-            chart,
-            data
-        },
-        { filter: 'success' }
-    );
-
-    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
-        chart,
-        auth,
-        data
-    });
-
-    const chartBlocks = await server.app.events.emit(
-        server.app.event.CHART_BLOCKS,
-        {
-            chart,
-            data
-        },
-        { filter: 'success' }
-    );
-
-    data.blocks = chartBlocks.filter(d => d);
-    data.chartAfterBodyHTML = htmlResults.join('\n');
-
-    return data;
-}
-
 async function getChart(request, h) {
     const { url, query, params, auth, server } = request;
     const isAdmin = server.methods.isAdmin(request);
@@ -792,19 +768,8 @@ async function getChart(request, h) {
         }
     }
 
-    let data;
-    if (query.withData) {
-        try {
-            data = await getBulkData(chart.dataValues, request);
-        } catch (error) {
-            request.server.logger().error(error);
-            data = null;
-        }
-    }
-
     return {
         ...prepareChart(chart, additionalMetaData),
-        data,
         url: `${url.pathname}`
     };
 }
