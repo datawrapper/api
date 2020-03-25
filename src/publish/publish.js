@@ -159,11 +159,6 @@ async function publishChart(request, h) {
         ]
     });
 
-    /**
-     * Create a temporary directory and write files to it
-     */
-    const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
-
     const filePromises = [
         'document-register-element.js' /* TODO: check if this can move into main.legacy.js */,
         chartCore.script['main.js'],
