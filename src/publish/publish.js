@@ -190,7 +190,7 @@ async function publishChart(request, h) {
      */
 
     /* increment public version */
-    const newPublicVersion = chart.publicVersion + 1;
+    const newPublicVersion = chart.public_version + 1;
 
     logPublishStatus('uploading');
 
