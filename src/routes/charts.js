@@ -15,6 +15,7 @@ const {
     Folder,
     Plugin
 } = require('@datawrapper/orm/models');
+
 const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
 
 const chartResponse = createResponseConfig({

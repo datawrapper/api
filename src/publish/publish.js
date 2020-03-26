@@ -9,6 +9,7 @@ const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
 const { stringify, readFileAndHash, copyFileHashed } = require('../utils/index.js');
+const { getScope } = require('../utils/l10n');
 
 const { compileCSS } = require('./compile-css');
 const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
@@ -89,12 +90,13 @@ async function publishChart(request, h) {
     /**
      * Load assets like CSS, Javascript and translations
      */
-    const [css, translations, { fileName, content }] = await Promise.all([
+    const [css, { fileName, content }] = await Promise.all([
         compileCSS({ theme, filePaths: [chartCore.less, vis.less] }),
-        fs.readJSON(path.join(chartCore.path.locale, `${chart.language.replace('_', '-')}.json`)),
         readFileAndHash(vis.script)
     ]);
     theme.less = ''; /* reset "theme.less" to not inline it twice into the HTML */
+    vis.locale = data.locales;
+    delete data.locales;
 
     /**
      * Collect data for server side rendering with Svelte and Pug
@@ -115,8 +117,7 @@ async function publishChart(request, h) {
             templateJS: false,
             polyfillUri: `../../lib/vendor`
         },
-        theme,
-        translations
+        theme
     };
 
     logPublishStatus('rendering');
@@ -189,7 +190,7 @@ async function publishChart(request, h) {
      */
 
     /* increment public version */
-    const newPublicVersion = chart.publicVersion + 1;
+    const newPublicVersion = chart.public_version + 1;
 
     logPublishStatus('uploading');
 
@@ -318,6 +319,9 @@ async function publishData(request, h) {
         { filter: 'success' }
     );
     data.blocks = chartBlocks.filter(d => d);
+
+    // chart locales
+    data.locales = getScope('chart', chart.language);
 
     await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
         chart,
