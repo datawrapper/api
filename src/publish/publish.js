@@ -151,8 +151,8 @@ async function publishChart(request, h) {
             ]);
             return {
                 source: {
-                    js: `../../lib/vendor/${js}`,
-                    css: `../../lib/vendor/${css}`
+                    js: `../../lib/blocks/${js}`,
+                    css: `../../lib/blocks/${css}`
                 },
                 blocks
             };
