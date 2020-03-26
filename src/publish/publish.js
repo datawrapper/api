@@ -90,12 +90,13 @@ async function publishChart(request, h) {
     /**
      * Load assets like CSS, Javascript and translations
      */
-    const [css, translations, { fileName, content }] = await Promise.all([
+    const [css, { fileName, content }] = await Promise.all([
         compileCSS({ theme, filePaths: [chartCore.less, vis.less] }),
-        fs.readJSON(path.join(chartCore.path.locale, `${chart.language.replace('_', '-')}.json`)),
         readFileAndHash(vis.script)
     ]);
     theme.less = ''; /* reset "theme.less" to not inline it twice into the HTML */
+    vis.locale = data.locales;
+    delete data.locales;
 
     /**
      * Collect data for server side rendering with Svelte and Pug
@@ -116,8 +117,7 @@ async function publishChart(request, h) {
             templateJS: false,
             polyfillUri: `../../lib/vendor`
         },
-        theme,
-        translations
+        theme
     };
 
     logPublishStatus('rendering');
