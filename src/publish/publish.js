@@ -70,12 +70,6 @@ async function publishChart(request, h) {
         return Boom.notImplemented(`"${chart.type}" is currently not supported.`);
     }
 
-    if (vis.locale) {
-        Object.entries(vis.locale).map(([key, value]) => {
-            vis.locale[key] = value[chart.language];
-        });
-    }
-
     // no need to await this...
     logPublishStatus('preparing');
 
@@ -148,6 +142,28 @@ async function publishChart(request, h) {
 
     dependencies.push(path.join('lib/vis/', fileName));
 
+    const blocksFilePromises = data.blocks
+        .filter(block => block.include)
+        .map(async ({ publish, blocks }) => {
+            const [js, css] = await Promise.all([
+                copyFileHashed(publish.js, outDir),
+                copyFileHashed(publish.css, outDir)
+            ]);
+            return {
+                source: {
+                    js: `../../lib/vendor/${js}`,
+                    css: `../../lib/vendor/${css}`
+                },
+                blocks
+            };
+        });
+
+    const publishedBlocks = await Promise.all(blocksFilePromises);
+    const blocksFiles = publishedBlocks
+        .map(({ source }) => [source.js.replace('../../', ''), source.css.replace('../../', '')])
+        .flat();
+
+    props.data.publishData.blocks = publishedBlocks;
     /**
      * Render the visualizations entry: "index.html"
      */
@@ -179,6 +195,7 @@ async function publishChart(request, h) {
     const fileMap = [
         ...dependencies,
         ...polyfillFiles,
+        ...blocksFiles,
         path.join('lib/', coreScript),
         'index.html'
     ];
