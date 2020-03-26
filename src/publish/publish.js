@@ -143,11 +143,11 @@ async function publishChart(request, h) {
     dependencies.push(path.join('lib/vis/', fileName));
 
     const blocksFilePromises = data.blocks
-        .filter(block => block.include)
-        .map(async ({ publish, blocks }) => {
+        .filter(block => block.include && block.prefix)
+        .map(async ({ prefix, publish, blocks }) => {
             const [js, css] = await Promise.all([
-                copyFileHashed(publish.js, outDir),
-                copyFileHashed(publish.css, outDir)
+                copyFileHashed(publish.js, outDir, { prefix }),
+                copyFileHashed(publish.css, outDir, { prefix })
             ]);
             return {
                 source: {
