@@ -200,12 +200,38 @@ test('Users can edit chart medatata', async t => {
             metadata: {
                 annotate: {
                     notes: 'note-2'
+                },
+                visualize: {
+                    'custom-colors': {
+                        column1: '#ff0000'
+                    }
                 }
             }
         }
     });
 
     t.is(chart.result.metadata.annotate.notes, 'note-2');
+    t.is(chart.result.metadata.visualize['custom-colors'].column1, '#ff0000');
+
+    chart = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/charts/${chart.result.id}`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            metadata: {
+                annotate: {
+                    notes: 'note-2'
+                },
+                visualize: {
+                    'custom-colors': {}
+                }
+            }
+        }
+    });
+
+    t.deepEqual(chart.result.metadata.visualize['custom-colors'], {});
 
     chart = await t.context.server.inject({
         method: 'GET',
