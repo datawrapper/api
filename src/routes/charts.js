@@ -144,10 +144,6 @@ function register(server, options) {
                         .description(
                             'Used in the app to determine where the user last edited the chart.'
                         ),
-                    language: Joi.string()
-                        .description('Chart language.')
-                        .allow('')
-                        .optional(),
                     folderId: Joi.number()
                         .allow(null)
                         .optional(),
