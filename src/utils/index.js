@@ -22,9 +22,13 @@ function createHashedFileName(filePath, hash) {
     return path.format({ name, ext });
 }
 
-utils.copyFileHashed = (filePath, destination, hashLength = 8) => {
+utils.copyFileHashed = (filePath, destination, { prefix, hashLength = 8 } = {}) => {
     let hash = crypto.createHash('sha256');
-    const outFilePath = path.join(destination, path.basename(filePath));
+    let outFileName = path.basename(filePath);
+    if (prefix) {
+        outFileName = `${prefix}.${outFileName}`;
+    }
+    const outFilePath = path.join(destination, outFileName);
     const input = fs.createReadStream(filePath);
     const output = fs.createWriteStream(outFilePath);
 
@@ -40,7 +44,7 @@ utils.copyFileHashed = (filePath, destination, hashLength = 8) => {
         output.on('finish', rename);
         async function rename() {
             hash = hash.digest('hex').slice(0, hashLength);
-            const hashedFileName = createHashedFileName(filePath, hash);
+            const hashedFileName = createHashedFileName(outFilePath, hash);
             await fs.move(outFilePath, path.join(destination, hashedFileName));
             resolve(hashedFileName);
         }
