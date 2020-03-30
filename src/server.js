@@ -15,6 +15,8 @@ const pkg = require('../package.json');
 const configPath = findConfigPath();
 const config = require(configPath);
 
+const DW_DEV_MODE = JSON.parse(process.env.DW_DEV_MODE || 'false');
+
 validateAPI(config.api);
 validateORM(config.orm);
 validateFrontend(config.frontend);
@@ -28,25 +30,24 @@ const port = config.api.port || 3000;
 const OpenAPI = {
     plugin: HapiSwagger,
     options: {
-        debug: process.env.NODE_ENV === 'development',
-        host: process.env.NODE_ENV === 'development' ? `${host}:${port}` : host,
-        schemes: process.env.NODE_ENV === 'development' ? ['http'] : ['https'],
+        debug: DW_DEV_MODE,
+        host: DW_DEV_MODE ? `${host}:${port}` : host,
+        schemes: DW_DEV_MODE ? ['http'] : ['https'],
         info: {
             title: 'Datawrapper API v3 Documentation',
             version: pkg.version,
-            'x-info':
-                process.env.NODE_ENV === 'development'
-                    ? {
-                          node: process.version,
-                          hapi: pkg.dependencies.hapi
-                      }
-                    : undefined
+            'x-info': DW_DEV_MODE
+                ? {
+                      node: process.version,
+                      hapi: pkg.dependencies.hapi
+                  }
+                : undefined
         },
         sortPaths: 'path-method',
         jsonPath: '/',
         basePath: '/v3/',
-        documentationPage: process.env.NODE_ENV === 'development',
-        swaggerUI: process.env.NODE_ENV === 'development',
+        documentationPage: DW_DEV_MODE,
+        swaggerUI: DW_DEV_MODE,
         deReference: true
     }
 };
@@ -58,7 +59,7 @@ const server = Hapi.server({
     tls: config.api.https,
     router: { stripTrailingSlash: true },
     /* https://hapijs.com/api#-serveroptionsdebug */
-    debug: process.env.NODE_ENV === 'development' ? { request: ['implementation'] } : false,
+    debug: DW_DEV_MODE ? { request: ['implementation'] } : false,
     routes: {
         cors: {
             origin: config.api.cors,
@@ -68,9 +69,11 @@ const server = Hapi.server({
 });
 
 function getLogLevel() {
+    if (DW_DEV_MODE) {
+        return 'debug';
+    }
+
     switch (process.env.NODE_ENV) {
-        case 'development':
-            return 'debug';
         case 'test':
             return 'error';
         default:
@@ -106,11 +109,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             logEvents: ['request', 'log', 'onPostStart', 'onPostStop', 'request-error'],
             level: getLogLevel(),
             base: { name: commit || version },
-            redact: process.env.NODE_ENV !== 'development' && [
-                'req.headers.authorization',
-                'req.headers.cookie',
-                'res.headers["set-cookie"]'
-            ]
+            redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]']
         }
     });
 
@@ -149,7 +148,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     });
     server.method('validateThemeData', validateThemeData);
 
-    if (process.env.NODE_ENV === 'development') {
+    if (DW_DEV_MODE) {
         server.register([require('@hapi/inert'), require('@hapi/vision')]);
     }
 

@@ -24,11 +24,11 @@ function register(server, options) {
                     ),
                     order: Joi.string()
                         .uppercase()
-                        .valid(['ASC', 'DESC'])
+                        .valid('ASC', 'DESC')
                         .default('ASC')
                         .description('Result order (ascending or descending)'),
                     orderBy: Joi.string()
-                        .valid(['name', 'createdAt'])
+                        .valid('name', 'createdAt')
                         .default('name')
                         .description('Attribute to order by'),
                     limit: Joi.number()
