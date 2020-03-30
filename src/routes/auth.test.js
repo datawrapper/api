@@ -1,6 +1,6 @@
-import test from 'ava';
+const test = require('ava');
 
-import { setup } from '../../test/helpers/setup';
+const { setup } = require('../../test/helpers/setup');
 
 function parseSetCookie(string) {
     const cookie = {};

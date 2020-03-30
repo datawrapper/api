@@ -1,5 +1,5 @@
-import test from 'ava';
-import { setup } from './helpers/setup';
+const test = require('ava');
+const { setup } = require('./helpers/setup');
 
 const USER_PASSWORD = 'legacy';
 /**
