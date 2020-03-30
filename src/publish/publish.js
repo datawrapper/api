@@ -70,12 +70,6 @@ async function publishChart(request, h) {
         return Boom.notImplemented(`"${chart.type}" is currently not supported.`);
     }
 
-    if (vis.locale) {
-        Object.entries(vis.locale).map(([key, value]) => {
-            vis.locale[key] = value[chart.language];
-        });
-    }
-
     // no need to await this...
     logPublishStatus('preparing');
 
@@ -148,6 +142,29 @@ async function publishChart(request, h) {
 
     dependencies.push(path.join('lib/vis/', fileName));
 
+    const blocksFilePromises = data.blocks
+        .filter(block => block.include && block.prefix)
+        .map(async ({ prefix, publish, blocks }) => {
+            const [js, css] = await Promise.all([
+                copyFileHashed(publish.js, outDir, { prefix }),
+                copyFileHashed(publish.css, outDir, { prefix })
+            ]);
+            return {
+                source: {
+                    js: `../../lib/blocks/${js}`,
+                    css: `../../lib/blocks/${css}`
+                },
+                blocks
+            };
+        });
+
+    const publishedBlocks = await Promise.all(blocksFilePromises);
+    const blocksFiles = publishedBlocks
+        .map(({ source }) => [source.js.replace('../../', ''), source.css.replace('../../', '')])
+        .flat();
+
+    props.data.publishData.blocks = publishedBlocks;
+
     /**
      * Render the visualizations entry: "index.html"
      */
@@ -179,6 +196,7 @@ async function publishChart(request, h) {
     const fileMap = [
         ...dependencies,
         ...polyfillFiles,
+        ...blocksFiles,
         path.join('lib/', coreScript),
         'index.html'
     ];
@@ -310,6 +328,15 @@ async function publishData(request, h) {
     );
     data.chartAfterBodyHTML = htmlResults.join('\n');
 
+    // chart locales
+    data.locales = getScope('chart', chart.language);
+
+    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
+        chart,
+        auth,
+        data
+    });
+
     const chartBlocks = await server.app.events.emit(
         server.app.event.CHART_BLOCKS,
         {
@@ -319,15 +346,6 @@ async function publishData(request, h) {
         { filter: 'success' }
     );
     data.blocks = chartBlocks.filter(d => d);
-
-    // chart locales
-    data.locales = getScope('chart', chart.language);
-
-    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
-        chart,
-        auth,
-        data
-    });
 
     return data;
 }
