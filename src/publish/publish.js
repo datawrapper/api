@@ -164,6 +164,7 @@ async function publishChart(request, h) {
         .flat();
 
     props.data.publishData.blocks = publishedBlocks;
+
     /**
      * Render the visualizations entry: "index.html"
      */
@@ -327,6 +328,15 @@ async function publishData(request, h) {
     );
     data.chartAfterBodyHTML = htmlResults.join('\n');
 
+    // chart locales
+    data.locales = getScope('chart', chart.language);
+
+    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
+        chart,
+        auth,
+        data
+    });
+
     const chartBlocks = await server.app.events.emit(
         server.app.event.CHART_BLOCKS,
         {
@@ -336,15 +346,6 @@ async function publishData(request, h) {
         { filter: 'success' }
     );
     data.blocks = chartBlocks.filter(d => d);
-
-    // chart locales
-    data.locales = getScope('chart', chart.language);
-
-    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
-        chart,
-        auth,
-        data
-    });
 
     return data;
 }
