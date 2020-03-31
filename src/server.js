@@ -231,10 +231,12 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
                 const basename = path.basename(file);
                 const dir = path.dirname(file);
 
-                const out = dir
-                    ? path.resolve(dest, '..', dir, basename)
-                    : path.resolve(dest, basename);
-                await fs.copy(path.join(outDir, basename), out, { overwrite: !dir });
+                const out =
+                    dir === '.'
+                        ? path.resolve(dest, basename)
+                        : path.resolve(dest, '..', dir, basename);
+
+                await fs.copy(path.join(outDir, basename), out, { overwrite: dir === '.' });
             }
 
             await fs.remove(outDir);
