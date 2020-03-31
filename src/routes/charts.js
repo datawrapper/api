@@ -12,6 +12,7 @@ const { promisify } = require('util');
 const mkdirAsync = promisify(fs.mkdir);
 const writeFileAsync = promisify(fs.writeFile);
 const accessAsync = promisify(fs.access);
+const assignWithEmptyObjects = require('../utils/assignWithEmptyObjects');
 
 const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
 
@@ -730,7 +731,7 @@ async function editChart(request, h) {
         delete payload.authorId;
     }
 
-    const newData = Object.assign(prepareChart(chart), payload);
+    const newData = assignWithEmptyObjects(prepareChart(chart), payload);
 
     await Chart.update(
         { ...decamelizeKeys(newData), metadata: newData.metadata },
