@@ -117,7 +117,6 @@ async function publishChart(request, h) {
             themeId: theme.id,
             fontsJSON: theme.fonts,
             typographyJSON: theme.data.typography,
-            templateJS: false,
             polyfillUri: `../../lib/vendor`
         },
         theme,
