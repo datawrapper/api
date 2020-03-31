@@ -1,8 +1,7 @@
-import test from 'ava';
-import EventEmitter from 'events';
-import OpenAPIValidator from 'openapi-schema-validator';
-
-import { init } from '../src/server';
+const test = require('ava');
+const EventEmitter = require('events');
+const OpenAPIValidator = require('openapi-schema-validator').default;
+const { init } = require('../src/server');
 
 test.before(async t => {
     t.context.server = await init();

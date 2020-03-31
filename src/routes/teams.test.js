@@ -1,6 +1,6 @@
-import test from 'ava';
-import nanoid from 'nanoid';
-import { setup } from '../../test/helpers/setup';
+const test = require('ava');
+const nanoid = require('nanoid');
+const { setup } = require('../../test/helpers/setup');
 
 test.before(async t => {
     const { server, getTeamWithUser, getUser, models, addToCleanup } = await setup({

@@ -1,9 +1,9 @@
-import fs from 'fs';
-import os from 'os';
-import { promisify } from 'util';
-import path from 'path';
-import nanoid from 'nanoid';
-import { init } from '../../src/server';
+const fs = require('fs');
+const os = require('os');
+const { promisify } = require('util');
+const path = require('path');
+const nanoid = require('nanoid');
+const { init } = require('../../src/server');
 
 const appendFile = promisify(fs.appendFile);
 
@@ -19,7 +19,7 @@ function getCredentials() {
     };
 }
 
-export async function setup(options) {
+async function setup(options) {
     const server = await init(options);
     const models = require('@datawrapper/orm/models');
 
@@ -106,3 +106,5 @@ export async function setup(options) {
 
     return { server, models, getUser, getTeamWithUser, addToCleanup, createTheme, getCredentials };
 }
+
+module.exports = { setup };
