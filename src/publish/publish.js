@@ -70,6 +70,15 @@ async function publishChart(request, h) {
         return Boom.notImplemented(`"${chart.type}" is currently not supported.`);
     }
 
+    // load vendor locales needed by visualization
+    const locales = {};
+    if (vis.dependencies.dayjs) {
+        locales.dayjs = await loadVendorLocale('dayjs', chart.language);
+    }
+    if (vis.dependencies.numeral) {
+        locales.numeral = await loadVendorLocale('numeral', chart.language);
+    }
+
     // no need to await this...
     logPublishStatus('preparing');
 
@@ -103,7 +112,7 @@ async function publishChart(request, h) {
             chartData: csv,
             isPreview: false,
             chartLocale: chart.language,
-            locales: {} /* NOTE: What about this? */,
+            locales,
             metricPrefix: {} /* NOTE: What about this? */,
             themeId: theme.id,
             fontsJSON: theme.fonts,
@@ -111,7 +120,8 @@ async function publishChart(request, h) {
             templateJS: false,
             polyfillUri: `../../lib/vendor`
         },
-        theme
+        theme,
+        translations: vis.locale
     };
 
     logPublishStatus('rendering');
@@ -279,6 +289,30 @@ async function publishChart(request, h) {
         url: destination,
         timing: `${endTiming[0]}s ${Math.round(endTiming[1] / 1000000)}ms`
     };
+}
+
+function loadVendorLocale(vendor, locale) {
+    const basePath = path.resolve(
+        __dirname,
+        '../../node_modules/@datawrapper/locales/locales/',
+        vendor
+    );
+    const culture = locale.replace('_', '-').toLowerCase();
+    const tryFiles = [`${culture}.js`];
+    if (culture.length > 2) {
+        // also try just language as fallback
+        tryFiles.push(`${culture.substr(0, 2)}.js`);
+    }
+    for (let i = 0; i < tryFiles.length; i++) {
+        const file = path.join(basePath, tryFiles[i]);
+        try {
+            return fs.readFile(file, 'utf-8');
+        } catch (e) {
+            // file not found, so try next
+        }
+    }
+    // no locale found at all
+    return 'null';
 }
 
 async function publishChartStatus(request, h) {
