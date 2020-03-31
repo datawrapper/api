@@ -221,9 +221,6 @@ test('Users can edit chart medatata', async t => {
         },
         payload: {
             metadata: {
-                annotate: {
-                    notes: 'note-2'
-                },
                 visualize: {
                     'custom-colors': {}
                 }
@@ -231,6 +228,7 @@ test('Users can edit chart medatata', async t => {
         }
     });
 
+    t.is(chart.result.metadata.annotate.notes, 'note-2');
     t.deepEqual(chart.result.metadata.visualize['custom-colors'], {});
 
     chart = await t.context.server.inject({
