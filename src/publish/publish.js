@@ -291,7 +291,7 @@ async function publishChart(request, h) {
     };
 }
 
-async function loadVendorLocale(vendor, locale) {
+function loadVendorLocale(vendor, locale) {
     const basePath = path.resolve(
         __dirname,
         '../../node_modules/@datawrapper/locales/locales/',
