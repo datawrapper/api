@@ -189,6 +189,7 @@ test('Users can edit chart medatata', async t => {
     });
 
     t.is(chart.result.metadata.annotate.notes, 'note-1');
+    t.log('set new metadata property: ', chart.result.metadata.annotate.notes);
 
     chart = await t.context.server.inject({
         method: 'PATCH',
@@ -200,12 +201,50 @@ test('Users can edit chart medatata', async t => {
             metadata: {
                 annotate: {
                     notes: 'note-2'
+                },
+                visualize: {
+                    'base-color': 'red',
+                    'custom-colors': {
+                        column1: '#ff0000'
+                    }
                 }
             }
         }
     });
 
     t.is(chart.result.metadata.annotate.notes, 'note-2');
+    t.is(chart.result.metadata.visualize['base-color'], 'red');
+    t.log('overwrite existing metadata property: ', chart.result.metadata.annotate.notes);
+
+    t.is(chart.result.metadata.visualize['custom-colors'].column1, '#ff0000');
+
+    chart = await t.context.server.inject({
+        method: 'PATCH',
+        url: `/v3/charts/${chart.result.id}`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            metadata: {
+                visualize: {
+                    'custom-colors': {}
+                }
+            }
+        }
+    });
+
+    t.deepEqual(chart.result.metadata.visualize['custom-colors'], {});
+    t.log(
+        'set an existing metadata property to empty object: ',
+        chart.result.metadata.visualize['custom-colors']
+    );
+
+    t.is(chart.result.metadata.annotate.notes, 'note-2');
+    t.is(chart.result.metadata.visualize['base-color'], 'red');
+    t.log(
+        'previously existing metadata property still exists: ',
+        chart.result.metadata.annotate.notes
+    );
 
     chart = await t.context.server.inject({
         method: 'GET',
