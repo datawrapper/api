@@ -112,12 +112,44 @@ function register(server, options) {
         handler: deleteChart
     });
 
+    const editChartPayload = Joi.object({
+        title: Joi.string()
+            .example('My cool chart')
+            .allow('')
+            .description('Title of your chart. This will be the chart headline.'),
+        theme: Joi.string()
+            .example('datawrapper')
+            .description('Chart theme to use.'),
+        type: Joi.string()
+            .example('d3-lines')
+            .description(
+                'Type of the chart ([Reference](https://developer.datawrapper.de/v3.0/docs/chart-types))'
+            ),
+        lastEditStep: Joi.number()
+            .integer()
+            .example(1)
+            .description('Used in the app to determine where the user last edited the chart.'),
+        folderId: Joi.number()
+            .allow(null)
+            .optional(),
+        organizationId: Joi.string()
+            .allow(null)
+            .optional(),
+        metadata: Joi.object({
+            data: Joi.object({
+                transpose: Joi.boolean()
+            }).unknown(true)
+        })
+            .description('Metadata that saves all chart specific settings and options.')
+            .unknown(true)
+    }).unknown();
+
     server.route({
         method: 'PATCH',
         path: '/{id}',
         options: {
             tags: ['api'],
-            description: 'Update chart metadata',
+            description: 'Update chart. Allows for partial metadata updates (JSON merge patch)',
             validate: {
                 params: Joi.object({
                     id: Joi.string()
@@ -125,39 +157,27 @@ function register(server, options) {
                         .required()
                         .description('5 character long chart ID.')
                 }),
-                payload: Joi.object({
-                    title: Joi.string()
-                        .example('My cool chart')
-                        .allow('')
-                        .description('Title of your chart. This will be the chart headline.'),
-                    theme: Joi.string()
-                        .example('datawrapper')
-                        .description('Chart theme to use.'),
-                    type: Joi.string()
-                        .example('d3-lines')
-                        .description(
-                            'Type of the chart ([Reference](https://developer.datawrapper.de/v3.0/docs/chart-types))'
-                        ),
-                    lastEditStep: Joi.number()
-                        .integer()
-                        .example(1)
-                        .description(
-                            'Used in the app to determine where the user last edited the chart.'
-                        ),
-                    folderId: Joi.number()
-                        .allow(null)
-                        .optional(),
-                    organizationId: Joi.string()
-                        .allow(null)
-                        .optional(),
-                    metadata: Joi.object({
-                        data: Joi.object({
-                            transpose: Joi.boolean()
-                        }).unknown(true)
-                    })
-                        .description('Metadata that saves all chart specific settings and options.')
-                        .unknown(true)
-                }).unknown()
+                payload: editChartPayload
+            },
+            response: chartResponse
+        },
+        handler: editChart
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/{id}',
+        options: {
+            tags: ['api'],
+            description: 'Update chart. Replaces the entire metadata object.',
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                        .description('5 character long chart ID.')
+                }),
+                payload: editChartPayload
             },
             response: chartResponse
         },
@@ -732,6 +752,11 @@ async function editChart(request, h) {
     }
 
     const newData = assignWithEmptyObjects(prepareChart(chart), payload);
+
+    if (request.method === 'put' && payload.metadata) {
+        // in PUT request we replace the entire metadata object
+        newData.metadata = payload.metadata;
+    }
 
     await Chart.update(
         { ...decamelizeKeys(newData), metadata: newData.metadata },
