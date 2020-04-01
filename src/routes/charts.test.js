@@ -203,6 +203,7 @@ test('Users can edit chart medatata', async t => {
                     notes: 'note-2'
                 },
                 visualize: {
+                    'base-color': 'red',
                     'custom-colors': {
                         column1: '#ff0000'
                     }
@@ -212,6 +213,7 @@ test('Users can edit chart medatata', async t => {
     });
 
     t.is(chart.result.metadata.annotate.notes, 'note-2');
+    t.is(chart.result.metadata.visualize['base-color'], 'red');
     t.log('overwrite existing metadata property: ', chart.result.metadata.annotate.notes);
 
     t.is(chart.result.metadata.visualize['custom-colors'].column1, '#ff0000');
@@ -238,6 +240,7 @@ test('Users can edit chart medatata', async t => {
     );
 
     t.is(chart.result.metadata.annotate.notes, 'note-2');
+    t.is(chart.result.metadata.visualize['base-color'], 'red');
     t.log(
         'previously existing metadata property still exists: ',
         chart.result.metadata.annotate.notes
