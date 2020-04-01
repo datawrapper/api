@@ -332,3 +332,45 @@ test('User can read and write chart data', async t => {
         });
     }
 });
+
+test('PUT request replace metadata', async t => {
+    const { session } = await t.context.getUser();
+    let chart = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            metadata: {
+                annotate: {
+                    notes: 'note-1'
+                },
+                visualize: {
+                    foo: 'bar'
+                }
+            }
+        }
+    });
+
+    t.is(chart.result.metadata.annotate.notes, 'note-1');
+    t.is(chart.result.metadata.visualize.foo, 'bar');
+
+    chart = await t.context.server.inject({
+        method: 'PUT',
+        url: `/v3/charts/${chart.result.id}`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`
+        },
+        payload: {
+            metadata: {
+                annotate: {
+                    notes: 'note-2'
+                }
+            }
+        }
+    });
+
+    t.is(chart.result.metadata.annotate.notes, 'note-2');
+    t.is(chart.result.metadata.visualize, undefined);
+});
