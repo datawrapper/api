@@ -4,11 +4,12 @@ const process = require('process');
 const fs = require('fs-extra');
 const os = require('os');
 const pug = require('pug');
-const { Chart, ChartPublic, Action } = require('@datawrapper/orm/models');
+const { Op } = require('@datawrapper/orm').db;
+const { Chart, ChartPublic, ChartAccessToken, Action } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
-const { stringify, readFileAndHash, copyFileHashed } = require('../utils/index.js');
+const { stringify, readFileAndHash, copyFileHashed, prepareChart } = require('../utils/index.js');
 const { getScope } = require('../utils/l10n');
 
 const { compileCSS } = require('./compile-css');
@@ -44,7 +45,7 @@ async function publishChart(request, h) {
      * Load chart information
      * (including metadata, data, basemaps, etc.)
      */
-    const { result: data } = await server.inject({
+    const { result: publishData } = await server.inject({
         url: `/v3/charts/${params.id}/publish/data`,
         auth
     });
@@ -53,8 +54,8 @@ async function publishChart(request, h) {
         return Boom.notFound();
     }
 
-    const csv = data.chart;
-    delete data.chart;
+    const csv = publishData.data;
+    delete publishData.data;
 
     if (!csv) {
         await logPublishStatus('error-data');
@@ -98,8 +99,8 @@ async function publishChart(request, h) {
         readFileAndHash(vis.script)
     ]);
     theme.less = ''; /* reset "theme.less" to not inline it twice into the HTML */
-    vis.locale = data.locales;
-    delete data.locales;
+    vis.locale = publishData.locales;
+    delete publishData.locales;
 
     /**
      * Collect data for server side rendering with Svelte and Pug
@@ -108,7 +109,7 @@ async function publishChart(request, h) {
         data: {
             visJSON: vis,
             chartJSON: chart,
-            publishData: data,
+            publishData,
             chartData: csv,
             isPreview: false,
             chartLocale: chart.language,
@@ -151,7 +152,7 @@ async function publishChart(request, h) {
 
     dependencies.push(path.join('lib/vis/', fileName));
 
-    const blocksFilePromises = data.blocks
+    const blocksFilePromises = publishData.blocks
         .filter(block => block.include && block.prefix)
         .map(async ({ prefix, publish, blocks }) => {
             const [js, css] = await Promise.all([
@@ -337,19 +338,37 @@ async function publishChartStatus(request, h) {
 }
 
 async function publishData(request, h) {
-    const { params, server, auth } = request;
+    const { query, params, server, auth } = request;
+
+    const chart = await Chart.findOne({
+        where: { id: params.id, deleted: { [Op.not]: true } },
+        attributes: { exclude: ['deleted', 'deleted_at', 'guest_session', 'utf8'] }
+    });
+
+    let hasAccess = await chart.isPublishableBy(auth.artifacts);
+    if (!hasAccess && query.ott) {
+        const count = await ChartAccessToken.destroy({
+            where: {
+                chart_id: params.id,
+                token: query.ott
+            },
+            limit: 1
+        });
+
+        hasAccess = !!count;
+    }
+
+    if (!hasAccess) {
+        return Boom.unauthorized();
+    }
+
     // the csv dataset
     const res = await request.server.inject({
         url: `/v3/charts/${params.id}/data`,
         auth
     });
 
-    const chart = await Chart.findByPk(params.id);
-    if (!(await chart.isPublishableBy(auth.artifacts))) {
-        return Boom.unauthorized();
-    }
-
-    const data = { chart: res.result };
+    const data = { data: res.result, chart: prepareChart(chart) };
 
     const htmlResults = await server.app.events.emit(
         server.app.event.CHART_AFTER_BODY_HTML,

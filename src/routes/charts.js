@@ -2,20 +2,13 @@ const path = require('path');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
-const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
+const { decamelizeKeys, decamelize } = require('humps');
 const get = require('lodash/get');
 const set = require('lodash/set');
 const assign = require('assign-deep');
 const mime = require('mime');
-const {
-    Chart,
-    ChartPublic,
-    ChartAccessToken,
-    User,
-    Folder,
-    Plugin
-} = require('@datawrapper/orm/models');
-
+const { Chart, ChartPublic, User, Folder, Plugin } = require('@datawrapper/orm/models');
+const { prepareChart } = require('../utils/index.js');
 const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
 
 const chartResponse = createResponseConfig({
@@ -90,36 +83,11 @@ function register(server, options) {
                 }),
                 query: Joi.object({
                     published: Joi.boolean()
-                })
+                }).unknown(true)
             },
             response: chartResponse
         },
         handler: getChart
-    });
-
-    server.route({
-        method: 'GET',
-        path: '/{id}/{token}',
-        options: {
-            auth: false,
-            description: 'Fetch chart metadata with one time token',
-            validate: {
-                params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
-                        .description('5 character long chart ID.'),
-                    token: Joi.string()
-                        .required()
-                        .description('One time access token.')
-                }),
-                query: Joi.object({
-                    withData: Joi.boolean()
-                })
-            },
-            response: chartResponse
-        },
-        handler: getChartWithToken
     });
 
     server.route({
@@ -526,21 +494,6 @@ function register(server, options) {
     }
 }
 
-function prepareChart(chart) {
-    const { user, in_folder, ...dataValues } = chart.dataValues;
-
-    return {
-        publicId: chart.publicId,
-        language: 'en_US',
-        theme: 'datawrapper',
-        ...camelizeKeys(dataValues),
-        folderId: in_folder,
-        metadata: dataValues.metadata,
-        author: user ? { name: user.name, email: user.email } : undefined,
-        guestSession: undefined
-    };
-}
-
 async function getAllCharts(request, h) {
     const { query, url, auth } = request;
     const isAdmin = request.server.methods.isAdmin(request);
@@ -641,12 +594,9 @@ async function getChart(request, h) {
     }
 
     const isGuestChart = chart.guest_session === auth.credentials.session;
-    const isOneTimeAccess = auth.isInjected && auth.strategy === 'one_time_token';
 
     const isEditable =
-        isOneTimeAccess ||
-        isGuestChart ||
-        (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
+        isGuestChart || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
 
     if (query.published || !isEditable) {
         if (chart.published_at) {
@@ -712,35 +662,6 @@ async function getChart(request, h) {
         ...prepareChart(chart, additionalMetaData),
         url: `${url.pathname}`
     };
-}
-
-async function getChartWithToken(request, h) {
-    const { params, url, server } = request;
-
-    const row = await ChartAccessToken.findOne({
-        where: {
-            chart_id: params.id,
-            token: params.token
-        }
-    });
-
-    if (!row) {
-        return Boom.unauthorized();
-    }
-
-    const response = await server.inject({
-        url: `/v3/charts/${params.id}${url.search}`,
-        auth: {
-            strategy: 'one_time_token',
-            credentials: {
-                token: params.token
-            }
-        }
-    });
-
-    await row.destroy();
-
-    return response.result;
 }
 
 async function createChart(request, h) {

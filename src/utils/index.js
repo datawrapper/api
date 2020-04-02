@@ -1,4 +1,5 @@
 const generate = require('nanoid/generate');
+const { camelizeKeys } = require('humps');
 const path = require('path');
 const jsesc = require('jsesc');
 const crypto = require('crypto');
@@ -7,6 +8,21 @@ const fs = require('fs-extra');
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
 const utils = {};
+
+utils.prepareChart = chart => {
+    const { user, in_folder, ...dataValues } = chart.dataValues;
+
+    return {
+        publicId: chart.publicId,
+        language: 'en_US',
+        theme: 'datawrapper',
+        ...camelizeKeys(dataValues),
+        folderId: in_folder,
+        metadata: dataValues.metadata,
+        author: user ? { name: user.name, email: user.email } : undefined,
+        guestSession: undefined
+    };
+};
 
 utils.stringify = obj => {
     return jsesc(JSON.stringify(obj), {
