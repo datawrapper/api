@@ -79,7 +79,7 @@ module.exports = {
 function logError(root, name, error) {
     if (error.code === 'MODULE_NOT_FOUND') {
         return `- skipped
-    Reason: \`api.js\` doesn't exist.`;
+    Reason: \`api.js\` doesn't exist or a dependency is not installed.`;
     }
 
     return `
