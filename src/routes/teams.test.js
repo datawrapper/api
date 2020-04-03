@@ -416,6 +416,25 @@ test('users can create teams', async t => {
     t.is(team.statusCode, 201);
 });
 
+test('users can create teams with "Content-Type: text/plain"', async t => {
+    const team = await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/teams`,
+        auth: t.context.auth,
+        headers: {
+            'content-type': 'text/plain'
+        },
+        payload: {
+            id: 'test-user-plain',
+            name: 'Test'
+        }
+    });
+
+    await t.context.addToCleanup('team', team.result.id);
+    t.is(team.result.name, 'Test');
+    t.is(team.statusCode, 201);
+});
+
 test('owners can edit team', async t => {
     const team = await t.context.server.inject({
         method: 'PATCH',
