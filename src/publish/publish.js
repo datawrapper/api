@@ -291,7 +291,7 @@ async function publishChart(request, h) {
     };
 }
 
-function loadVendorLocale(vendor, locale) {
+async function loadVendorLocale(vendor, locale) {
     const basePath = path.resolve(
         __dirname,
         '../../node_modules/@datawrapper/locales/locales/',
@@ -306,7 +306,7 @@ function loadVendorLocale(vendor, locale) {
     for (let i = 0; i < tryFiles.length; i++) {
         const file = path.join(basePath, tryFiles[i]);
         try {
-            return fs.readFile(file, 'utf-8');
+            return await fs.readFile(file, 'utf-8');
         } catch (e) {
             // file not found, so try next
         }
