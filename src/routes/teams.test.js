@@ -1,6 +1,6 @@
-import test from 'ava';
-import nanoid from 'nanoid';
-import { setup } from '../../test/helpers/setup';
+const test = require('ava');
+const nanoid = require('nanoid');
+const { setup } = require('../../test/helpers/setup');
 
 test.before(async t => {
     const { server, getTeamWithUser, getUser, models, addToCleanup } = await setup({
@@ -407,6 +407,25 @@ test('users can create teams', async t => {
         auth: t.context.auth,
         payload: {
             id: 'test-user',
+            name: 'Test'
+        }
+    });
+
+    await t.context.addToCleanup('team', team.result.id);
+    t.is(team.result.name, 'Test');
+    t.is(team.statusCode, 201);
+});
+
+test('users can create teams with "Content-Type: text/plain"', async t => {
+    const team = await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/teams`,
+        auth: t.context.auth,
+        headers: {
+            'content-type': 'text/plain'
+        },
+        payload: {
+            id: 'test-user-plain',
             name: 'Test'
         }
     });

@@ -1,6 +1,6 @@
-import test from 'ava';
+const test = require('ava');
 
-import { setup } from '../../test/helpers/setup';
+const { setup } = require('../../test/helpers/setup');
 
 function parseSetCookie(string) {
     const cookie = {};
@@ -356,4 +356,37 @@ test('user activation after team invite', async t => {
 
     t.is(res.statusCode, 200);
     t.is(res.result.email, credentials.email);
+});
+
+test('Login and logout updates session fields', async t => {
+    const { Session } = t.context.models;
+    let res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/login',
+        payload: {
+            email: t.context.user.email,
+            password: 'test-password',
+            keepSession: false
+        }
+    });
+
+    const sessionId = res.result['DW-SESSION'];
+
+    // check Session
+    const session = await Session.findByPk(sessionId);
+    t.is(session.user_id, t.context.user.id);
+    t.is(session.persistent, false);
+
+    // now logout
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/logout',
+        headers: {
+            cookie: `DW-SESSION=${sessionId}`
+        }
+    });
+
+    // check that session has been destroyed
+    const session2 = await Session.findByPk(sessionId);
+    t.is(session2, null);
 });

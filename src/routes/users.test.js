@@ -1,8 +1,8 @@
-import test from 'ava';
-import sortBy from 'lodash/sortBy';
-import { decamelize } from 'humps';
+const test = require('ava');
+const sortBy = require('lodash/sortBy');
+const { decamelize } = require('humps');
 
-import { setup } from '../../test/helpers/setup';
+const { setup } = require('../../test/helpers/setup');
 
 test.before(async t => {
     const { server, models, getUser, getTeamWithUser, getCredentials, addToCleanup } = await setup({

@@ -398,7 +398,7 @@ module.exports = {
                             .required()
                             .description('ID of the team member you want to change the status of.'),
                         role: Joi.string()
-                            .valid(ROLES)
+                            .valid(...ROLES)
                             .required()
                     })
                 },
@@ -427,7 +427,7 @@ module.exports = {
                             .required()
                             .example('thor@gmail.com'),
                         role: Joi.string()
-                            .valid(ROLES)
+                            .valid(...ROLES)
                             .required()
                     }
                 },

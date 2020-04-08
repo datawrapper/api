@@ -1,5 +1,5 @@
-import test from 'ava';
-import { setup } from '../../test/helpers/setup';
+const test = require('ava');
+const { setup } = require('../../test/helpers/setup');
 
 test.before(async t => {
     const { server, getTeamWithUser, getUser } = await setup({

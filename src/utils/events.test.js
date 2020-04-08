@@ -1,7 +1,7 @@
-import test from 'ava';
-import EventEmitter from 'events';
-import { ApiEventEmitter, eventList } from './events';
-import { noop } from './index';
+const test = require('ava');
+const EventEmitter = require('events');
+const { ApiEventEmitter, eventList } = require('./events');
+const { noop } = require('./index');
 
 function mockLogger() {
     return { error: noop };

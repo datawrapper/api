@@ -244,6 +244,8 @@ module.exports = {
 async function createSession(id, userId, keepSession = true) {
     return Session.create({
         id,
+        user_id: userId,
+        persistent: keepSession,
         data: {
             'dw-user-id': userId,
             persistent: keepSession,
@@ -329,7 +331,9 @@ async function login(request, h) {
                     ...session.data,
                     'dw-user-id': user.id,
                     last_action_time: Math.floor(Date.now() / 1000)
-                }
+                },
+                user_id: user.id,
+                persistent: keepSession
             }),
             associateChartsWithUser(session.id, user.id)
         ]);
@@ -471,6 +475,8 @@ async function signup(request, h) {
         /* associate guest session with newly created user */
         await Promise.all([
             session.update({
+                user_id: res.result.id,
+                persistent: true,
                 data: {
                     ...session.data,
                     'dw-user-id': res.result.id,
@@ -523,6 +529,8 @@ async function activateAccount(request, h) {
         // associate guest session with the activated user
         session = request.auth.credentials.data;
         await session.update({
+            user_id: user.id,
+            persistent: true,
             data: {
                 ...session.data,
                 'dw-user-id': user.id,
