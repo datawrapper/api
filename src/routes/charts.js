@@ -790,27 +790,19 @@ async function exportChart(request, h) {
 
     Object.assign(payload, params);
     try {
-        const results = await events.emit(event.CHART_EXPORT, {
-            data: payload,
-            userId: user.id,
-            logger
-        });
-
-        const successfulResult = results.find(res => res.status === 'success');
-
-        if (!successfulResult) {
-            const { error } = results.find(res => res.status === 'error') || {
-                error: new CodedError(
-                    'notImplemented',
-                    `the export format "${params.format}" is not available`
-                )
-            };
-            throw error;
-        }
+        const result = await events.emit(
+            event.CHART_EXPORT,
+            {
+                data: payload,
+                userId: user.id,
+                logger
+            },
+            { filter: 'first' }
+        );
 
         await request.server.methods.logAction(user.id, `chart/export/${params.format}`, params.id);
 
-        const { stream, type } = successfulResult.data;
+        const { stream, type } = result;
 
         if (query.download) {
             return h
@@ -900,17 +892,11 @@ async function getChartAsset(request, h) {
     const filename = params.asset;
 
     try {
-        const eventResults = await events.emit(event.GET_CHART_ASSET, { chart, filename });
-        const successResult = eventResults.find(e => e.status === 'success');
-
-        if (!successResult) {
-            const errorResult = eventResults.find(e => e.status === 'error');
-            throw errorResult
-                ? errorResult.error
-                : new Error(`${event.GET_CHART_ASSET} event failed`);
-        }
-
-        const contentStream = successResult.data;
+        const contentStream = await events.emit(
+            event.GET_CHART_ASSET,
+            { chart, filename },
+            { filter: 'first' }
+        );
 
         const contentType =
             chart.type === 'locator-map' && path.extname(filename) === '.csv'
@@ -957,16 +943,18 @@ async function writeChartAsset(request, h) {
     const filename = params.asset;
 
     try {
-        const eventResults = await events.emit(event.PUT_CHART_ASSET, {
-            chart,
-            data:
-                request.headers['content-type'] === 'application/json'
-                    ? JSON.stringify(request.payload)
-                    : request.payload,
-            filename
-        });
-
-        const { code } = eventResults.find(e => e.status === 'success').data;
+        const { code } = await events.emit(
+            event.PUT_CHART_ASSET,
+            {
+                chart,
+                data:
+                    request.headers['content-type'] === 'application/json'
+                        ? JSON.stringify(request.payload)
+                        : request.payload,
+                filename
+            },
+            { filter: 'first' }
+        );
 
         // log chart/edit
         await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
