@@ -95,7 +95,7 @@ async function publishChart(request, h) {
      * Load assets like CSS, Javascript and translations
      */
     const [css, { fileName, content }] = await Promise.all([
-        compileCSS({ theme, filePaths: [chartCore.less, vis.less] }),
+        compileCSS({ theme, filePaths: [chartCore.less, vis.less], chart }),
         readFileAndHash(vis.script)
     ]);
     theme.less = ''; /* reset "theme.less" to not inline it twice into the HTML */

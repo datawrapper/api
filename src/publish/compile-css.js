@@ -3,6 +3,7 @@ const path = require('path');
 const less = require('less');
 const postcssLess = require('postcss-less');
 const pCSS = require('postcss');
+const get = require('lodash/get');
 
 /* needed for variable parsing, otherwise postcss logs annoying messages we don't care about */
 const { noop } = require('../utils/index.js');
@@ -31,7 +32,7 @@ module.exports = { compileCSS };
  * @param {string[]} options.paths List of paths to look in for less `@import` statements
  * @returns {string} CSS string
  */
-async function compileCSS({ theme, filePaths }) {
+async function compileCSS({ theme, filePaths, chart }) {
     const paths = filePaths.map(path.dirname);
 
     const lessString = (await Promise.all(filePaths.map(saveReadFile))).join('');
@@ -54,6 +55,8 @@ async function compileCSS({ theme, filePaths }) {
             maps: theme.data.maps
         })
     });
+
+    css += get(chart, 'metadata.publish.custom-css', '');
 
     css = (await postcss.process(css, { from: undefined })).css;
 
