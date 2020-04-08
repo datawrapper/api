@@ -340,12 +340,18 @@ async function publishChartStatus(request, h) {
 async function publishData(request, h) {
     const { query, params, server, auth } = request;
 
-    const chart = await Chart.findOne({
-        where: { id: params.id, deleted: { [Op.not]: true } },
-        attributes: { exclude: ['deleted', 'deleted_at', 'guest_session', 'utf8'] }
-    });
+    const chartQuery = query.published
+        ? ChartPublic.findOne({
+              where: { id: params.id }
+          })
+        : Chart.findOne({
+              where: { id: params.id, deleted: { [Op.not]: true } },
+              attributes: { exclude: ['deleted', 'deleted_at', 'guest_session', 'utf8'] }
+          });
 
-    let hasAccess = await chart.isPublishableBy(auth.artifacts);
+    const chart = await chartQuery;
+
+    let hasAccess = query.published || (await chart.isPublishableBy(auth.artifacts));
     if (!hasAccess && query.ott) {
         const count = await ChartAccessToken.destroy({
             where: {
