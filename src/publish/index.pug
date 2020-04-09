@@ -6,14 +6,15 @@ html(lang="en")
     style!=CSS
     | !{CHART_HEAD}
 
-  body(class="dw-chart chart" class=CHART_CLASS data-id="__svelte-dw")
+  body
+    div(class="dw-chart chart" class=CHART_CLASS id="__svelte-dw")
+      | !{CHART_HTML}
+
     //- https://v8.dev/blog/cost-of-javascript-2019#json
     script window.__DW_SVELTE_PROPS__ = JSON.parse(!{__DW_SVELTE_PROPS__});
 
     each src in SCRIPTS
       script(src=src)
-
-    | !{CHART_HTML}
 
     script.
       window.parent.postMessage('datawrapper:vis:reload', '*');
