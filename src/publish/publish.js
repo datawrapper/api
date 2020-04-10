@@ -399,6 +399,7 @@ async function publishData(request, h) {
         server.app.event.CHART_BLOCKS,
         {
             chart,
+            user: auth.artifacts,
             data
         },
         { filter: 'success' }
