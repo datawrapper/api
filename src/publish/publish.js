@@ -214,17 +214,6 @@ async function publishChart(request, h) {
         'index.html'
     ];
 
-    /* store new embed codes in chart metadata */
-    const embedCodes = {};
-    const res = await request.server.inject({
-        url: `/v3/charts/${params.id}/embed-codes`,
-        auth
-    });
-    res.result.forEach(embed => {
-        embedCodes[`embed-method-${embed.id}`] = embed.code;
-    });
-    set(chart, 'metadata.publish.embed-codes', embedCodes);
-
     /**
      * The hard work is done!
      * The only thing left is to move the published chart to it's public directory
@@ -265,13 +254,30 @@ async function publishChart(request, h) {
     }
 
     const now = new Date();
+
+    /* we need to update chart here to get the correct public_url
+       in out embed codes */
+    await chart.update({
+        public_version: newPublicVersion,
+        published_at: now,
+        public_url: destination,
+        last_edit_step: 5
+    });
+
+    /* store new embed codes in chart metadata */
+    const embedCodes = {};
+    const res = await request.server.inject({
+        url: `/v3/charts/${params.id}/embed-codes`,
+        auth
+    });
+    res.result.forEach(embed => {
+        embedCodes[`embed-method-${embed.id}`] = embed.code;
+    });
+    set(chart, 'metadata.publish.embed-codes', embedCodes);
+
     const chartUpdatePromise = Chart.update(
         {
-            public_version: newPublicVersion,
-            published_at: now,
-            public_url: destination,
-            metadata: chart.metadata,
-            last_edit_step: 5
+            metadata: chart.metadata
         },
         { where: { id: chart.id }, limit: 1 }
     );
