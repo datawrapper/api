@@ -3,10 +3,17 @@ const { getUserData } = require('@datawrapper/orm/utils/userData');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 const get = require('lodash/get');
+const path = require('path');
+const fs = require('fs-extra');
 const { translate } = require('../../utils/l10n');
 const sanitizeHtml = require('sanitize-html');
 
-module.exports = (server, options) => {
+module.exports = async (server, options) => {
+    const embedJS = await fs.readFile(
+        path.join(__dirname, '../../../node_modules/@datawrapper/chart-core/dist/core/embed.js'),
+        'utf-8'
+    );
+
     server.route({
         method: 'GET',
         path: '/{id}/embed-codes',
@@ -65,7 +72,7 @@ module.exports = (server, options) => {
                     preferred: preferred === 'responsive',
                     title: __('publish / embed / responsive'),
                     ...getTemplate(
-                        `<iframe title="%chart_title%" aria-label="%chart_type%" id="datawrapper-chart-%chart_id%" src="%chart_url%" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="%chart_height%"></iframe><script type="text/javascript"></script>`
+                        `<iframe title="%chart_title%" aria-label="%chart_type%" id="datawrapper-chart-%chart_id%" src="%chart_url%" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="%chart_height%"></iframe><script type="text/javascript">%embed_js%</script>`
                     )
                 },
                 // standard iframe
@@ -102,10 +109,12 @@ module.exports = (server, options) => {
                 return {
                     template,
                     code: template
-                        .replace(/%chart_title%/g, clean(chart.title))
+                        .replace(/%chart_id%/g, chart.id)
                         .replace(/%chart_url%/g, chart.public_url)
                         .replace(/%chart_type%/g, ariaLabel)
+                        .replace(/%chart_title%/g, clean(chart.title))
                         .replace(/%chart_intro%/g, clean(get(chart, 'metadata.describe.intro')))
+                        .replace(/%embed_js%/g, embedJS)
                         .replace(
                             /%chart_width%/g,
                             clean(get(chart, 'metadata.publish.embed-width'))
