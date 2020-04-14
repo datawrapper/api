@@ -3,8 +3,8 @@ const { getUserData } = require('@datawrapper/orm/utils/userData');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 const get = require('lodash/get');
-const purifyHtml = require('@datawrapper/shared/purifyHtml');
 const { translate } = require('../../utils/l10n');
+const sanitizeHtml = require('sanitize-html');
 
 module.exports = (server, options) => {
     server.route({
@@ -39,19 +39,16 @@ module.exports = (server, options) => {
                 return Boom.unauthorized();
             }
 
-            function getTemplate(code) {
-                return code
-                    .replace(/%chart_title%/g, purifyHtml(chart.title, ''))
-                    .replace(/%chart_type%/g, '');
-            }
+            const __ = key => translate(key, { scope: 'core', language: auth.artifacts.language });
+
+            const vis = server.app.visualizations.get(chart.type);
+            const ariaLabel = vis.ariaLabel || vis.title || __('chart');
 
             const team = await chart.getTeam();
             const preferred =
                 team && get(team, 'settings.embed.preferred_embed')
                     ? get(team, 'settings.embed.preferred_embed')
                     : await getUserData(auth.artifacts.id, 'embed_type', 'responsive');
-
-            const __ = key => translate(key, { scope: 'core', language: auth.artifacts.language });
 
             const templates = [
                 // responsive iframe
@@ -84,6 +81,24 @@ module.exports = (server, options) => {
                 });
             }
             return templates;
+
+            function clean(s) {
+                return sanitizeHtml(s, { allowedTags: [] })
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            function getTemplate(code) {
+                return code
+                    .replace(/%chart_title%/g, clean(chart.title))
+                    .replace(/%chart_url%/g, chart.public_url)
+                    .replace(/%chart_type%/g, ariaLabel)
+                    .replace(/%chart_intro%/g, clean(get(chart, 'metadata.describe.intro')))
+                    .replace(/%chart_width%/g, clean(get(chart, 'metadata.publish.embed-width')))
+                    .replace(/%chart_height%/g, clean(get(chart, 'metadata.publish.embed-height')));
+            }
         }
     });
 };
