@@ -13,6 +13,7 @@ const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
 const CodedError = require('@datawrapper/shared/CodedError');
 
 const { generateToken } = require('./utils');
+const { addScope } = require('./utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
@@ -127,6 +128,22 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         },
         '[Initialize] Starting server ...'
     );
+
+    // load translations
+    try {
+        const localePath = path.join(__dirname, '../locale');
+        const localeFiles = await fs.readdir(localePath);
+        const locales = {};
+        for (let i = 0; i < localeFiles.length; i++) {
+            const file = localeFiles[i];
+            if (/[a-z]+_[a-z]+\.json/i.test(file)) {
+                locales[file.split('.')[0]] = JSON.parse(
+                    await fs.readFile(path.join(localePath, file))
+                );
+            }
+        }
+        addScope('core', locales);
+    } catch (e) {}
 
     await ORM.init(config);
     if (ORM.registerPlugins) {
