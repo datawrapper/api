@@ -64,7 +64,7 @@ module.exports = (server, options) => {
                     id: 'responsive',
                     preferred: preferred === 'responsive',
                     title: __('publish / embed / responsive'),
-                    template: getTemplate(
+                    ...getTemplate(
                         `<iframe title="%chart_title%" aria-label="%chart_type%" id="datawrapper-chart-%chart_id%" src="%chart_url%" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="%chart_height%"></iframe><script type="text/javascript"></script>`
                     )
                 },
@@ -73,7 +73,7 @@ module.exports = (server, options) => {
                     id: 'iframe',
                     preferred: preferred === 'iframe',
                     title: __('publish / embed / iframe'),
-                    template: getTemplate(
+                    ...getTemplate(
                         `<iframe title="%chart_title%" aria-label="%chart_type%" id="datawrapper-chart-%chart_id%" src="%chart_url%" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="%chart_height%"></iframe>`
                     )
                 }
@@ -85,7 +85,7 @@ module.exports = (server, options) => {
                     id: 'custom',
                     preferred: true,
                     title: customEmbed.title,
-                    template: getTemplate(customEmbed.template)
+                    ...getTemplate(customEmbed.template)
                 });
             }
             return templates;
@@ -98,14 +98,23 @@ module.exports = (server, options) => {
                     .replace(/"/g, '&quot;');
             }
 
-            function getTemplate(code) {
-                return code
-                    .replace(/%chart_title%/g, clean(chart.title))
-                    .replace(/%chart_url%/g, chart.public_url)
-                    .replace(/%chart_type%/g, ariaLabel)
-                    .replace(/%chart_intro%/g, clean(get(chart, 'metadata.describe.intro')))
-                    .replace(/%chart_width%/g, clean(get(chart, 'metadata.publish.embed-width')))
-                    .replace(/%chart_height%/g, clean(get(chart, 'metadata.publish.embed-height')));
+            function getTemplate(template) {
+                return {
+                    template,
+                    code: template
+                        .replace(/%chart_title%/g, clean(chart.title))
+                        .replace(/%chart_url%/g, chart.public_url)
+                        .replace(/%chart_type%/g, ariaLabel)
+                        .replace(/%chart_intro%/g, clean(get(chart, 'metadata.describe.intro')))
+                        .replace(
+                            /%chart_width%/g,
+                            clean(get(chart, 'metadata.publish.embed-width'))
+                        )
+                        .replace(
+                            /%chart_height%/g,
+                            clean(get(chart, 'metadata.publish.embed-height'))
+                        )
+                };
             }
         }
     });

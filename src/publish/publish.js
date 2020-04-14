@@ -9,6 +9,7 @@ const { Chart, ChartPublic, ChartAccessToken, Action } = require('@datawrapper/o
 const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
+const set = require('lodash/set');
 const { stringify, readFileAndHash, copyFileHashed, prepareChart } = require('../utils/index.js');
 const { getScope } = require('../utils/l10n');
 
@@ -213,6 +214,17 @@ async function publishChart(request, h) {
         'index.html'
     ];
 
+    /* store new embed codes in chart metadata */
+    const embedCodes = {};
+    const res = await request.server.inject({
+        url: `/v3/charts/${params.id}/embed-codes`,
+        auth
+    });
+    res.result.forEach(embed => {
+        embedCodes[`embed-method-${embed.id}`] = embed.code;
+    });
+    set(chart, 'metadata.publish.embed-codes', embedCodes);
+
     /**
      * The hard work is done!
      * The only thing left is to move the published chart to it's public directory
@@ -258,6 +270,7 @@ async function publishChart(request, h) {
             public_version: newPublicVersion,
             published_at: now,
             public_url: destination,
+            metadata: chart.metadata,
             last_edit_step: 5
         },
         { where: { id: chart.id }, limit: 1 }
