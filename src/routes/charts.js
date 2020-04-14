@@ -3,7 +3,6 @@ const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
 const { decamelizeKeys, decamelize } = require('humps');
-const get = require('lodash/get');
 const set = require('lodash/set');
 const mime = require('mime');
 const { Chart, ChartPublic, User, Folder, Plugin } = require('@datawrapper/orm/models');
@@ -20,7 +19,12 @@ const chartResponse = createResponseConfig({
     }).unknown()
 });
 
-const { publishChart, publishChartStatus, publishData } = require('../publish/publish');
+const {
+    publishChart,
+    publishChartStatus,
+    publishData,
+    getAdditionalMetadata
+} = require('../publish/publish');
 
 module.exports = {
     name: 'chart-routes',
@@ -631,56 +635,10 @@ async function getChart(request, h) {
         }
     }
 
-    const forkedFromId = chart.dataValues.is_fork ? chart.dataValues.forked_from : null;
-
-    const results = await server.app.events.emit(server.app.event.ADDITIONAL_CHART_DATA, {
-        chartId: chart.id,
-        forkedFromId
-    });
-
-    const additionalMetaData = results.reduce((obj, event) => {
-        if (event.status === 'success') {
-            Object.assign(obj, event.data);
-        }
-        return obj;
-    }, {});
-
-    if (forkedFromId) {
-        const forkedFromChart = await Chart.findByPk(forkedFromId);
-        const basedOnBylineText = get(forkedFromChart, 'dataValues.metadata.describe.byline', null);
-
-        if (basedOnBylineText) {
-            let basedOnUrl = '';
-
-            const sourceUrl = get(additionalMetaData, 'river.source_url', null);
-            if (sourceUrl) basedOnUrl = sourceUrl;
-            else {
-                const results = await server.app.events.emit(
-                    server.app.event.GET_CHART_DISPLAY_URL,
-                    {
-                        chartId: chart.id
-                    }
-                );
-
-                const chartDisplayData = results.reduce((obj, event) => {
-                    if (event.status === 'success') {
-                        Object.assign(obj, event.data);
-                    }
-                    return obj;
-                }, {});
-
-                const chartDisplayUrl = chartDisplayData.url;
-                if (chartDisplayUrl) basedOnUrl = chartDisplayUrl;
-            }
-
-            chart.dataValues.basedOnByline = basedOnUrl
-                ? `<a href='${basedOnUrl}' target='_blank'>${basedOnBylineText}</a>`
-                : basedOnBylineText;
-        }
-    }
+    const additionalData = await getAdditionalMetadata(chart, { server });
 
     return {
-        ...prepareChart(chart, additionalMetaData),
+        ...prepareChart(chart, additionalData),
         url: `${url.pathname}`
     };
 }

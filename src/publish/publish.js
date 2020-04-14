@@ -55,7 +55,9 @@ async function publishChart(request, h) {
     }
 
     const csv = publishData.data;
+    const chartJSON = publishData.chart;
     delete publishData.data;
+    delete publishData.chart;
 
     if (!csv) {
         await logPublishStatus('error-data');
@@ -108,7 +110,7 @@ async function publishChart(request, h) {
     const props = {
         data: {
             visJSON: vis,
-            chartJSON: chart,
+            chartJSON,
             publishData,
             chartData: csv,
             isPreview: false,
@@ -374,7 +376,9 @@ async function publishData(request, h) {
         auth
     });
 
-    const data = { data: res.result, chart: prepareChart(chart) };
+    const additionalData = await getAdditionalMetadata(chart, { server });
+
+    const data = { data: res.result, chart: prepareChart(chart, additionalData) };
 
     const htmlResults = await server.app.events.emit(
         server.app.event.CHART_AFTER_BODY_HTML,
@@ -408,4 +412,48 @@ async function publishData(request, h) {
     return data;
 }
 
-module.exports = { publishChart, publishChartStatus, publishData };
+async function getAdditionalMetadata(chart, { server }) {
+    const data = {};
+    let additionalMetadata = await server.app.events.emit(
+        server.app.event.ADDITIONAL_CHART_DATA,
+        {
+            chartId: chart.id,
+            forkedFromId: chart.forked_from
+        },
+        { filter: 'success' }
+    );
+
+    additionalMetadata = Object.assign({}, ...additionalMetadata);
+
+    if (chart.forked_from) {
+        const forkedFromChart = await Chart.findByPk(chart.forked_from, {
+            attributes: ['metadata']
+        });
+        const basedOnBylineText = get(forkedFromChart, 'metadata.describe.byline', null);
+
+        if (basedOnBylineText) {
+            let basedOnUrl = get(additionalMetadata, 'river.source_url', null);
+
+            if (!basedOnUrl) {
+                let results = await server.app.events.emit(
+                    server.app.event.GET_CHART_DISPLAY_URL,
+                    {
+                        chartId: chart.id
+                    },
+                    { filter: 'success' }
+                );
+
+                results = Object.assign({}, ...results);
+                basedOnUrl = results.url;
+            }
+
+            data.basedOnByline = basedOnUrl
+                ? `<a href='${basedOnUrl}' target='_blank' rel='noopener'>${basedOnBylineText}</a>`
+                : basedOnBylineText;
+        }
+    }
+
+    return data;
+}
+
+module.exports = { publishChart, publishChartStatus, publishData, getAdditionalMetadata };
