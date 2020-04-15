@@ -48,16 +48,23 @@ module.exports = async (server, options) => {
 
             const __ = key => translate(key, { scope: 'core', language: auth.artifacts.language });
 
-            const vis = server.app.visualizations.get(chart.type);
+            let ariaLabel = translate('visualization', { scope: 'core', language: chart.language });
 
-            const ariaLabel = vis.ariaLabel
-                ? // preferably, use the defined aria-label eg "Interactive line chart"
-                  translate(vis.ariaLabel, { scope: vis.__plugin, language: chart.language })
-                : vis.title
-                ? // otherwise fall back to the visualization title
-                  translate(vis.title, { scope: vis.__plugin, language: chart.language })
-                : // as last resort just use chart|map|table
-                  translate(vis.namespace || 'chart', { scope: 'core', language: chart.language });
+            if (server.app.visualizations.has(chart.type)) {
+                const vis = server.app.visualizations.get(chart.type);
+
+                ariaLabel = vis.ariaLabel
+                    ? // preferably, use the defined aria-label eg "Interactive line chart"
+                      translate(vis.ariaLabel, { scope: vis.__plugin, language: chart.language })
+                    : vis.title
+                    ? // otherwise fall back to the visualization title
+                      translate(vis.title, { scope: vis.__plugin, language: chart.language })
+                    : // as last resort just use chart|map|table
+                      translate(vis.namespace || 'chart', {
+                          scope: 'core',
+                          language: chart.language
+                      });
+            }
 
             const team = await chart.getTeam();
             const preferred =
