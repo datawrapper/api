@@ -22,7 +22,7 @@ async function publishChart(request, h) {
     const { events, event, visualizations } = server.app;
     const user = auth.artifacts;
 
-    const chart = await Chart.findByPk(params.id);
+    const chart = await Chart.findByPk(params.id, { attributes: { include: ['created_at'] } });
     if (!(await chart.isPublishableBy(auth.artifacts))) {
         return Boom.unauthorized();
     }
@@ -212,6 +212,13 @@ async function publishChart(request, h) {
         path.join('lib/', coreScript),
         'index.html'
     ];
+
+    /* write public CSV file (used when forking a chart) */
+    await events.emit(event.PUT_CHART_ASSET, {
+        chart,
+        data: csv,
+        filename: `${chart.id}.public.csv`
+    });
 
     /**
      * The hard work is done!
