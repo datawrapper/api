@@ -457,6 +457,9 @@ function register(server, options) {
         handler: writeChartData
     });
 
+    // GET /v3/charts/:id/embed-codes
+    require('./charts/embed-codes')(server, options);
+
     server.route({
         method: 'POST',
         path: '/{id}/publish',
