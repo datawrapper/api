@@ -49,6 +49,7 @@ async function compileCSS({ theme, filePaths }) {
         modifyVars: flatten({
             typography: theme.data.typography,
             style: theme.data.style,
+            options: theme.data.options,
             colors: theme.data.colors,
             vis: theme.data.vis,
             maps: theme.data.maps
