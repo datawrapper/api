@@ -7,12 +7,10 @@ const path = require('path');
 const fs = require('fs-extra');
 const { translate } = require('../../utils/l10n');
 const sanitizeHtml = require('sanitize-html');
+const chartCore = require('@datawrapper/chart-core');
 
 module.exports = async (server, options) => {
-    const embedJS = await fs.readFile(
-        path.join(__dirname, '../../../node_modules/@datawrapper/chart-core/dist/core/embed.js'),
-        'utf-8'
-    );
+    const embedJS = await fs.readFile(path.join(chartCore.path.dist, 'embed.js'), 'utf-8');
 
     server.route({
         method: 'GET',

@@ -134,7 +134,7 @@ async function publishChart(request, h) {
     let dependencies = getDependencies({
         locale: chart.language,
         dependencies: vis.dependencies
-    }).map(file => path.join(chartCore.path.vendor, file));
+    }).map(file => path.join(chartCore.path.dist, file));
 
     /* Create a temporary directory */
     const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
@@ -149,7 +149,7 @@ async function publishChart(request, h) {
     );
 
     const [coreScript] = await Promise.all([
-        copyFileHashed(path.join(chartCore.path.vendor, 'main.js'), path.join(outDir)),
+        copyFileHashed(path.join(chartCore.path.dist, 'main.js'), path.join(outDir)),
         fs.writeFile(path.join(outDir, fileName), content)
     ]);
 
