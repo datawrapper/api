@@ -242,6 +242,7 @@ async function publishChart(request, h) {
                 outDir,
                 fileMap,
                 chart,
+                user,
                 newPublicVersion
             },
             { filter: 'first' }
