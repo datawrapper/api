@@ -37,8 +37,7 @@
         "@datawrapper/orm": "^3.9.0",
         "@datawrapper/schemas": "^1.3.0",
         "@datawrapper/shared": "0.19.4",
-        "@hapi/boom": "8.0.1",
-        "@hapi/catbox-memory": "4.1.1",
+        "@hapi/boom": "9.1.0",
         "@hapi/hapi": "19.1.1",
         "@hapi/joi": "15.1.1",
         "arg": "4.1.2",
@@ -49,8 +48,8 @@
         "fs-extra": "8.1.0",
         "got": "10.0.3",
         "hapi-auth-bearer-token": "6.2.1",
-        "hapi-pino": "6.3.0",
-        "hapi-swagger": "10.2.0",
+        "hapi-pino": "6.5.0",
+        "hapi-swagger": "10.3.0",
         "humps": "2.0.1",
         "jsesc": "2.5.2",
         "less": "3.10.3",
@@ -60,9 +59,9 @@
         "tar": "6.0.1"
     },
     "devDependencies": {
-        "@hapi/inert": "~5.2.2",
-        "@hapi/vision": "~5.5.4",
-        "ava": "~2.4.0",
+        "@hapi/inert": "5.2.2",
+        "@hapi/vision": "5.5.4",
+        "ava": "~3.5.2",
         "babel-eslint": "~10.0.3",
         "dotenv": "~8.2.0",
         "healthier": "~3.2.0",
@@ -118,8 +117,8 @@
             "**/*.test.js",
             "!plugins/**/*"
         ],
-        "helpers": [
-            "**/helpers/**/*"
+        "require": [
+            "./test/helpers/setup.js"
         ],
         "snapshotDir": "test/__snapshots__"
     }

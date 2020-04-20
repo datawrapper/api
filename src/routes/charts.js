@@ -5,7 +5,6 @@ const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
 const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
 const set = require('lodash/set');
-const assign = require('assign-deep');
 const mime = require('mime');
 const { Chart, ChartPublic, User, Folder, Plugin } = require('@datawrapper/orm/models');
 const CodedError = require('@datawrapper/shared/CodedError');
@@ -13,6 +12,7 @@ const { promisify } = require('util');
 const mkdirAsync = promisify(fs.mkdir);
 const writeFileAsync = promisify(fs.writeFile);
 const accessAsync = promisify(fs.access);
+const assignWithEmptyObjects = require('../utils/assignWithEmptyObjects');
 
 const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
 
@@ -112,12 +112,44 @@ function register(server, options) {
         handler: deleteChart
     });
 
+    const editChartPayload = Joi.object({
+        title: Joi.string()
+            .example('My cool chart')
+            .allow('')
+            .description('Title of your chart. This will be the chart headline.'),
+        theme: Joi.string()
+            .example('datawrapper')
+            .description('Chart theme to use.'),
+        type: Joi.string()
+            .example('d3-lines')
+            .description(
+                'Type of the chart ([Reference](https://developer.datawrapper.de/v3.0/docs/chart-types))'
+            ),
+        lastEditStep: Joi.number()
+            .integer()
+            .example(1)
+            .description('Used in the app to determine where the user last edited the chart.'),
+        folderId: Joi.number()
+            .allow(null)
+            .optional(),
+        organizationId: Joi.string()
+            .allow(null)
+            .optional(),
+        metadata: Joi.object({
+            data: Joi.object({
+                transpose: Joi.boolean()
+            }).unknown(true)
+        })
+            .description('Metadata that saves all chart specific settings and options.')
+            .unknown(true)
+    }).unknown();
+
     server.route({
         method: 'PATCH',
         path: '/{id}',
         options: {
             tags: ['api'],
-            description: 'Update chart metadata',
+            description: 'Update chart. Allows for partial metadata updates (JSON merge patch)',
             validate: {
                 params: Joi.object({
                     id: Joi.string()
@@ -125,43 +157,27 @@ function register(server, options) {
                         .required()
                         .description('5 character long chart ID.')
                 }),
-                payload: Joi.object({
-                    title: Joi.string()
-                        .example('My cool chart')
-                        .allow('')
-                        .description('Title of your chart. This will be the chart headline.'),
-                    theme: Joi.string()
-                        .example('datawrapper')
-                        .description('Chart theme to use.'),
-                    type: Joi.string()
-                        .example('d3-lines')
-                        .description(
-                            'Type of the chart ([Reference](https://developer.datawrapper.de/v3.0/docs/chart-types))'
-                        ),
-                    lastEditStep: Joi.number()
-                        .integer()
-                        .example(1)
-                        .description(
-                            'Used in the app to determine where the user last edited the chart.'
-                        ),
-                    language: Joi.string()
-                        .description('Chart language.')
-                        .allow('')
-                        .optional(),
-                    folderId: Joi.number()
-                        .allow(null)
-                        .optional(),
-                    organizationId: Joi.string()
-                        .allow(null)
-                        .optional(),
-                    metadata: Joi.object({
-                        data: Joi.object({
-                            transpose: Joi.boolean()
-                        }).unknown(true)
-                    })
-                        .description('Metadata that saves all chart specific settings and options.')
-                        .unknown(true)
-                }).unknown()
+                payload: editChartPayload
+            },
+            response: chartResponse
+        },
+        handler: editChart
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/{id}',
+        options: {
+            tags: ['api'],
+            description: 'Update chart. Replaces the entire metadata object.',
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                        .description('5 character long chart ID.')
+                }),
+                payload: editChartPayload
             },
             response: chartResponse
         },
@@ -735,7 +751,12 @@ async function editChart(request, h) {
         delete payload.authorId;
     }
 
-    const newData = assign(prepareChart(chart), payload);
+    const newData = assignWithEmptyObjects(prepareChart(chart), payload);
+
+    if (request.method === 'put' && payload.metadata) {
+        // in PUT request we replace the entire metadata object
+        newData.metadata = payload.metadata;
+    }
 
     await Chart.update(
         { ...decamelizeKeys(newData), metadata: newData.metadata },
@@ -769,27 +790,19 @@ async function exportChart(request, h) {
 
     Object.assign(payload, params);
     try {
-        const results = await events.emit(event.CHART_EXPORT, {
-            data: payload,
-            userId: user.id,
-            logger
-        });
-
-        const successfulResult = results.find(res => res.status === 'success');
-
-        if (!successfulResult) {
-            const { error } = results.find(res => res.status === 'error') || {
-                error: new CodedError(
-                    'notImplemented',
-                    `the export format "${params.format}" is not available`
-                )
-            };
-            throw error;
-        }
+        const result = await events.emit(
+            event.CHART_EXPORT,
+            {
+                data: payload,
+                userId: user.id,
+                logger
+            },
+            { filter: 'first' }
+        );
 
         await request.server.methods.logAction(user.id, `chart/export/${params.format}`, params.id);
 
-        const { stream, type } = successfulResult.data;
+        const { stream, type } = result;
 
         if (query.download) {
             return h
@@ -875,17 +888,11 @@ async function getChartAsset(request, h) {
     const filename = params.asset;
 
     try {
-        const eventResults = await events.emit(event.GET_CHART_ASSET, { chart, filename });
-        const successResult = eventResults.find(e => e.status === 'success');
-
-        if (!successResult) {
-            const errorResult = eventResults.find(e => e.status === 'error');
-            throw errorResult
-                ? errorResult.error
-                : new Error(`${event.GET_CHART_ASSET} event failed`);
-        }
-
-        const contentStream = successResult.data;
+        const contentStream = await events.emit(
+            event.GET_CHART_ASSET,
+            { chart, filename },
+            { filter: 'first' }
+        );
 
         const contentType =
             chart.type === 'locator-map' && path.extname(filename) === '.csv'
@@ -932,16 +939,18 @@ async function writeChartAsset(request, h) {
     const filename = params.asset;
 
     try {
-        const eventResults = await events.emit(event.PUT_CHART_ASSET, {
-            chart,
-            data:
-                request.headers['content-type'] === 'application/json'
-                    ? JSON.stringify(request.payload)
-                    : request.payload,
-            filename
-        });
-
-        const { code } = eventResults.find(e => e.status === 'success').data;
+        const { code } = await events.emit(
+            event.PUT_CHART_ASSET,
+            {
+                chart,
+                data:
+                    request.headers['content-type'] === 'application/json'
+                        ? JSON.stringify(request.payload)
+                        : request.payload,
+                filename
+            },
+            { filter: 'first' }
+        );
 
         // log chart/edit
         await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
