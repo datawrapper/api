@@ -33,7 +33,7 @@ function cookieAuth(server, options) {
         isSecure: process.env.NODE_ENV === 'production',
         strictHeader: false,
         domain: `.${api.domain}`,
-        isSameSite: false,
+        isSameSite: 'Lax',
         path: '/'
     });
 
