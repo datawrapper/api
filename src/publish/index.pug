@@ -11,7 +11,10 @@ html(lang="en")
       | !{CHART_HTML}
 
     //- https://v8.dev/blog/cost-of-javascript-2019#json
-    script window.__DW_SVELTE_PROPS__ = JSON.parse(!{__DW_SVELTE_PROPS__});
+    script.
+      window.__DW_SVELTE_PROPS__ = JSON.parse(!{__DW_SVELTE_PROPS__});
+      window.__DW_SVELTE_PROPS__.isStylePlain = /[?&]plain=1/.test(window.location.search);
+      window.__DW_SVELTE_PROPS__.isStyleStatic = /[?&]static=1/.test(window.location.search);
 
     each src in SCRIPTS
       script(src=src)
