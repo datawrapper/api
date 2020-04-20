@@ -19,7 +19,7 @@ const postcss = pCSS([
     require('cssnano')({ preset: ['default', { svgo: false }] })
 ]);
 
-module.exports = { compileCSS };
+module.exports = { compileCSS, findLessVariables, createFontEntries, flatten };
 
 /**
  * Compile and concatenate .less files to CSS and run some code optimizations with PostCSS.
