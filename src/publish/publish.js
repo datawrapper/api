@@ -313,7 +313,7 @@ async function publishChart(request, h) {
 
     await publishStatusAction.destroy();
 
-    await server.app.events.emit(server.app.event.POST_CHART_PUBLISH, { chart, user });
+    await server.app.events.emit(server.app.event.CHART_PUBLISHED, { chart, user });
 
     return {
         version: newPublicVersion,
