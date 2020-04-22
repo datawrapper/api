@@ -1,35 +1,19 @@
 const Boom = require('@hapi/boom');
-const path = require('path');
-const process = require('process');
-const fs = require('fs-extra');
-const os = require('os');
-const pug = require('pug');
 const { Op } = require('@datawrapper/orm').db;
 const { Chart, ChartPublic, ChartAccessToken, Action } = require('@datawrapper/orm/models');
-const chartCore = require('@datawrapper/chart-core');
-const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
 const set = require('lodash/set');
-const { stringify, readFileAndHash, copyFileHashed, prepareChart } = require('../utils/index.js');
+const { prepareChart } = require('../utils/index.js');
 const { getScope } = require('../utils/l10n');
 
-const { compileCSS } = require('./compile-css');
-const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
-
 async function publishChart(request, h) {
-    const startTiming = process.hrtime();
-
     const { params, auth, server } = request;
-    const { events, event, visualizations } = server.app;
+    const { events, event } = server.app;
+    const { createChartWebsite } = server.methods;
     const user = auth.artifacts;
 
-    const chart = await Chart.findByPk(params.id, { attributes: { include: ['created_at'] } });
-    if (!(await chart.isPublishableBy(auth.artifacts))) {
-        return Boom.unauthorized();
-    }
-
     const publishStatus = [];
-    const publishStatusAction = await request.server.methods.logAction(
+    const publishStatusAction = await server.methods.logAction(
         user.id,
         `chart/${params.id}/publish`,
         ''
@@ -42,190 +26,21 @@ async function publishChart(request, h) {
         });
     }
 
-    /**
-     * Load chart information
-     * (including metadata, data, basemaps, etc.)
-     */
-    const { result: publishData } = await server.inject({
-        url: `/v3/charts/${params.id}/publish/data`,
-        auth
-    });
-
-    if (chart.error) {
-        return Boom.notFound();
-    }
-
-    const csv = publishData.data;
-    const chartJSON = publishData.chart;
-    delete publishData.data;
-    delete publishData.chart;
-
-    if (!csv) {
-        await logPublishStatus('error-data');
-        return Boom.conflict('No chart data available.');
-    }
-
-    /**
-     * Load visualization information
-     */
-    const vis = visualizations.get(chart.type);
-    if (!vis) {
-        await logPublishStatus('error-vis-not-supported');
-        return Boom.notImplemented(`"${chart.type}" is currently not supported.`);
-    }
-
-    // load vendor locales needed by visualization
-    const locales = {};
-    if (vis.dependencies.dayjs) {
-        locales.dayjs = await loadVendorLocale('dayjs', chart.language);
-    }
-    if (vis.dependencies.numeral) {
-        locales.numeral = await loadVendorLocale('numeral', chart.language);
-    }
-
-    // no need to await this...
-    logPublishStatus('preparing');
-
-    /**
-     * Load theme information
-     */
-    const { result: theme } = await server.inject({
-        url: `/v3/themes/${chart.theme}?extend=true`,
-        auth
-    });
-
-    /**
-     * Load assets like CSS, Javascript and translations
-     */
-    const [css, { fileName, content }] = await Promise.all([
-        compileCSS({ theme, filePaths: [chartCore.less, vis.less] }),
-        readFileAndHash(vis.script)
-    ]);
-    theme.less = ''; /* reset "theme.less" to not inline it twice into the HTML */
-    vis.locale = publishData.locales;
-    delete publishData.locales;
-
-    /**
-     * Collect data for server side rendering with Svelte and Pug
-     */
-    const props = {
-        data: {
-            visJSON: vis,
-            chartJSON,
-            publishData,
-            chartData: csv,
-            isPreview: false,
-            chartLocale: chart.language,
-            locales,
-            metricPrefix: {} /* NOTE: What about this? */,
-            themeId: theme.id,
-            fontsJSON: theme.fonts,
-            typographyJSON: theme.data.typography,
-            polyfillUri: `../../lib/vendor`
-        },
-        theme,
-        translations: vis.locale
-    };
-
-    logPublishStatus('rendering');
-
-    const { html, head } = chartCore.svelte.render(props);
-
-    let dependencies = getDependencies({
-        locale: chart.language,
-        dependencies: vis.dependencies
-    }).map(file => path.join(chartCore.path.dist, file));
-
-    /* Create a temporary directory */
-    const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
-
-    /* Copy dependencies into temporary directory and hash them on the way */
-    const dependencyPromises = [dependencies, vis.libraries.map(lib => lib.file)]
-        .flat()
-        .map(filePath => copyFileHashed(filePath, outDir));
-
-    dependencies = (await Promise.all(dependencyPromises)).map(file =>
-        path.join('lib/vendor/', file)
-    );
-
-    const [coreScript] = await Promise.all([
-        copyFileHashed(path.join(chartCore.path.dist, 'main.js'), path.join(outDir)),
-        fs.writeFile(path.join(outDir, fileName), content)
-    ]);
-
-    dependencies.push(path.join('lib/vis/', fileName));
-
-    const blocksFilePromises = publishData.blocks
-        .filter(block => block.include && block.prefix)
-        .map(async ({ prefix, publish, blocks }) => {
-            const [js, css] = await Promise.all([
-                copyFileHashed(publish.js, outDir, { prefix }),
-                copyFileHashed(publish.css, outDir, { prefix })
-            ]);
-            return {
-                source: {
-                    js: `../../lib/blocks/${js}`,
-                    css: `../../lib/blocks/${css}`
-                },
-                blocks
-            };
-        });
-
-    const publishedBlocks = await Promise.all(blocksFilePromises);
-    const blocksFiles = publishedBlocks
-        .map(({ source }) => [source.js.replace('../../', ''), source.css.replace('../../', '')])
-        .flat();
-
-    props.data.publishData.blocks = publishedBlocks;
-
-    /**
-     * Render the visualizations entry: "index.html"
-     */
-    const indexHTML = renderHTML({
-        __DW_SVELTE_PROPS__: stringify(props),
-        CHART_HTML: html,
-        CHART_HEAD: head,
-        CORE_SCRIPT: `../../lib/${coreScript}`,
-        CSS: css,
-        SCRIPTS: dependencies.map(file => `../../${file}`),
-        CHART_CLASS: [
-            `vis-height-${get(vis, 'height', 'fit')}`,
-            `theme-${get(theme, 'id')}`,
-            `vis-${get(vis, 'id')}`
-        ]
-    });
-
-    /* Copy polyfills to destination */
-    const polyfillPromises = chartCore.polyfills.map(async filePath => {
-        const file = path.basename(filePath);
-        await fs.copyFile(filePath, path.join(outDir, file));
-        return path.join('lib/vendor/', file);
-    });
-
-    const polyfillFiles = await Promise.all(polyfillPromises);
-
-    /* write "index.html", visualization Javascript and other assets */
-    await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
-    const fileMap = [
-        ...dependencies,
-        ...polyfillFiles,
-        ...blocksFiles,
-        path.join('lib/', coreScript),
-        'index.html'
-    ];
-
-    /* write public CSV file (used when forking a chart) */
-    await events.emit(event.PUT_CHART_ASSET, {
-        chart,
-        data: csv,
-        filename: `${chart.id}.public.csv`
-    });
+    const options = { auth, server, log: logPublishStatus };
+    const { chart, data, outDir, fileMap, cleanup } = await createChartWebsite(params.id, options);
 
     /**
      * The hard work is done!
      * The only thing left is to move the published chart to it's public directory
      * and update some database entries!
      */
+
+    /* write public CSV file (used when forking a chart) */
+    await events.emit(event.PUT_CHART_ASSET, {
+        chart,
+        data,
+        filename: `${chart.id}.public.csv`
+    });
 
     /* increment public version */
     const newPublicVersion = chart.public_version + 1;
@@ -255,7 +70,7 @@ async function publishChart(request, h) {
     /**
      * All files were moved and the temporary directory is not needed anymore.
      */
-    await fs.remove(outDir);
+    await cleanup();
 
     if (eventError) {
         throw Boom.badGateway();
@@ -306,8 +121,6 @@ async function publishChart(request, h) {
 
     request.logger.debug({ dest: destination }, `Chart [${chart.id}] published`);
 
-    const endTiming = process.hrtime(startTiming);
-
     // log action that chart has been published
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
 
@@ -317,33 +130,8 @@ async function publishChart(request, h) {
 
     return {
         version: newPublicVersion,
-        url: destination,
-        timing: `${endTiming[0]}s ${Math.round(endTiming[1] / 1000000)}ms`
+        url: destination
     };
-}
-
-async function loadVendorLocale(vendor, locale) {
-    const basePath = path.resolve(
-        __dirname,
-        '../../node_modules/@datawrapper/locales/locales/',
-        vendor
-    );
-    const culture = locale.replace('_', '-').toLowerCase();
-    const tryFiles = [`${culture}.js`];
-    if (culture.length > 2) {
-        // also try just language as fallback
-        tryFiles.push(`${culture.substr(0, 2)}.js`);
-    }
-    for (let i = 0; i < tryFiles.length; i++) {
-        const file = path.join(basePath, tryFiles[i]);
-        try {
-            return await fs.readFile(file, 'utf-8');
-        } catch (e) {
-            // file not found, so try next
-        }
-    }
-    // no locale found at all
-    return 'null';
 }
 
 async function publishChartStatus(request, h) {
@@ -351,7 +139,7 @@ async function publishChartStatus(request, h) {
 
     const chart = await Chart.findByPk(params.id);
     if (!(await chart.isEditableBy(auth.artifacts))) {
-        return Boom.unauthorized();
+        throw Boom.unauthorized();
     }
 
     const publishAction = await Action.findOne({
@@ -361,7 +149,7 @@ async function publishChartStatus(request, h) {
         order: [['id', 'DESC']]
     });
 
-    if (!publishAction) return Boom.notFound();
+    if (!publishAction) throw Boom.notFound();
 
     return {
         progress: publishAction.details.split(',')
@@ -396,7 +184,7 @@ async function publishData(request, h) {
     }
 
     if (!hasAccess) {
-        return Boom.unauthorized();
+        throw Boom.unauthorized();
     }
 
     // the csv dataset

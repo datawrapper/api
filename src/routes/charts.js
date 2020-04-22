@@ -236,7 +236,7 @@ function register(server, options) {
                         .description('5 character long chart ID.'),
                     format: Joi.string()
                         .required()
-                        .description('Export format (PDF, PNG, SVG)')
+                        .description('Export format (PDF, PNG, SVG, ZIP)')
                 }),
                 payload: Joi.object({
                     unit: Joi.string().default('px'),
@@ -279,7 +279,7 @@ function register(server, options) {
                         .description('5 character long chart ID.'),
                     format: Joi.string()
                         .required()
-                        .description('Export format (pdf, png, svg)')
+                        .description('Export format (PDF, PNG, SVG, ZIP)')
                 }),
                 query: Joi.object({
                     unit: Joi.string().default('px'),
@@ -792,6 +792,14 @@ async function exportChart(request, h) {
         }
     }
 
+    if (params.format === 'zip' && !plugins.includes('export-zip')) {
+        const zipPlugin = await Plugin.findByPk('export-zip');
+
+        if (zipPlugin && zipPlugin.is_private) {
+            return Boom.forbidden();
+        }
+    }
+
     Object.assign(payload, params);
     try {
         const result = await events.emit(
@@ -799,6 +807,7 @@ async function exportChart(request, h) {
             {
                 data: payload,
                 userId: user.id,
+                auth,
                 logger
             },
             { filter: 'first' }
@@ -808,7 +817,7 @@ async function exportChart(request, h) {
 
         const { stream, type } = result;
 
-        if (query.download) {
+        if (query.download || params.format === 'zip') {
             return h
                 .response(stream)
                 .header(
