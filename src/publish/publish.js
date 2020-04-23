@@ -138,8 +138,8 @@ async function publishChartStatus(request, h) {
     const { params, auth } = request;
 
     const chart = await Chart.findByPk(params.id);
-    if (!(await chart.isEditableBy(auth.artifacts))) {
-        throw Boom.unauthorized();
+    if (!(await chart.isEditableBy(auth.artifacts, auth.credentials.session))) {
+        return Boom.unauthorized();
     }
 
     const publishAction = await Action.findOne({
@@ -165,12 +165,13 @@ async function publishData(request, h) {
           })
         : Chart.findOne({
               where: { id: params.id, deleted: { [Op.not]: true } },
-              attributes: { exclude: ['deleted', 'deleted_at', 'guest_session', 'utf8'] }
+              attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
           });
 
     const chart = await chartQuery;
 
-    let hasAccess = query.published || (await chart.isEditableBy(auth.artifacts));
+    let hasAccess =
+        query.published || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
     if (!hasAccess && query.ott) {
         const count = await ChartAccessToken.destroy({
             where: {

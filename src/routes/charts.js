@@ -867,7 +867,10 @@ async function deleteChart(request, h) {
 
     if (!chart) return Boom.notFound();
 
-    if (!server.methods.isAdmin(request) || !(await chart.isEditableBy(auth.artifacts))) {
+    if (
+        !server.methods.isAdmin(request) ||
+        !(await chart.isEditableBy(auth.artifacts, auth.credentials.session))
+    ) {
         return Boom.forbidden();
     }
 
@@ -939,7 +942,9 @@ async function writeChartAsset(request, h) {
     const chart = await loadChart(request);
 
     const isGuestChart = chart.guest_session === request.auth.credentials.session;
-    const isEditable = isGuestChart || (await chart.isEditableBy(request.auth.artifacts));
+    const isEditable =
+        isGuestChart ||
+        (await chart.isEditableBy(request.auth.artifacts, auth.credentials.session));
 
     if (!isEditable) {
         return Boom.forbidden();
