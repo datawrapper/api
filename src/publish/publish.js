@@ -170,7 +170,7 @@ async function publishData(request, h) {
 
     const chart = await chartQuery;
 
-    let hasAccess = query.published || (await chart.isPublishableBy(auth.artifacts));
+    let hasAccess = query.published || (await chart.isEditableBy(auth.artifacts));
     if (!hasAccess && query.ott) {
         const count = await ChartAccessToken.destroy({
             where: {

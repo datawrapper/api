@@ -863,17 +863,13 @@ async function deleteChart(request, h) {
         }
     };
 
-    if (!server.methods.isAdmin(request)) {
-        if (auth.artifacts.role === 'guest') {
-            set(options, ['where', 'guest_session'], auth.credentials.session);
-        } else {
-            set(options, ['where', 'author_id'], auth.artifacts.id);
-        }
-    }
-
     const chart = await Chart.findOne(options);
 
-    if (!chart) return Boom.forbidden();
+    if (!chart) return Boom.notFound();
+
+    if (!server.methods.isAdmin(request) || !(await chart.isEditableBy(auth.artifacts))) {
+        return Boom.forbidden();
+    }
 
     await chart.update({
         deleted: true,
