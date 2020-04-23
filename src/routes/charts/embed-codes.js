@@ -40,7 +40,7 @@ module.exports = async (server, options) => {
             if (!chart) {
                 return Boom.notFound();
             }
-            if (!(await chart.isPublishableBy(auth.artifacts))) {
+            if (!(await chart.isEditableBy(auth.artifacts))) {
                 return Boom.unauthorized();
             }
 
