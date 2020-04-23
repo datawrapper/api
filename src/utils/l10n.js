@@ -19,6 +19,13 @@ function getScope(scope, locale = defaultLanguage) {
 }
 
 function addScope(scope, messages) {
+    if (scope === 'chart') {
+        Object.keys(messages).forEach(key => {
+            messages[key.replace('-', '_')] = messages[key];
+            delete messages[key];
+        });
+    }
+
     if (!scopes[scope]) {
         scopes[scope] = messages;
     } else {
