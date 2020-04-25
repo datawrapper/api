@@ -12,7 +12,7 @@ const postcss = pCSS([
     /* removes all declarations with value of CSS_ELIMINATION_KEYWORD */
     require('./postcss-plugin-remove-declaration')(CSS_ELIMINATION_KEYWORD),
     /* sets px unit for all unitless values (12 -> 12px) */
-    require('postcss-default-unit')({ ignore: { 'stroke-opacity': true } }),
+    require('postcss-default-unit')({ ignore: { 'stroke-opacity': true, 'font-family': true } }),
     /* vendor prefixes for older browsers */
     require('autoprefixer'),
     /* css minification and dead code elimination */
