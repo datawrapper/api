@@ -43,7 +43,7 @@ utils.copyFileHashed = (filePath, destination, { prefix, hashLength = 8 } = {}) 
     let hash = crypto.createHash('sha256');
     const outFileName = path.basename(filePath);
 
-    const outFilePath = path.join(destination, `temp-${outFileName}`);
+    const outFilePath = path.join(destination, `temp-${utils.generateToken(5)}-${outFileName}`);
     const input = fs.createReadStream(filePath);
     const output = fs.createWriteStream(outFilePath);
 
