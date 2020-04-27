@@ -11,11 +11,15 @@ async function publishChart(request, h) {
     const { events, event } = server.app;
     const { createChartWebsite } = server.methods;
     const user = auth.artifacts;
+    const chart = await Chart.findByPk(params.id, { attributes: { include: ['created_at'] } });
+    if (!chart || !(await chart.isPublishableBy(user))) {
+        throw Boom.unauthorized();
+    }
 
     const publishStatus = [];
     const publishStatusAction = await server.methods.logAction(
         user.id,
-        `chart/${params.id}/publish`,
+        `chart/${params.id}/publish/${chart.public_version}`,
         ''
     );
 
@@ -27,7 +31,7 @@ async function publishChart(request, h) {
     }
 
     const options = { auth, server, log: logPublishStatus };
-    const { chart, data, outDir, fileMap, cleanup } = await createChartWebsite(params.id, options);
+    const { data, outDir, fileMap, cleanup } = await createChartWebsite(chart, options);
 
     /**
      * The hard work is done!
@@ -124,7 +128,7 @@ async function publishChart(request, h) {
     // log action that chart has been published
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
 
-    await publishStatusAction.destroy();
+    logPublishStatus('done');
 
     await server.app.events.emit(server.app.event.CHART_PUBLISHED, { chart, user });
 
@@ -144,7 +148,7 @@ async function publishChartStatus(request, h) {
 
     const publishAction = await Action.findOne({
         where: {
-            key: `chart/${chart.id}/publish`
+            key: `chart/${chart.id}/publish/${params.version}`
         },
         order: [['id', 'DESC']]
     });
