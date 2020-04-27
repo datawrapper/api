@@ -15,7 +15,7 @@ async function publishChart(request, h) {
     const publishStatus = [];
     const publishStatusAction = await server.methods.logAction(
         user.id,
-        `chart/${params.id}/publish`,
+        `chart/${params.id}/publish/${chart.public_version}`,
         ''
     );
 
@@ -124,7 +124,7 @@ async function publishChart(request, h) {
     // log action that chart has been published
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
 
-    await publishStatusAction.destroy();
+    logPublishStatus('done');
 
     await server.app.events.emit(server.app.event.CHART_PUBLISHED, { chart, user });
 
@@ -144,7 +144,7 @@ async function publishChartStatus(request, h) {
 
     const publishAction = await Action.findOne({
         where: {
-            key: `chart/${chart.id}/publish`
+            key: `chart/${chart.id}/publish/${params.version}`
         },
         order: [['id', 'DESC']]
     });

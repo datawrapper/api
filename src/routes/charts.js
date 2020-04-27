@@ -478,14 +478,17 @@ function register(server, options) {
 
     server.route({
         method: 'GET',
-        path: '/{id}/publish/status',
+        path: '/{id}/publish/status/{version}',
         options: {
             tags: ['api'],
             validate: {
                 params: Joi.object({
                     id: Joi.string()
                         .length(5)
-                        .required()
+                        .required(),
+                    version: Joi.number()
+                        .integer()
+                        .min(0)
                 })
             }
         },
