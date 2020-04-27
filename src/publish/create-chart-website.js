@@ -3,7 +3,6 @@ const path = require('path');
 const fs = require('fs-extra');
 const os = require('os');
 const pug = require('pug');
-const { Chart } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
@@ -39,22 +38,17 @@ const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
  * @returns {Result}
  */
 module.exports = async function createChartWebsite(
-    chartId,
+    chart,
     { auth, server, log = noop, includePolyfills = true, flatRessources = false } = {}
 ) {
     const { visualizations } = server.app;
-
-    const chart = await Chart.findByPk(chartId, { attributes: { include: ['created_at'] } });
-    if (!chart || !(await chart.isPublishableBy(auth.artifacts))) {
-        throw Boom.unauthorized();
-    }
 
     /**
      * Load chart information
      * (including metadata, data, basemaps, etc.)
      */
     const { result: publishData } = await server.inject({
-        url: `/v3/charts/${chartId}/publish/data`,
+        url: `/v3/charts/${chart.id}/publish/data`,
         auth
     });
 
@@ -231,7 +225,7 @@ module.exports = async function createChartWebsite(
         await fs.remove(outDir);
     }
 
-    return { chart, data, outDir, fileMap, cleanup };
+    return { data, outDir, fileMap, cleanup };
 };
 
 async function loadVendorLocale(vendor, locale) {

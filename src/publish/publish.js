@@ -11,6 +11,10 @@ async function publishChart(request, h) {
     const { events, event } = server.app;
     const { createChartWebsite } = server.methods;
     const user = auth.artifacts;
+    const chart = await Chart.findByPk(params.id, { attributes: { include: ['created_at'] } });
+    if (!chart || !(await chart.isPublishableBy(user))) {
+        throw Boom.unauthorized();
+    }
 
     const publishStatus = [];
     const publishStatusAction = await server.methods.logAction(
@@ -27,7 +31,7 @@ async function publishChart(request, h) {
     }
 
     const options = { auth, server, log: logPublishStatus };
-    const { chart, data, outDir, fileMap, cleanup } = await createChartWebsite(params.id, options);
+    const { data, outDir, fileMap, cleanup } = await createChartWebsite(chart, options);
 
     /**
      * The hard work is done!
