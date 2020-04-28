@@ -240,6 +240,15 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     const hasRegisteredPublishPlugin = registeredEvents.includes(event.PUBLISH_CHART);
 
+    if (general.localChartPublishRoot === undefined && !hasRegisteredPublishPlugin) {
+        server
+            .logger()
+            .error(
+                '[Config] You need to configure `general.localChartPublishRoot` or install a plugin that implements chart publication.'
+            );
+        process.exit(1);
+    }
+
     if (!hasRegisteredPublishPlugin) {
         const protocol = frontend.https ? 'https' : 'http';
         events.on(event.PUBLISH_CHART, async ({ chart, outDir, fileMap }) => {
