@@ -29,6 +29,18 @@
         "api": "node src/index.js",
         "start": "node src/index.js"
     },
+    "nodemonConfig": {
+        "ignore": [
+            "d3*/src/*",
+            "d3*/static/*",
+            "locator-maps/src/*",
+            "locator-maps/static/*",
+            "tables/src/*",
+            "tables/static/*",
+            "visualization*/src/*",
+            "visualization*/static/*"
+        ]
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
