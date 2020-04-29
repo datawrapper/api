@@ -158,12 +158,33 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     server.app.event = eventList;
     server.app.events = new ApiEventEmitter({ logger: server.logger });
+    server.app.visualizations = new Map();
+    server.app.exportFormats = new Set();
 
     server.method('getModel', name => ORM.db.models[name]);
     server.method('config', key => (key ? config[key] : config));
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
     server.method('createChartWebsite', require('./publish/create-chart-website.js'));
+    server.method('registerVisualization', function(plugin, visualizations = []) {
+        visualizations.forEach(vis => {
+            const visualization = server.app.visualizations.get(vis.id);
+
+            if (visualization) {
+                server
+                    .logger()
+                    .warn(
+                        { status: 'skipping', registeredBy: plugin },
+                        `[Visualization] "${vis.id}" already registered.`
+                    );
+                return;
+            }
+
+            vis.__plugin = plugin;
+            vis.libraries = vis.libraries || [];
+            server.app.visualizations.set(vis.id, vis);
+        });
+    });
 
     const { validateThemeData } = schemas.initialize({
         getSchema: config.api.schemaBaseUrl
@@ -186,11 +207,10 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         await server.register(OpenAPI, routeOptions);
     }
 
-    await server.register([require('./routes')], routeOptions);
-
     if (options.usePlugins) {
         await server.register([require('./plugin-loader')], routeOptions);
     }
+    await server.register([require('./routes')], routeOptions);
 
     const { events, event } = server.app;
     const { general, frontend } = server.methods.config();
