@@ -12,29 +12,6 @@ module.exports = {
 };
 
 async function register(server, options) {
-    server.app.visualizations = new Map();
-    server.method('registerVisualization', registerVisualization);
-
-    function registerVisualization(plugin, visualizations = []) {
-        visualizations.forEach(vis => {
-            const visualization = server.app.visualizations.get(vis.id);
-
-            if (visualization) {
-                server
-                    .logger()
-                    .warn(
-                        { status: 'skipping', registeredBy: plugin },
-                        `[Visualization] "${vis.id}" already registered.`
-                    );
-                return;
-            }
-
-            vis.__plugin = plugin;
-            vis.libraries = vis.libraries || [];
-            server.app.visualizations.set(vis.id, vis);
-        });
-    }
-
     server.route({
         method: 'GET',
         path: '/{id}',
