@@ -70,9 +70,9 @@ function createFontEntries(fonts) {
                     return `
 @font-face {
     font-family: '${font}';
-    src: url('${attr.files.woff2}') format('woff2'),     /* Super Modern Browsers */
          url('${attr.files.woff}')  format('woff'),      /* Pretty Modern Browsers */
          url('${attr.files.ttf}')   format('truetype');  /* Safari, Android, iOS */
+         url('${attr.files.svg}#${font}')   format('svg');
 }`;
                 case 'import':
                     return `@import '${attr.import}';`;
