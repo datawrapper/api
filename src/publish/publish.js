@@ -163,16 +163,16 @@ async function publishChartStatus(request, h) {
 async function publishData(request, h) {
     const { query, params, server, auth } = request;
 
-    const chartQuery = query.published
+    const chart = await (query.published
         ? ChartPublic.findOne({
               where: { id: params.id }
           })
         : Chart.findOne({
               where: { id: params.id, deleted: { [Op.not]: true } },
               attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
-          });
+          }));
 
-    const chart = await chartQuery;
+    if (!chart) throw Boom.notFound();
 
     let hasAccess =
         query.published || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
