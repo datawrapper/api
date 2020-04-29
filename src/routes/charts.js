@@ -811,7 +811,7 @@ async function exportChart(request, h) {
 
         await request.server.methods.logAction(user.id, `chart/export/${params.format}`, params.id);
 
-        const { stream, type } = result;
+        const { stream, type } = result.data;
 
         if (query.download || params.format === 'zip') {
             return h
