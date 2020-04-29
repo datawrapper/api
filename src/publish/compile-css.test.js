@@ -17,6 +17,7 @@ test('should create font rule declarations', t => {
         Font: {
             type: 'font',
             files: {
+                svg: '/font.svg',
                 ttf: '/font.ttf',
                 woff: '/font.woff',
                 woff2: '/font.woff2'
