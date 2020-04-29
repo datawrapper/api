@@ -72,7 +72,6 @@ function createFontEntries(fonts) {
     font-family: '${font}';
          url('${attr.files.woff}')  format('woff'),      /* Pretty Modern Browsers */
          url('${attr.files.ttf}')   format('truetype');  /* Safari, Android, iOS */
-         url('${attr.files.svg}#${font}')   format('svg');
 }`;
                 case 'import':
                     return `@import '${attr.import}';`;
