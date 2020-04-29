@@ -235,9 +235,9 @@ function register(server, options) {
                         .required()
                         .description('5 character long chart ID.'),
                     format: Joi.string()
-                        .lowercase()
                         .required()
-                        .description('Export format (pdf, png, svg, zip)')
+                        .valid(...server.app.exportFormats.values())
+                        .description('Export format')
                 }),
                 payload: Joi.object({
                     unit: Joi.string().default('px'),
@@ -279,9 +279,9 @@ function register(server, options) {
                         .required()
                         .description('5 character long chart ID.'),
                     format: Joi.string()
-                        .lowercase()
                         .required()
-                        .description('Export format (pdf, png, svg, zip)')
+                        .valid(...server.app.exportFormats.values())
+                        .description('Export format')
                 }),
                 query: Joi.object({
                     unit: Joi.string().default('px'),
