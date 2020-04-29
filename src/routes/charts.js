@@ -626,10 +626,7 @@ async function getChart(request, h) {
         return Boom.notFound();
     }
 
-    const isGuestChart = chart.guest_session === auth.credentials.session;
-
-    const isEditable =
-        isGuestChart || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
+    const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
 
     if (query.published || !isEditable) {
         if (chart.published_at) {
@@ -724,10 +721,7 @@ async function editChart(request, h) {
         return Boom.notFound();
     }
 
-    const isGuestChart = chart.guest_session === auth.credentials.session;
-
-    const isEditable =
-        isGuestChart || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
+    const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
 
     if (!isEditable) {
         return Boom.unauthorized();
@@ -949,10 +943,7 @@ async function writeChartAsset(request, h) {
     const user = auth.artifacts;
     const chart = await loadChart(request);
 
-    const isGuestChart = chart.guest_session === request.auth.credentials.session;
-    const isEditable =
-        isGuestChart ||
-        (await chart.isEditableBy(request.auth.artifacts, auth.credentials.session));
+    const isEditable = await chart.isEditableBy(request.auth.artifacts, auth.credentials.session);
 
     if (!isEditable) {
         return Boom.forbidden();
