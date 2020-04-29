@@ -803,17 +803,23 @@ async function exportChart(request, h) {
 
     Object.assign(payload, params);
     try {
-        const result = await events.emit(
-            event.CHART_EXPORT,
-            {
-                chart,
-                user,
-                data: payload,
-                auth,
-                logger
-            },
-            { filter: 'first' }
-        );
+        const result = (
+            await events.emit(
+                event.CHART_EXPORT,
+                {
+                    chart,
+                    user,
+                    data: payload,
+                    auth,
+                    logger
+                },
+                {
+                    filter: 'success'
+                }
+            )
+        ).find(res => res.data);
+
+        if (!result) return Boom.badImplementation();
 
         await request.server.methods.logAction(user.id, `chart/export/${params.format}`, params.id);
 
