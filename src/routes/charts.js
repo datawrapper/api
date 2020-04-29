@@ -798,20 +798,14 @@ async function exportChart(request, h) {
     Object.assign(payload, params);
     try {
         const result = (
-            await events.emit(
-                event.CHART_EXPORT,
-                {
-                    chart,
-                    user,
-                    data: payload,
-                    auth,
-                    logger
-                },
-                {
-                    filter: 'success'
-                }
-            )
-        ).find(res => res.data);
+            await events.emit(event.CHART_EXPORT, {
+                chart,
+                user,
+                data: payload,
+                auth,
+                logger
+            })
+        ).find(res => res.status === 'success' && res.data);
 
         if (!result) return Boom.badImplementation();
 
@@ -835,6 +829,7 @@ async function exportChart(request, h) {
             return Boom[error.code](error.message);
         }
         // this is an unexpected error, so let's log it
+        request.logger.error(error);
         return Boom.badImplementation();
     }
 }
