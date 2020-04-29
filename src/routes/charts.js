@@ -5,7 +5,7 @@ const { Op } = require('@datawrapper/orm').db;
 const { decamelizeKeys, decamelize } = require('humps');
 const set = require('lodash/set');
 const mime = require('mime');
-const { Chart, ChartPublic, User, Folder, Plugin } = require('@datawrapper/orm/models');
+const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
 const { prepareChart } = require('../utils/index.js');
 const assignWithEmptyObjects = require('../utils/assignWithEmptyObjects');
 
@@ -786,32 +786,29 @@ async function exportChart(request, h) {
     const { events, event } = server.app;
     const user = auth.artifacts;
 
-    const userPlugins = await user.getUserPluginCache();
-    const plugins = userPlugins && userPlugins.plugins ? userPlugins.plugins.split(',') : [];
-
-    if (params.format !== 'png' && !plugins.includes('export-pdf')) {
-        const pdfPlugin = await Plugin.findByPk('export-pdf');
-
-        if (pdfPlugin && pdfPlugin.is_private) {
-            return Boom.forbidden();
+    // authorize user
+    const chart = await Chart.findOne({
+        where: {
+            id: params.id,
+            deleted: { [Op.not]: true }
         }
-    }
+    });
 
-    if (params.format === 'zip' && !plugins.includes('export-zip')) {
-        const zipPlugin = await Plugin.findByPk('export-zip');
+    if (!chart) return Boom.notFound();
+    const mayEdit = await user.mayEditChart(chart);
+    if (!mayEdit) return Boom.notFound();
 
-        if (zipPlugin && zipPlugin.is_private) {
-            return Boom.forbidden();
-        }
-    }
+    // user is authorized to access chart
+    // further authoritzation is handled by plugins
 
     Object.assign(payload, params);
     try {
         const result = await events.emit(
             event.CHART_EXPORT,
             {
+                chart,
+                user,
                 data: payload,
-                userId: user.id,
                 auth,
                 logger
             },
