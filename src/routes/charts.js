@@ -252,7 +252,8 @@ function register(server, options) {
                     border: Joi.object().keys({
                         width: Joi.number(),
                         color: Joi.string().default('auto')
-                    })
+                    }),
+                    fullVector: Joi.boolean().default(false)
                 })
             }
         },
@@ -300,7 +301,8 @@ function register(server, options) {
                     zoom: Joi.number().default(2),
                     borderWidth: Joi.number(),
                     borderColor: Joi.string(),
-                    download: Joi.boolean().default(false)
+                    download: Joi.boolean().default(false),
+                    fullVector: Joi.boolean().default(false)
                 })
             }
         },
