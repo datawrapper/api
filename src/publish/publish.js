@@ -128,9 +128,13 @@ async function publishChart(request, h) {
     // log action that chart has been published
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
 
-    logPublishStatus('done');
+    await server.app.events.emit(server.app.event.CHART_PUBLISHED, {
+        chart,
+        user,
+        log: logPublishStatus
+    });
 
-    await server.app.events.emit(server.app.event.CHART_PUBLISHED, { chart, user });
+    logPublishStatus('done');
 
     return {
         version: newPublicVersion,
