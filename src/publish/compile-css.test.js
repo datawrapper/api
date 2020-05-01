@@ -29,6 +29,18 @@ test('should create font rule declarations', t => {
     t.snapshot(result);
 });
 
+test('should change a css @import without protocol to use https', t => {
+    const result = createFontEntries({
+        Roboto: {
+            type: 'font',
+            import: '//static.dwcdn.net/css/roboto.css',
+            method: 'import'
+        }
+    });
+
+    t.is(result, "@import 'https://static.dwcdn.net/css/roboto.css';");
+});
+
 test('should flatten a nested theme object', t => {
     const result = flatten({
         colors: { general: { padding: 0 } },
