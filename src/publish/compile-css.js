@@ -62,6 +62,14 @@ async function compileCSS({ theme, filePaths }) {
 }
 
 function createFontEntries(fonts) {
+    function processUrl(url) {
+        if (url.substring(0, 2) === '//') {
+            return `https:${url}`;
+        } else {
+            return url;
+        }
+    }
+
     return Object.entries(fonts)
         .map(([font, attr]) => {
             switch (attr.method) {
@@ -70,12 +78,12 @@ function createFontEntries(fonts) {
                     return `
 @font-face {
     font-family: '${font}';
-    src: url('${attr.files.woff}')  format('woff'),      /* Pretty Modern Browsers */
-         url('${attr.files.ttf}')   format('truetype'),  /* Safari, Android, iOS */
-         url('${attr.files.svg}#${font}')   format('svg');
+    src: url('${processUrl(attr.files.woff)}')  format('woff'),      /* Pretty Modern Browsers */
+         url('${processUrl(attr.files.ttf)}')   format('truetype'),  /* Safari, Android, iOS */
+         url('${processUrl(attr.files.svg)}#${font}')   format('svg');
 }`;
                 case 'import':
-                    return `@import '${attr.import}';`;
+                    return `@import '${processUrl(attr.import)}';`;
                 default:
                     return '';
             }
