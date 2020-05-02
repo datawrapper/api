@@ -193,7 +193,7 @@ async function publishData(request, h) {
 
         hasAccess = !!count;
 
-        if (hasAccess) {
+        if (hasAccess && chart.author_id) {
             user = await User.findByPk(chart.author_id);
         }
     }
