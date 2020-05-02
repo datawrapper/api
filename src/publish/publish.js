@@ -1,6 +1,6 @@
 const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
-const { Chart, ChartPublic, ChartAccessToken, Action } = require('@datawrapper/orm/models');
+const { User, Chart, ChartPublic, ChartAccessToken, Action } = require('@datawrapper/orm/models');
 const get = require('lodash/get');
 const set = require('lodash/set');
 const { prepareChart } = require('../utils/index.js');
@@ -178,6 +178,8 @@ async function publishData(request, h) {
 
     if (!chart) throw Boom.notFound();
 
+    let user = auth.artifacts;
+
     let hasAccess =
         query.published || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
     if (!hasAccess && query.ott) {
@@ -190,6 +192,10 @@ async function publishData(request, h) {
         });
 
         hasAccess = !!count;
+
+        if (hasAccess) {
+            user = await User.findByPk(chart.author_id);
+        }
     }
 
     if (!hasAccess) {
@@ -229,7 +235,7 @@ async function publishData(request, h) {
         server.app.event.CHART_BLOCKS,
         {
             chart,
-            user: auth.artifacts,
+            user,
             data
         },
         { filter: 'success' }
