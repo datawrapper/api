@@ -58,6 +58,8 @@ module.exports = async function createChartWebsite(
 
     const { data } = publishData;
     const chartJSON = publishData.chart;
+    const locale = chart.language || 'en-US';
+
     delete publishData.data;
     delete publishData.chart;
 
@@ -78,10 +80,10 @@ module.exports = async function createChartWebsite(
     // load vendor locales needed by visualization
     const locales = {};
     if (vis.dependencies.dayjs) {
-        locales.dayjs = await loadVendorLocale('dayjs', chart.language);
+        locales.dayjs = await loadVendorLocale('dayjs', locale);
     }
     if (vis.dependencies.numeral) {
-        locales.numeral = await loadVendorLocale('numeral', chart.language);
+        locales.numeral = await loadVendorLocale('numeral', locale);
     }
 
     // no need to await this...
@@ -116,7 +118,7 @@ module.exports = async function createChartWebsite(
             publishData,
             chartData: data,
             isPreview: false,
-            chartLocale: chart.language,
+            chartLocale: locale,
             locales,
             metricPrefix: {} /* NOTE: What about this? */,
             themeId: theme.id,
@@ -133,7 +135,7 @@ module.exports = async function createChartWebsite(
     const { html, head } = chartCore.svelte.render(props);
 
     let dependencies = getDependencies({
-        locale: chart.language,
+        locale,
         dependencies: vis.dependencies
     }).map(file => path.join(chartCore.path.dist, file));
 
