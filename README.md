@@ -114,6 +114,7 @@ Key | Example Value | Description
 ---------|----------|---------
 `api.port` | `3000` | Network port the node process will be running on.
 `api.domain` | `"datawrapper.de"` | Domain where the API will be available at and used for the session cookies `Domain` value.
+`api.legacyApi` | `"https://api.datawrapper.de"` | Base Url for the PHP API. Some endpoints need to call it in the transition away from the PHP API.
 `api.subdomain` | `"api"` | Subdomain where the API will be available. Value will be combined with `api.domain`. If the session cookie is supposed to be available only under the subdomain, it can be included in `api.domain` and this key can be removed.
 `api.cors` | `['*']` | Array of fully qualified origins.
 `api.sessionID` | `"DW-SESSION"` | Name for session cookie.

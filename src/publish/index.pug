@@ -1,0 +1,25 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    style!=CSS
+    | !{CHART_HEAD}
+
+  body
+    div(class="dw-chart chart" class=CHART_CLASS id="__svelte-dw")
+      | !{CHART_HTML}
+
+    //- https://v8.dev/blog/cost-of-javascript-2019#json
+    script.
+      window.__DW_SVELTE_PROPS__ = JSON.parse(!{__DW_SVELTE_PROPS__});
+      window.__DW_SVELTE_PROPS__.isStylePlain = /[?&]plain=1/.test(window.location.search);
+      window.__DW_SVELTE_PROPS__.isStyleStatic = /[?&]static=1/.test(window.location.search);
+
+    each src in SCRIPTS
+      script(src=src)
+
+    script.
+      window.parent.postMessage('datawrapper:vis:reload', '*');
+
+    script(src=CORE_SCRIPT)

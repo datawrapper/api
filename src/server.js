@@ -4,11 +4,16 @@ const Joi = require('@hapi/joi');
 const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
+const fs = require('fs-extra');
+const path = require('path');
 const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/schemas/config');
 const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
 
+const CodedError = require('@datawrapper/shared/CodedError');
+
 const { generateToken } = require('./utils');
+const { addScope } = require('./utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
@@ -56,7 +61,7 @@ const server = Hapi.server({
     host: 'localhost',
     address: '0.0.0.0',
     port,
-    tls: config.api.https,
+    tls: false,
     router: { stripTrailingSlash: true },
     /* https://hapijs.com/api#-serveroptionsdebug */
     debug: DW_DEV_MODE ? { request: ['implementation'] } : false,
@@ -124,7 +129,25 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         '[Initialize] Starting server ...'
     );
 
+    // load translations
+    try {
+        const localePath = path.join(__dirname, '../locale');
+        const localeFiles = await fs.readdir(localePath);
+        const locales = {};
+        for (let i = 0; i < localeFiles.length; i++) {
+            const file = localeFiles[i];
+            if (/[a-z]+_[a-z]+\.json/i.test(file)) {
+                locales[file.split('.')[0]] = JSON.parse(
+                    await fs.readFile(path.join(localePath, file))
+                );
+            }
+        }
+        addScope('core', locales);
+    } catch (e) {}
+
     await ORM.init(config);
+    await ORM.registerPlugins();
+
     /* register api plugins with core db */
     require('@datawrapper/orm/models/Plugin').register(
         'datawrapper-api',
@@ -135,11 +158,33 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     server.app.event = eventList;
     server.app.events = new ApiEventEmitter({ logger: server.logger });
-    server.app.visualization = new Set();
+    server.app.visualizations = new Map();
+    server.app.exportFormats = new Set();
 
+    server.method('getModel', name => ORM.db.models[name]);
     server.method('config', key => (key ? config[key] : config));
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
+    server.method('createChartWebsite', require('./publish/create-chart-website.js'));
+    server.method('registerVisualization', function(plugin, visualizations = []) {
+        visualizations.forEach(vis => {
+            const visualization = server.app.visualizations.get(vis.id);
+
+            if (visualization) {
+                server
+                    .logger()
+                    .warn(
+                        { status: 'skipping', registeredBy: plugin },
+                        `[Visualization] "${vis.id}" already registered.`
+                    );
+                return;
+            }
+
+            vis.__plugin = plugin;
+            vis.libraries = vis.libraries || [];
+            server.app.visualizations.set(vis.id, vis);
+        });
+    });
 
     const { validateThemeData } = schemas.initialize({
         getSchema: config.api.schemaBaseUrl
@@ -165,8 +210,85 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     if (options.usePlugins) {
         await server.register([require('./plugin-loader')], routeOptions);
     }
-
     await server.register([require('./routes')], routeOptions);
+
+    const { events, event } = server.app;
+    const { general, frontend } = server.methods.config();
+    const { localChartAssetRoot } = general;
+    const registeredEvents = events.eventNames();
+    const hasRegisteredDataPlugins =
+        registeredEvents.includes(event.GET_CHART_ASSET) &&
+        registeredEvents.includes(event.PUT_CHART_ASSET);
+
+    if (localChartAssetRoot === undefined && !hasRegisteredDataPlugins) {
+        server
+            .logger()
+            .error(
+                '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
+            );
+        process.exit(1);
+    }
+
+    if (!hasRegisteredDataPlugins) {
+        events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
+            const filePath = path.join(
+                localChartAssetRoot,
+                getDataPath(chart.dataValues.created_at),
+                filename
+            );
+            try {
+                await fs.access(filePath, fs.constants.R_OK);
+            } catch (e) {
+                throw new CodedError('notFound', 'chart asset not found');
+            }
+            return fs.createReadStream(filePath);
+        });
+
+        events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
+            const outPath = path.join(
+                localChartAssetRoot,
+                getDataPath(chart.dataValues.created_at)
+            );
+
+            await fs.mkdir(outPath, { recursive: true });
+            await fs.writeFile(path.join(outPath, filename), data);
+            return { code: 200 };
+        });
+    }
+
+    const hasRegisteredPublishPlugin = registeredEvents.includes(event.PUBLISH_CHART);
+
+    if (general.localChartPublishRoot === undefined && !hasRegisteredPublishPlugin) {
+        server
+            .logger()
+            .error(
+                '[Config] You need to configure `general.localChartPublishRoot` or install a plugin that implements chart publication.'
+            );
+        process.exit(1);
+    }
+
+    if (!hasRegisteredPublishPlugin) {
+        const protocol = frontend.https ? 'https' : 'http';
+        events.on(event.PUBLISH_CHART, async ({ chart, outDir, fileMap }) => {
+            const dest = path.resolve(general.localChartPublishRoot, chart.publicId);
+
+            for (const file of fileMap) {
+                const basename = path.basename(file);
+                const dir = path.dirname(file);
+
+                const out =
+                    dir === '.'
+                        ? path.resolve(dest, basename)
+                        : path.resolve(dest, '..', dir, basename);
+
+                await fs.copy(path.join(outDir, basename), out, { overwrite: dir === '.' });
+            }
+
+            await fs.remove(outDir);
+
+            return `${protocol}://${general.chart_domain}/${chart.publicId}`;
+        });
+    }
 
     server.route({
         method: '*',
@@ -226,6 +348,12 @@ function loadSchemaFromUrl(baseUrl) {
 
         return body;
     };
+}
+
+function getDataPath(date) {
+    const year = date.getUTCFullYear();
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    return `${year}${month}`;
 }
 
 module.exports = { init, start };

@@ -1,17 +1,12 @@
-const fs = require('fs');
 const path = require('path');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
-const { camelizeKeys, decamelizeKeys, decamelize } = require('humps');
+const { decamelizeKeys, decamelize } = require('humps');
 const set = require('lodash/set');
 const mime = require('mime');
-const { Chart, ChartPublic, User, Folder, Plugin } = require('@datawrapper/orm/models');
-const CodedError = require('@datawrapper/shared/CodedError');
-const { promisify } = require('util');
-const mkdirAsync = promisify(fs.mkdir);
-const writeFileAsync = promisify(fs.writeFile);
-const accessAsync = promisify(fs.access);
+const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
+const { prepareChart } = require('../utils/index.js');
 const assignWithEmptyObjects = require('../utils/assignWithEmptyObjects');
 
 const { listResponse, createResponseConfig, noContentResponse } = require('../schemas/response');
@@ -23,6 +18,13 @@ const chartResponse = createResponseConfig({
         metadata: Joi.object()
     }).unknown()
 });
+
+const {
+    publishChart,
+    publishChartStatus,
+    publishData,
+    getAdditionalMetadata
+} = require('../publish/publish');
 
 module.exports = {
     name: 'chart-routes',
@@ -83,7 +85,10 @@ function register(server, options) {
                         .length(5)
                         .required()
                         .description('5 character long chart ID.')
-                })
+                }),
+                query: Joi.object({
+                    published: Joi.boolean()
+                }).unknown(true)
             },
             response: chartResponse
         },
@@ -231,7 +236,8 @@ function register(server, options) {
                         .description('5 character long chart ID.'),
                     format: Joi.string()
                         .required()
-                        .description('Export format (PDF, PNG, SVG)')
+                        .valid(...server.app.exportFormats.values())
+                        .description('Export format')
                 }),
                 payload: Joi.object({
                     unit: Joi.string().default('px'),
@@ -274,7 +280,8 @@ function register(server, options) {
                         .description('5 character long chart ID.'),
                     format: Joi.string()
                         .required()
-                        .description('Export format (pdf, png, svg)')
+                        .valid(...server.app.exportFormats.values())
+                        .description('Export format')
                 }),
                 query: Joi.object({
                     unit: Joi.string().default('px'),
@@ -452,6 +459,60 @@ function register(server, options) {
         handler: writeChartData
     });
 
+    // GET /v3/charts/:id/embed-codes
+    require('./charts/embed-codes')(server, options);
+
+    server.route({
+        method: 'POST',
+        path: '/{id}/publish',
+        options: {
+            tags: ['api'],
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                })
+            }
+        },
+        handler: publishChart
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/{id}/publish/status/{version}',
+        options: {
+            tags: ['api'],
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required(),
+                    version: Joi.number()
+                        .integer()
+                        .min(0)
+                })
+            }
+        },
+        handler: publishChartStatus
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/{id}/publish/data',
+        options: {
+            tags: ['api'],
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                })
+            }
+        },
+        handler: publishData
+    });
+
     async function writeChartData(request, h) {
         const { params } = request;
 
@@ -464,60 +525,6 @@ function register(server, options) {
 
         return h.response(res.result).code(res.statusCode);
     }
-
-    const { events, event } = server.app;
-    const { localChartAssetRoot } = server.methods.config('general');
-    const hasRegisteredDataPlugins =
-        events.eventNames().includes(event.GET_CHART_ASSET) &&
-        events.eventNames().includes(event.PUT_CHART_ASSET);
-
-    if (localChartAssetRoot === undefined && !hasRegisteredDataPlugins) {
-        server
-            .logger()
-            .error(
-                '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
-            );
-        process.exit(1);
-    }
-
-    if (!hasRegisteredDataPlugins) {
-        events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
-            const filePath = path.join(
-                localChartAssetRoot,
-                getDataPath(chart.dataValues.created_at),
-                filename
-            );
-            try {
-                await accessAsync(filePath, fs.constants.R_OK);
-            } catch (e) {
-                throw new CodedError('notFound', 'chart asset not found');
-            }
-            return fs.createReadStream(filePath);
-        });
-
-        events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
-            const outPath = path.join(
-                localChartAssetRoot,
-                getDataPath(chart.dataValues.created_at)
-            );
-
-            await mkdirAsync(outPath, { recursive: true });
-            await writeFileAsync(path.join(outPath, filename), data);
-            return { code: 200 };
-        });
-    }
-}
-
-function prepareChart(chart) {
-    const { user, in_folder, ...dataValues } = chart.dataValues;
-
-    return {
-        ...camelizeKeys(dataValues),
-        folderId: in_folder,
-        metadata: dataValues.metadata,
-        author: user ? { name: user.name, email: user.email } : undefined,
-        guestSession: undefined
-    };
 }
 
 async function getAllCharts(request, h) {
@@ -599,7 +606,7 @@ async function getAllCharts(request, h) {
 }
 
 async function getChart(request, h) {
-    const { url, params, auth, server } = request;
+    const { url, query, params, auth, server } = request;
     const isAdmin = server.methods.isAdmin(request);
 
     const options = {
@@ -619,12 +626,9 @@ async function getChart(request, h) {
         return Boom.notFound();
     }
 
-    const isGuestChart = chart.guest_session === auth.credentials.session;
+    const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
 
-    const isEditable =
-        isGuestChart || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
-
-    if (!isEditable) {
+    if (query.published || !isEditable) {
         if (chart.published_at) {
             chart = await ChartPublic.findOne({
                 where: {
@@ -636,8 +640,10 @@ async function getChart(request, h) {
         }
     }
 
+    const additionalData = await getAdditionalMetadata(chart, { server });
+
     return {
-        ...prepareChart(chart),
+        ...prepareChart(chart, additionalData),
         url: `${url.pathname}`
     };
 }
@@ -715,10 +721,7 @@ async function editChart(request, h) {
         return Boom.notFound();
     }
 
-    const isGuestChart = chart.guest_session === auth.credentials.session;
-
-    const isEditable =
-        isGuestChart || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
+    const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
 
     if (!isEditable) {
         return Boom.unauthorized();
@@ -777,34 +780,40 @@ async function exportChart(request, h) {
     const { events, event } = server.app;
     const user = auth.artifacts;
 
-    const userPlugins = await user.getUserPluginCache();
-    const plugins = userPlugins && userPlugins.plugins ? userPlugins.plugins.split(',') : [];
-
-    if (params.format !== 'png' && !plugins.includes('export-pdf')) {
-        const pdfPlugin = await Plugin.findByPk('export-pdf');
-
-        if (pdfPlugin && pdfPlugin.is_private) {
-            return Boom.forbidden();
+    // authorize user
+    const chart = await Chart.findOne({
+        where: {
+            id: params.id,
+            deleted: { [Op.not]: true }
         }
-    }
+    });
+
+    if (!chart) return Boom.notFound();
+    const mayEdit = await user.mayEditChart(chart);
+    if (!mayEdit) return Boom.notFound();
+
+    // user is authorized to access chart
+    // further authoritzation is handled by plugins
 
     Object.assign(payload, params);
     try {
-        const result = await events.emit(
-            event.CHART_EXPORT,
-            {
+        const result = (
+            await events.emit(event.CHART_EXPORT, {
+                chart,
+                user,
                 data: payload,
-                userId: user.id,
+                auth,
                 logger
-            },
-            { filter: 'first' }
-        );
+            })
+        ).find(res => res.status === 'success' && res.data);
+
+        if (!result) return Boom.badImplementation();
 
         await request.server.methods.logAction(user.id, `chart/export/${params.format}`, params.id);
 
-        const { stream, type } = result;
+        const { stream, type } = result.data;
 
-        if (query.download) {
+        if (query.download || params.format === 'zip') {
             return h
                 .response(stream)
                 .header(
@@ -820,6 +829,7 @@ async function exportChart(request, h) {
             return Boom[error.code](error.message);
         }
         // this is an unexpected error, so let's log it
+        request.logger.error(error);
         return Boom.badImplementation();
     }
 }
@@ -854,7 +864,10 @@ async function deleteChart(request, h) {
 
     if (!chart) return Boom.notFound();
 
-    if (!server.methods.isAdmin(request) || !(await chart.isEditableBy(auth.artifacts))) {
+    if (
+        !server.methods.isAdmin(request) ||
+        !(await chart.isEditableBy(auth.artifacts, auth.credentials.session))
+    ) {
         return Boom.forbidden();
     }
 
@@ -925,8 +938,7 @@ async function writeChartAsset(request, h) {
     const user = auth.artifacts;
     const chart = await loadChart(request);
 
-    const isGuestChart = chart.guest_session === request.auth.credentials.session;
-    const isEditable = isGuestChart || (await chart.isEditableBy(request.auth.artifacts));
+    const isEditable = await chart.isEditableBy(request.auth.artifacts, auth.credentials.session);
 
     if (!isEditable) {
         return Boom.forbidden();
@@ -957,13 +969,7 @@ async function writeChartAsset(request, h) {
 
         return h.response().code(code);
     } catch (error) {
-        request.logger.error(error);
+        request.logger.error(error.message);
         return Boom.notFound();
     }
-}
-
-function getDataPath(date) {
-    const year = date.getUTCFullYear();
-    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-    return `${year}${month}`;
 }
