@@ -50,7 +50,7 @@
         "@datawrapper/locales": "1.0.0",
         "@datawrapper/orm": "3.14.3",
         "@datawrapper/schemas": "^1.4.0",
-        "@datawrapper/shared": "0.25.1",
+        "@datawrapper/shared": "0.25.3",
         "@hapi/boom": "9.1.0",
         "@hapi/hapi": "19.1.1",
         "@hapi/joi": "15.1.1",
