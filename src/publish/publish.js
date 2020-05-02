@@ -137,6 +137,7 @@ async function publishChart(request, h) {
     logPublishStatus('done');
 
     return {
+        data: prepareChart(chart),
         version: newPublicVersion,
         url: destination
     };
