@@ -65,10 +65,11 @@ module.exports = async (server, options) => {
             }
 
             const team = await chart.getTeam();
-            const preferred =
-                team && get(team, 'settings.embed.preferred_embed')
+            const preferred = auth.artifacts.id
+                ? team && get(team, 'settings.embed.preferred_embed')
                     ? get(team, 'settings.embed.preferred_embed')
-                    : await getUserData(auth.artifacts.id, 'embed_type', 'responsive');
+                    : await getUserData(auth.artifacts.id, 'embed_type', 'responsive')
+                : 'responsive';
 
             const templates = [
                 // responsive iframe
