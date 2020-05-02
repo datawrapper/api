@@ -258,7 +258,7 @@ async function getAdditionalMetadata(chart, { server }) {
 
     additionalMetadata = Object.assign({}, ...additionalMetadata);
 
-    if (chart.forked_from) {
+    if (chart.forked_from && chart.is_fork) {
         const forkedFromChart = await Chart.findByPk(chart.forked_from, {
             attributes: ['metadata']
         });
