@@ -223,7 +223,7 @@ async function publishData(request, h) {
     data.chartAfterBodyHTML = htmlResults.join('\n');
 
     // chart locales
-    data.locales = getScope('chart', chart.language);
+    data.locales = getScope('chart', chart.language || 'en-US');
 
     await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
         chart,
