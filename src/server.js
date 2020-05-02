@@ -328,6 +328,19 @@ async function start() {
     }
 
     server.start();
+    setTimeout(() => {
+        server.logger().info('sending READY signal to pm2');
+        process.send('ready');
+    }, 100);
+
+    process.on('message', async function(msg) {
+        if (msg === 'shutdown') {
+            server.logger().info('received SHUTDOWN signal, closing all connections...');
+            await server.stop();
+            server.logger().info('server has stopped');
+            process.exit(0);
+        }
+    });
 
     return server;
 }
