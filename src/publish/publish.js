@@ -49,8 +49,6 @@ async function publishChart(request, h) {
     /* increment public version */
     const newPublicVersion = chart.public_version + 1;
 
-    logPublishStatus('uploading');
-
     /* move assets to publish location */
     let destination, eventError;
 
@@ -62,7 +60,8 @@ async function publishChart(request, h) {
                 fileMap,
                 chart,
                 user,
-                newPublicVersion
+                newPublicVersion,
+                log: logPublishStatus
             },
             { filter: 'first' }
         );
