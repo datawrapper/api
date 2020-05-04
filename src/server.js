@@ -335,7 +335,7 @@ async function start() {
     }, 100);
 
     process.on('SIGINT', async function() {
-        server.logger().info('received SHUTDOWN signal, closing all connections...');
+        server.logger().info('received SIGINT signal, closing all connections...');
         await server.stop();
         server.logger().info('server has stopped');
         process.exit(0);
