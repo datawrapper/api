@@ -117,6 +117,10 @@ module.exports = async (server, options) => {
                     code: template
                         .replace(/%chart_id%/g, chart.id)
                         .replace(/%chart_url%/g, chart.public_url)
+                        .replace(
+                            /%chart_url_without_protocol%/g,
+                            chart.public_url.replace(new URL(chart.public_url).protocol, '')
+                        )
                         .replace(/%chart_type%/g, ariaLabel)
                         .replace(/%chart_title%/g, clean(chart.title))
                         .replace(/%chart_intro%/g, clean(get(chart, 'metadata.describe.intro')))
