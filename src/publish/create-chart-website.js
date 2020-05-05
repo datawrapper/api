@@ -18,6 +18,7 @@ const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
  * @property {function} [log] - Logging function
  * @property {boolean} [includePolyfills] - Flag to decide if polyfills should get included
  * @property {boolean} [flatRessources] - Flag to rewrite asset paths in index.html
+ * @property {boolean} [publish] - Flag to indicate that this chart is to be published (not previewed or exported)
  */
 
 /**
@@ -39,7 +40,14 @@ const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
  */
 module.exports = async function createChartWebsite(
     chart,
-    { auth, server, log = noop, includePolyfills = true, flatRessources = false } = {}
+    {
+        auth,
+        server,
+        log = noop,
+        includePolyfills = true,
+        flatRessources = false,
+        publish = false
+    } = {}
 ) {
     const { visualizations } = server.app;
 
@@ -48,7 +56,7 @@ module.exports = async function createChartWebsite(
      * (including metadata, data, basemaps, etc.)
      */
     const { result: publishData } = await server.inject({
-        url: `/v3/charts/${chart.id}/publish/data`,
+        url: `/v3/charts/${chart.id}/publish/data${publish ? '?publish=true' : ''}`,
         auth
     });
 
