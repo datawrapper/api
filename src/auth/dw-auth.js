@@ -25,14 +25,14 @@ function dwAuth(server, options = {}) {
             let artifacts = {};
 
             try {
-                const cookie = await server.auth.test('session', request);
-                credentials = cookie.credentials;
-                artifacts = cookie.artifacts;
+                const bearer = await server.auth.test('bearer', request);
+                credentials = bearer.credentials;
+                artifacts = bearer.artifacts;
             } catch (error) {
                 try {
-                    const bearer = await server.auth.test('bearer', request);
-                    credentials = bearer.credentials;
-                    artifacts = bearer.artifacts;
+                    const cookie = await server.auth.test('session', request);
+                    credentials = cookie.credentials;
+                    artifacts = cookie.artifacts;
                 } catch (error) {
                     throw Boom.unauthorized('Invalid authentication credentials', [
                         'Session',
