@@ -370,8 +370,7 @@ async function logout(request, h) {
     return h
         .response()
         .code(205)
-        .unstate(api.sessionID)
-        .header('Clear-Site-Data', '"cookies", "storage", "executionContexts"');
+        .unstate(api.sessionID);
 }
 
 async function getAllTokens(request, h) {

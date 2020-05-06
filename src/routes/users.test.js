@@ -67,7 +67,6 @@ test('It should be possible to create a user, login and logout', async t => {
 
     t.is(res.statusCode, 205);
     t.false(res.headers['set-cookie'].join().includes(cookieString));
-    t.is(res.headers[('clear-site-data', '"cookies", "storage", "executionContexts"')]);
 });
 
 test('New user passwords should be saved as bcrypt hash', async t => {

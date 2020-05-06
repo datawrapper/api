@@ -670,8 +670,6 @@ async function deleteUser(request, h) {
         if (session) {
             await session.destroy();
         }
-
-        response.header('Clear-Site-Data', '"cookies", "storage", "executionContexts"');
     }
 
     await server.app.events.emit(server.app.event.USER_DELETED, {
