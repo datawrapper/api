@@ -87,7 +87,7 @@ module.exports = async (server, options) => {
                     preferred: preferred === 'iframe',
                     title: __('publish / embed / iframe'),
                     ...getTemplate(
-                        `<iframe title="%chart_title%" aria-label="%chart_type%" id="datawrapper-chart-%chart_id%" src="%chart_url%" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="%chart_height%"></iframe>`
+                        `<iframe title="%chart_title%" aria-label="%chart_type%" id="datawrapper-chart-%chart_id%" src="%chart_url%" scrolling="no" frameborder="0" style="border: none;" width="%chart_width%" height="%chart_height%"></iframe>`
                     )
                 }
             ];
@@ -117,6 +117,10 @@ module.exports = async (server, options) => {
                     code: template
                         .replace(/%chart_id%/g, chart.id)
                         .replace(/%chart_url%/g, chart.public_url)
+                        .replace(
+                            /%chart_url_without_protocol%/g,
+                            chart.public_url ? chart.public_url.replace('https:', '') : ''
+                        )
                         .replace(/%chart_type%/g, ariaLabel)
                         .replace(/%chart_title%/g, clean(chart.title))
                         .replace(/%chart_intro%/g, clean(get(chart, 'metadata.describe.intro')))
