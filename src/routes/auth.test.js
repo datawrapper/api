@@ -54,7 +54,6 @@ test('Login and logout work with correct credentials', async t => {
     });
 
     t.is(res.statusCode, 205);
-    t.is(res.headers['clear-site-data'], '"cookies", "storage", "executionContexts"');
     t.true(res.headers['set-cookie'][0].includes('DW-SESSION=;'));
     t.false(res.headers['set-cookie'].includes(session));
 });

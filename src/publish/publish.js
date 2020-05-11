@@ -30,7 +30,7 @@ async function publishChart(request, h) {
         });
     }
 
-    const options = { auth, server, log: logPublishStatus };
+    const options = { auth, server, log: logPublishStatus, publish: true };
     const { data, outDir, fileMap, cleanup } = await createChartWebsite(chart, options);
 
     /**
@@ -136,6 +136,7 @@ async function publishChart(request, h) {
     logPublishStatus('done');
 
     return {
+        data: prepareChart(chart),
         version: newPublicVersion,
         url: destination
     };
@@ -215,7 +216,8 @@ async function publishData(request, h) {
         server.app.event.CHART_AFTER_BODY_HTML,
         {
             chart,
-            data
+            data,
+            publish: query.publish === 'true'
         },
         { filter: 'success' }
     );

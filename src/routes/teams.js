@@ -1307,7 +1307,7 @@ async function getMaxTeamInvites({ teamId, server }) {
     );
 
     const maxTeamInvites = maxTeamInvitesRes
-        .map(({ data }) => data.maxInvites)
+        .map(({ data }) => (data ? data.maxInvites : false))
         .sort()
         .pop();
 
