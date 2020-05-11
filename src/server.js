@@ -329,6 +329,18 @@ async function start() {
 
     server.start();
 
+    setTimeout(() => {
+        server.logger().info('sending READY signal to pm2');
+        process.send('ready');
+    }, 100);
+
+    process.on('SIGINT', async function() {
+        server.logger().info('received SIGINT signal, closing all connections...');
+        await server.stop();
+        server.logger().info('server has stopped');
+        process.exit(0);
+    });
+
     return server;
 }
 
