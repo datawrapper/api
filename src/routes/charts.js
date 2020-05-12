@@ -504,7 +504,7 @@ function register(server, options) {
             },
             response: createResponseConfig({
                 schema: Joi.object({
-                    progress: Joi.string()
+                    progress: Joi.array().items(Joi.string())
                 }).unknown()
             })
         },
