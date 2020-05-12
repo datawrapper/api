@@ -252,7 +252,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
             await fs.mkdir(outPath, { recursive: true });
             await fs.writeFile(path.join(outPath, filename), data);
-            return { code: 200 };
+            return { code: 204 };
         });
     }
 

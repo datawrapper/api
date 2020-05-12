@@ -275,7 +275,7 @@ test('User can read and write chart data', async t => {
     t.is(res.statusCode, 404);
     // set chart data
     res = await putData('hello world');
-    t.is(res.statusCode, 200);
+    t.is(res.statusCode, 204);
     // confirm chart data was set
     res = await getData();
     t.is(res.statusCode, 200);
@@ -286,7 +286,7 @@ test('User can read and write chart data', async t => {
     t.is(res.result, 'hello world');
     // write some JSON to another asset
     res = await putAsset(`${chart.result.id}.map.json`, { answer: 42 }, 'application/json');
-    t.is(res.statusCode, 200);
+    t.is(res.statusCode, 204);
     // see if that worked
     res = await getAsset(`${chart.result.id}.map.json`);
     t.is(res.statusCode, 200);
