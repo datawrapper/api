@@ -467,13 +467,21 @@ function register(server, options) {
         path: '/{id}/publish',
         options: {
             tags: ['api'],
+            description: 'Publish a chart',
             validate: {
                 params: Joi.object({
                     id: Joi.string()
                         .length(5)
                         .required()
                 })
-            }
+            },
+            response: createResponseConfig({
+                schema: Joi.object({
+                    data: Joi.object(),
+                    version: Joi.number().integer(),
+                    url: Joi.string().uri()
+                }).unknown()
+            })
         },
         handler: publishChart
     });
@@ -483,6 +491,7 @@ function register(server, options) {
         path: '/{id}/publish/status/{version}',
         options: {
             tags: ['api'],
+            description: 'Check the publish status of a chart',
             validate: {
                 params: Joi.object({
                     id: Joi.string()
@@ -492,7 +501,12 @@ function register(server, options) {
                         .integer()
                         .min(0)
                 })
-            }
+            },
+            response: createResponseConfig({
+                schema: Joi.object({
+                    progress: Joi.array().items(Joi.string())
+                }).unknown()
+            })
         },
         handler: publishChartStatus
     });
@@ -501,7 +515,6 @@ function register(server, options) {
         method: 'GET',
         path: '/{id}/publish/data',
         options: {
-            tags: ['api'],
             validate: {
                 params: Joi.object({
                     id: Joi.string()

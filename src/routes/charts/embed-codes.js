@@ -9,6 +9,8 @@ const { translate } = require('../../utils/l10n');
 const sanitizeHtml = require('sanitize-html');
 const chartCore = require('@datawrapper/chart-core');
 
+const { createResponseConfig } = require('../../schemas/response');
+
 module.exports = async (server, options) => {
     const embedJS = await fs.readFile(path.join(chartCore.path.dist, 'embed.js'), 'utf-8');
 
@@ -18,7 +20,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Get embed codes for a chart',
-            notes: `Request the data of a chart, which is usually a CSV.`,
+            notes: `Request the responsive and static embed code of a chart.`,
             plugins: {
                 'hapi-swagger': {
                     produces: ['application/json']
@@ -30,7 +32,18 @@ module.exports = async (server, options) => {
                         .length(5)
                         .required()
                 })
-            }
+            },
+            response: createResponseConfig({
+                schema: Joi.array().items(
+                    Joi.object({
+                        id: Joi.string(),
+                        preferred: Joi.boolean(),
+                        title: Joi.string(),
+                        template: Joi.string(),
+                        code: Joi.string()
+                    })
+                )
+            })
         },
         async handler(request, h) {
             const { params, auth } = request;
