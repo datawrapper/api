@@ -3,6 +3,7 @@ const path = require('path');
 const less = require('less');
 const postcssLess = require('postcss-less');
 const pCSS = require('postcss');
+const hash = require('string-hash');
 
 /* needed for variable parsing, otherwise postcss logs annoying messages we don't care about */
 const { noop } = require('../utils/index.js');
@@ -21,6 +22,8 @@ const postcss = pCSS([
 
 module.exports = { compileCSS, findLessVariables, createFontEntries, flatten };
 
+const cache = {};
+
 /**
  * Compile and concatenate .less files to CSS and run some code optimizations with PostCSS.
  *
@@ -33,32 +36,37 @@ module.exports = { compileCSS, findLessVariables, createFontEntries, flatten };
  */
 async function compileCSS({ theme, filePaths }) {
     const paths = filePaths.map(path.dirname);
+    const id = hash(`${theme.id},${filePaths.join(',')}`);
 
-    const lessString = (await Promise.all(filePaths.map(saveReadFile))).join('');
+    if (!cache[id] || !cache[id].length) {
+        const lessString = (await Promise.all(filePaths.map(saveReadFile))).join('');
 
-    const lessVariables = await findLessVariables(lessString, { paths });
-    let varString = '';
-    for (const variable of lessVariables) {
-        varString = varString.concat(`${variable}: ${CSS_ELIMINATION_KEYWORD};`);
+        const lessVariables = await findLessVariables(lessString, { paths });
+        let varString = '';
+        for (const variable of lessVariables) {
+            varString = varString.concat(`${variable}: ${CSS_ELIMINATION_KEYWORD};`);
+        }
+
+        const inputLess = [varString, createFontEntries(theme.fonts), lessString, theme.less].join(
+            ''
+        );
+
+        const { css } = await less.render(inputLess, {
+            paths: paths,
+            modifyVars: flatten({
+                typography: theme.data.typography,
+                style: theme.data.style,
+                options: theme.data.options,
+                colors: theme.data.colors,
+                vis: theme.data.vis,
+                maps: theme.data.maps
+            })
+        });
+
+        cache[id] = (await postcss.process(css, { from: undefined })).css;
     }
 
-    const inputLess = [varString, createFontEntries(theme.fonts), lessString, theme.less].join('');
-
-    let { css } = await less.render(inputLess, {
-        paths: paths,
-        modifyVars: flatten({
-            typography: theme.data.typography,
-            style: theme.data.style,
-            options: theme.data.options,
-            colors: theme.data.colors,
-            vis: theme.data.vis,
-            maps: theme.data.maps
-        })
-    });
-
-    css = (await postcss.process(css, { from: undefined })).css;
-
-    return css;
+    return cache[id];
 }
 
 function createFontEntries(fonts) {
