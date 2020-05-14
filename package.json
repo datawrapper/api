@@ -46,7 +46,7 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/chart-core": "^8.11.1",
+        "@datawrapper/chart-core": "^8.11.3",
         "@datawrapper/locales": "1.0.0",
         "@datawrapper/orm": "3.14.3",
         "@datawrapper/schemas": "^1.4.0",
@@ -54,6 +54,8 @@
         "@hapi/boom": "9.1.0",
         "@hapi/hapi": "19.1.1",
         "@hapi/joi": "15.1.1",
+        "@hapi/inert": "5.2.2",
+        "@hapi/vision": "5.5.4",
         "arg": "4.1.2",
         "assign-deep": "1.0.1",
         "autoprefixer": "^9.7.6",
@@ -80,8 +82,6 @@
         "tar": "6.0.1"
     },
     "devDependencies": {
-        "@hapi/inert": "5.2.2",
-        "@hapi/vision": "5.5.4",
         "ava": "~3.5.2",
         "babel-eslint": "~10.1.0",
         "dotenv": "~8.2.0",
