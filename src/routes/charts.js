@@ -878,7 +878,7 @@ async function deleteChart(request, h) {
     if (!chart) return Boom.notFound();
 
     if (
-        !server.methods.isAdmin(request) ||
+        !server.methods.isAdmin(request) &&
         !(await chart.isEditableBy(auth.artifacts, auth.credentials.session))
     ) {
         return Boom.forbidden();
