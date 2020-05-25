@@ -57,7 +57,7 @@ const createUserPayloadValidation = [
         invitation: Joi.boolean()
             .valid(true)
             .required(),
-        chartId: Joi.string(),
+        chartId: Joi.string().optional(),
         role: Joi.string()
             .valid('editor', 'admin')
             .description('User role. This can be omitted.')
@@ -575,7 +575,7 @@ async function createUser(request, h) {
 
     // send activation/invitation link
     await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
-        type: isInvitation ? 'new-invite' : 'activation',
+        type: isInvitation ? (data.chartId ? 'new-invite' : 'mobile-activation') : 'activation',
         to: newUser.email,
         language: newUser.language,
         data: isInvitation
