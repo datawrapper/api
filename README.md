@@ -6,14 +6,13 @@ To learn more about, how to use it, go to https://developer.datawrapper.de/docs.
 ## Table of contents
 
 1. [Installation](#installation)
-1. [Local development](#local-development)
+1. [Local Development](#local-development)
 1. [Configuration](#configuration)
+1. [Server Methods](#server-methods)
+1. [Server Application Data](#server-application-data)
 1. [Plugins](#plugins)
-    1. [`hello-world`](#hello-world)
-    1. [`email-local`](#email-local)
-    1. [`chart-data-local`](#chart-data-local)
-1. [`create-api` script](./create-api/Readme.md)
-1. [REST API with JSON](#rest-api-with-json)
+    1. [Plugin Development](#plugin-development)
+    1. [Updating a Plugin](#updating-a-plugin)
 
 ## Installation
 
@@ -46,7 +45,7 @@ To make sure the database is in sync after ORM updates, run:
 npm run sync
 ```
 
-## Local development
+## Local Development
 
 To develop new features or add some documentation, clone the repository and get going.
 
@@ -102,55 +101,53 @@ The API will not start without a valid `config.js`. The repository includes a te
 `config.js` exports a javascript object with various configuration objects that are used by this project, as well as others, like the `render-client` or `render-server`.
 The following objects are used by the API.
 
-### `general`
+Documentation about schemas and available keys can be found in [`datawrapper/schemas`](https://github.com/datawrapper/schemas).
 
-Key | Example Value | Description
----------|----------|---------
-`general.localPluginRoot` | `"./datawrapper/plugins"` | Path where to find locally installed Datawrapper plugins
+## Server Methods
 
-### `api`
+Server methods are a way to provide common utilities throughout the API server. Everywhere you have access to the `server` object (like in request handlers) these methods are available. ([hapi documentation](https://hapi.dev/api/?v=19.1.1#-servermethods))
 
-Key | Example Value | Description
----------|----------|---------
-`api.port` | `3000` | Network port the node process will be running on.
-`api.domain` | `"datawrapper.de"` | Domain where the API will be available at and used for the session cookies `Domain` value.
-`api.legacyApi` | `"https://api.datawrapper.de"` | Base Url for the PHP API. Some endpoints need to call it in the transition away from the PHP API.
-`api.subdomain` | `"api"` | Subdomain where the API will be available. Value will be combined with `api.domain`. If the session cookie is supposed to be available only under the subdomain, it can be included in `api.domain` and this key can be removed.
-`api.cors` | `['*']` | Array of fully qualified origins.
-`api.sessionID` | `"DW-SESSION"` | Name for session cookie.
-`api.https` | `true` | Flag if the API is served over `https`. This will most likely be `false` in development.
-`api.hashRounds` | `15` | Number of hashing rounds for password hashing with `bcrypt`. This value should be configured according to the hardware, the server is running on. As a guideline, the `/auth/login` endpoint should take about 2s for a response.
+* `server.methods.config`  
+    Provides access to the servers `config.js` properties like `api` or `orm`.
+* `server.methods.comparePassword`  
+    Check validity of a password against a password hash.
+* `server.methods.createChartWebsite`  
+    Used by publish route and zip export to create a folder with all assets for a standalone Datawrapper chart.
+* `server.methods.generateToken`  
+    Generates a unique token/ID with a specified length.
+* `server.methods.getModel`  
+    Provides access to all registered ORM models (useful for quick access in plugins).
+* `server.methods.hashPassword`  
+    Hashes a cleartext password with the [`bcrypt`](https://en.wikipedia.org/wiki/Bcrypt) algorithm.
+* `server.methods.isAdmin`  
+    Checks if  a request was initiated by a Datawrapper admin.
+* `server.methods.logAction`  
+    Logs an action to the `action` database table.
+* `server.methods.registerVisualization`  
+    Registers a new visualization type usually handled by plugins like `plugin-d3-lines`.
+* `server.methods.validateThemeData`  
+    Validate a theme against a schema.
 
-### `orm`
+## Server Application Data
 
-Key | Example Value | Description
----------|----------|---------
-`orm.db.dialect` | `"mysql"` | Database dialect
-`orm.db.host` | `"127.0.0.1"` | Database host
-`orm.db.port` | `3306` | Database port
-`orm.db.user` | `"user"` | Database user
-`orm.db.password` | `"super-secret-password"` | Database password
-`orm.db.database` | `"datawrapper"` | Database name
+Server application data is server specific data that can be accessed everywhere the `server` object is available. ([hapi documentation](https://hapi.dev/api/?v=19.1.1#-serverapp))
 
-### `frontend`
-
-Key | Example Value | Description
----------|----------|---------
-`api.https` | `true` | Flag if the Frontend is served over `https`. Value is used to generate links to certain frontend pages like password reset.
-`domain` | `"datawrapper.de"` | Frontend domain. Value is used to generate links to certain frontend pages like password reset.
-
-### `plugins`
-
-Key | Example key | Example Value |  Description
----------|----------| --------- | ---------
-`plugin.<plugin-name>` | `plugin[my-plugin]` | `{}` | Configuration options for plugin
-|| `plugin[my-plugin].apiKey` | `agamotto` | Configuration key passed to the plugins register function when server starts.
+* `server.app.event`  
+    List of events the server can emit.
+* `server.app.events`   
+    Event emitter to trigger server events.
+* `server.app.visualizations`  
+    A map of registered visualizations like `d3-lines`.
+* `server.app.exportFormats`  
+    A set of export formats the server can process (eg. PDF, png, zip)
 
 ## Plugins
 
 The API is extensible to match customers and Datawrappers needs. By default the API has endpoints for basic functionality like user and chart management. This functionality can be extended with the use of plugins. Since the API is built on top of the [Hapi](https://hapijs.com) server framework, it uses [Hapis plugin system](https://hapijs.com/api#plugins). Everything a Hapi plugin can do, an API plugin can, too.
 
 When starting the API server, it will check which plugins are configured in `config.js` and pass the configuration objects to the plugins `register` function with `options.config`. Plugins will have access to ORM models through `options.models`.
+
+### Plugin Development
 
 In its simplest form, an API plugin is a node module that exports an object with `name`, `version` and `register` keys.
 
@@ -169,12 +166,13 @@ module.exports = {
     version: '1.0.0',
     register: (server, options) => {
         console.log('hello from my-plugin!')
-        console.log(`the api key is "${options.config.apiKey}"`) // the api key is "agamotto"
+        console.log(`the api key is "${options.config.apiKey}"`) 
+        // -> the api key is "agamotto"
     }
 }
 ```
 
-You can use the `hapijs` plugin options to prefix all routes defined in your plugin (to avoid repeating the prefix again and again):
+You can use the [`hapijs` plugin options](https://hapi.dev/api/?v=19.1.1#-await-serverregisterplugins-options) to prefix all routes defined in your plugin (to avoid repeating the prefix again and again):
 
 ```js
 /* api.js */
@@ -187,79 +185,30 @@ module.exports = {
         }
     },
     register: (server, options) => {
-        console.log('hello from my-plugin!')
-        console.log(`the api key is "${options.config.apiKey}"`) // the api key is "agamotto"
-    }
-}
-```
-
-### Local plugins
-
-Plugins can be loaded from the local file system. This is very useful for plugin development. The plugin needs to be a folder inside the `plugins/` directory, with an `api.js`.
-
-```
-plugins
-├── chart-data-local
-│   └── api.js
-├── email-local
-│   └── api.js
-└── hello-world
-    └── api.js
-```
-
-After cloning the repository for local development, there are 3 local plugins available as examples, `chart-data-local`, `email-local` and `hello-world`.
-
-#### `hello-world`
-
-Example plugin that registers a new API route `GET /hello-world`. It demonstrates how to add new routes to the API. 
-
-> The server will crash during start, if a route is already defined!
-
-```js
-module.exports = {
-    name: 'hello-world',
-    version: '1.0.0',
-    register: (server, options) => {
         server.route({
             method: 'GET',
-            path: '/hello-world',
+            path: '/hello', // Route will be `/v3/plugins/my-plugin/hello`
             config: { auth: false, tags: ['api', 'plugin'] },
             handler: (request, h) => {
                 return { data: 'Hello from plugin' };
             }
         });
     }
-};
-```
-
-#### `email-local`
-
-Example plugin that uses [`nodemailer`](https://nodemailer.com/about/) and [Ethereal](https://ethereal.email) to generate fake emails. This makes testing of email sending through the API very easy and listens to all `SEND_EMAIL` events.
-
-With this plugin, sending a password reset request will log some data and a URL where to find the fake email.
-
-```
-["2019-04-08T08:37:26.526Z"] DEBUG (2.0.0-beta.16): [local-email] reset-password
-    url: "https://ethereal.email/message/XKsIQ-btaQzasdfafZGnXKsIRo2TXwy5QPX-AAAAAYLtrIcE0up1bkcjxytMQNo"
-    to: "user@email.de"
-    language: "de_DE"
-    data: {
-      "reset_password_link": "http://datawrapper.localhost/account/reset-password/BhjU3c5bLZSwAbqX0UInB83Cb"
-    }
-```
-
-> Ethereal is a fake SMTP service, it never delivers emails and deletes messages after 7 days.
-
-#### `chart-data-local`
-
-Plugin that adds functionality to store csv data on the local file system. This is useful for local development, where it isn't necessary to write data to S3 or other storage providers.
-
-```js
-// Configuration
-
-plugins: {
-    'chart-data-local': {
-        data_path: '<path-to-local-datawrapper>/charts/data'
-    }
 }
 ```
+
+> **The server will crash during start, if a route is already defined!**
+
+### Updating a Plugin
+
+> This guide is for updating a plugin in a server environment (*staging*, *production*).
+
+The easiest way to fully update is by connecting to the server with ssh and navigating to the desired plugins location. There you can pull the latest changes with (eg. `git pull`) and then restart the running API server with PM2.
+
+**This way of updating is necessary every time the server code of a plugin changes (usually located in `api.js`).**
+
+Some plugins register visualizations and provide static assets like JS and CSS to render charts. If only the static assets change, a full server restart is not necessary. In this case, the API provides admin endpoints to update the static files of a plugin. By calling `POST /v3/admin/plugins/update` with the name and branch of the plugin `{ "name": "d3-lines", "branch": "master" }`, the API will download the new static files and replace them. Now the new files are served and used for chart previews and publishing. The following folders inside a plugins directory will get replaced: `less/, locale/, static/`.
+
+> **Note**: The process of updating only static files is not ideal and could cause inconsistent states in the API server. In practice this should not be a problem. 
+>
+> With our implementation of zero downtime API reloads, thanks to PM2, we should be able to programmatically trigger full plugin updates in the future. So far our special case for visualizations solves the problem.
