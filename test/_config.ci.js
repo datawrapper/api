@@ -15,9 +15,7 @@ module.exports = {
         secretAuthSalt: process.env.SECRET_AUTH_SALT,
         cors: ['*']
     },
-    plugins: {
-        'hello-world': {}
-    },
+    plugins: {},
     orm: {
         db: {
             dialect: 'mysql',
