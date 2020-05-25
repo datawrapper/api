@@ -5,7 +5,7 @@ const Boom = require('@hapi/boom');
 const { Action, User, Session, AuthToken, Chart } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const get = require('lodash/get');
-const { cookieTTL } = require('../utils');
+const { getStateOpts } = require('../auth/utils');
 const { listResponse, noContentResponse, createResponseConfig } = require('../schemas/response.js');
 const { createUserPayloadValidation } = require('./users');
 
@@ -287,9 +287,7 @@ async function handleSession(request, h) {
         .response({
             [api.sessionID]: session.id
         })
-        .state(api.sessionID, session.id, {
-            ttl: cookieTTL(30)
-        });
+        .state(api.sessionID, session.id, getStateOpts(api.domain, 30));
 }
 
 async function login(request, h) {
@@ -347,9 +345,7 @@ async function login(request, h) {
         .response({
             [api.sessionID]: session.id
         })
-        .state(api.sessionID, session.id, {
-            ttl: cookieTTL(keepSession ? 90 : 30)
-        });
+        .state(api.sessionID, session.id, getStateOpts(api.domain, keepSession ? 90 : 30));
 }
 
 async function logout(request, h) {
@@ -490,9 +486,7 @@ async function signup(request, h) {
 
     const api = config('api');
 
-    return h.response(res.result).state(api.sessionID, session.id, {
-        ttl: cookieTTL(90)
-    });
+    return h.response(res.result).state(api.sessionID, session.id, getStateOpts(api.domain, 90));
 }
 
 async function activateAccount(request, h) {
@@ -538,9 +532,7 @@ async function activateAccount(request, h) {
         });
     }
 
-    response.state(api.sessionID, session.id, {
-        ttl: cookieTTL(90)
-    });
+    response.state(api.sessionID, session.id, getStateOpts(api.domain, 90));
 
     return response;
 }

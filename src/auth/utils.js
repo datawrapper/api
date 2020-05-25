@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { cookieTTL } = require('../utils');
 const { User } = require('@datawrapper/orm/models');
 
 const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
@@ -122,8 +123,20 @@ function createComparePassword(server) {
     };
 }
 
+function getStateOpts(domain, ttl) {
+    return {
+        isSecure: process.env.NODE_ENV === 'production',
+        strictHeader: false,
+        domain: `.${domain}`,
+        isSameSite: false,
+        path: '/',
+        ttl: cookieTTL(ttl)
+    };
+}
+
 module.exports = {
     legacyHash,
     createHashPassword,
-    createComparePassword
+    createComparePassword,
+    getStateOpts
 };

@@ -1,5 +1,5 @@
 const Boom = require('@hapi/boom');
-const { cookieTTL } = require('../utils');
+const { getStateOpts } = require('./utils');
 const { Session } = require('@datawrapper/orm/models');
 const getUser = require('./get-user');
 
@@ -28,14 +28,7 @@ function cookieAuth(server, options) {
     const api = server.methods.config('api');
     const opts = { cookie: api.sessionID, ...options };
 
-    server.state(opts.cookie, {
-        ttl: cookieTTL(90),
-        isSecure: process.env.NODE_ENV === 'production',
-        strictHeader: false,
-        domain: `.${api.domain}`,
-        isSameSite: false,
-        path: '/'
-    });
+    server.state(opts.cookie, getStateOpts(api.domain, 90));
 
     const scheme = {
         authenticate: async (request, h) => {
