@@ -1,5 +1,0 @@
-{
-    "name": "hello-world",
-    "description": "This is a simple API plugin based on Hapi's plugin convention.",
-    "version": "1.0.0"
-}
