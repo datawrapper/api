@@ -3,7 +3,6 @@ const Boom = require('@hapi/boom');
 const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
 const set = require('lodash/set');
 const keyBy = require('lodash/keyBy');
-const { setUserData } = require('@datawrapper/orm/utils/userData');
 const { logAction } = require('@datawrapper/orm/utils/action');
 const { User, Chart, Team, UserTeam, Session } = require('@datawrapper/orm/models');
 const { queryUsers } = require('../utils/raw-queries');
@@ -57,7 +56,7 @@ const createUserPayloadValidation = [
         invitation: Joi.boolean()
             .valid(true)
             .required(),
-        chartId: Joi.string(),
+        chartId: Joi.string().optional(),
         role: Joi.string()
             .valid('editor', 'admin')
             .description('User role. This can be omitted.')
@@ -216,34 +215,11 @@ module.exports = {
             handler: deleteUser
         });
 
-        server.route({
-            method: 'PATCH',
-            path: '/{id}/settings',
-            options: {
-                tags: ['api'],
-                description: 'Update user settings',
-                validate: {
-                    params: {
-                        id: Joi.number()
-                            .required()
-                            .description('User ID')
-                    },
-                    payload: {
-                        activeTeam: Joi.string()
-                            .allow(null)
-                            .example('teamxyz')
-                            .description('The active team for the user')
-                    }
-                },
-                response: createResponseConfig({
-                    schema: Joi.object({
-                        activeTeam: Joi.string(),
-                        updatedAt: Joi.date()
-                    }).unknown()
-                })
-            },
-            handler: editUserSettings
-        });
+        // GET /v3/users/:id/settings
+        require('./users/settings')(server, options);
+
+        // GET /v3/users/:id/data
+        require('./users/data')(server, options);
 
         server.method('userIsDeleted', isDeleted);
     },
@@ -500,38 +476,6 @@ async function editUser(request, h) {
     };
 }
 
-async function editUserSettings(request, h) {
-    const { auth, params } = request;
-    const userId = params.id;
-
-    await request.server.methods.userIsDeleted(userId);
-
-    if (userId !== auth.artifacts.id) {
-        request.server.methods.isAdmin(request, { throwError: true });
-    }
-
-    const result = {};
-
-    if (request.payload.activeTeam !== undefined) {
-        let teamId = '%none%';
-        if (request.payload.activeTeam !== null) {
-            const team = await Team.findByPk(request.payload.activeTeam);
-            if (team) teamId = team.id;
-            else return Boom.notFound('there is no team with that id');
-        }
-
-        await setUserData(userId, 'active_team', teamId);
-        result.activeTeam = teamId !== '%none%' ? teamId : null;
-    }
-
-    const updatedAt = new Date().toISOString();
-
-    return {
-        ...result,
-        updatedAt
-    };
-}
-
 async function createUser(request, h) {
     const { hashPassword, isAdmin, generateToken, config } = request.server.methods;
     const { password = '', ...data } = request.payload;
@@ -575,7 +519,7 @@ async function createUser(request, h) {
 
     // send activation/invitation link
     await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
-        type: isInvitation ? 'new-invite' : 'activation',
+        type: isInvitation ? (data.chartId ? 'new-invite' : 'mobile-activation') : 'activation',
         to: newUser.email,
         language: newUser.language,
         data: isInvitation
