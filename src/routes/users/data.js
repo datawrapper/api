@@ -39,9 +39,11 @@ module.exports = async (server, options) => {
                 for (let i = 0; i < keys.length; i++) {
                     const key = keys[i];
                     if (/^[a-z0-9_-]+$/.test(key)) {
-                        await setUserData(userId, keys[i], request.payload[keys[i]]);
+                        await setUserData(userId, key, request.payload[key]);
                     } else {
-                        return Boom.badRequest();
+                        return Boom.badRequest(
+                            'user data keys must only contain letters, numbers, _ and -'
+                        );
                     }
                 }
             }
