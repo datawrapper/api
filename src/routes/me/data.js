@@ -12,7 +12,6 @@ module.exports = async (server, options) => {
             },
             response: createResponseConfig({
                 schema: Joi.object({
-                    activeTeam: Joi.string(),
                     updatedAt: Joi.date()
                 }).unknown()
             })
