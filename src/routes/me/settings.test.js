@@ -1,5 +1,16 @@
 const test = require('ava');
 
+const { setup } = require('../../test/helpers/setup');
+
+test.before(async t => {
+    const { server, getTeamWithUser } = await setup({
+        usePlugins: false
+    });
+
+    t.context.server = server;
+    t.context.getTeamWithUser = getTeamWithUser;
+});
+
 test('User can set and unset activeTeam herself', async t => {
     const { team, session } = await t.context.getTeamWithUser();
 
