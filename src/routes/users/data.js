@@ -1,4 +1,4 @@
-const { setUserData } = require('@datawrapper/orm/utils/userData');
+const { setUserData, unsetUserData } = require('@datawrapper/orm/utils/userData');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 
@@ -39,7 +39,11 @@ module.exports = async (server, options) => {
                 for (let i = 0; i < keys.length; i++) {
                     const key = keys[i];
                     if (/^[a-z0-9_-]+$/.test(key)) {
-                        await setUserData(userId, key, request.payload[key]);
+                        if (request.payload[key] === null) {
+                            await unsetUserData(userId, key);
+                        } else {
+                            await setUserData(userId, key, request.payload[key]);
+                        }
                     } else {
                         return Boom.badRequest(
                             'user data keys must only contain letters, numbers, _ and -'
