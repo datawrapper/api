@@ -1,6 +1,6 @@
 const test = require('ava');
 
-const { setup } = require('../../test/helpers/setup');
+const { setup } = require('../../../test/helpers/setup');
 
 test.before(async t => {
     const { server, getTeamWithUser } = await setup({
