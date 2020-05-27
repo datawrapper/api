@@ -167,14 +167,25 @@ async function publishChartStatus(request, h) {
 async function publishData(request, h) {
     const { query, params, server, auth } = request;
 
-    const chart = await (query.published
-        ? ChartPublic.findOne({
-              where: { id: params.id }
-          })
-        : Chart.findOne({
-              where: { id: params.id, deleted: { [Op.not]: true } },
-              attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
-          }));
+    let chart;
+
+    if (query.published) {
+        const ogChart = await Chart.findOne({
+            where: { id: params.id, deleted: { [Op.not]: true } },
+            attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
+        });
+
+        chart = await ChartPublic.findOne({
+            where: { id: params.id }
+        });
+
+        chart.dataValues.theme = ogChart.theme;
+    } else {
+        chart = await Chart.findOne({
+            where: { id: params.id, deleted: { [Op.not]: true } },
+            attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
+        });
+    }
 
     if (!chart) throw Boom.notFound();
 
