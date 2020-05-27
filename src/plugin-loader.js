@@ -73,6 +73,9 @@ module.exports = {
                 }
             }
         }
+        // emit PLUGINS_LOADED event so plugins who depend on other
+        // plugins can safely initialize
+        await server.app.events.emit(server.app.event.PLUGINS_LOADED, { plugins });
     }
 };
 
