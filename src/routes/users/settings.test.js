@@ -3,10 +3,11 @@ const test = require('ava');
 const { setup } = require('../../../test/helpers/setup');
 
 test.before(async t => {
-    const { server, getTeamWithUser } = await setup({
+    const { server, getTeamWithUser, getUser } = await setup({
         usePlugins: false
     });
 
+    t.context.admin = await getUser('admin');
     t.context.server = server;
     t.context.getTeamWithUser = getTeamWithUser;
 });
