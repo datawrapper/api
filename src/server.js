@@ -69,6 +69,13 @@ const server = Hapi.server({
         cors: {
             origin: config.api.cors,
             credentials: true
+        },
+        validate: {
+            failAction: !DW_DEV_MODE
+                ? 'error'
+                : async function(request, h, err) {
+                      throw err;
+                  }
         }
     }
 });
