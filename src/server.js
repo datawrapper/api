@@ -71,11 +71,9 @@ const server = Hapi.server({
             credentials: true
         },
         validate: {
-            failAction: !DW_DEV_MODE
-                ? 'error'
-                : async function(request, h, err) {
-                      throw Boom.badRequest('Invalid request payload input: ' + err.message);
-                  }
+            async failAction(request, h, err) {
+                throw Boom.badRequest('Invalid request payload input: ' + err.message);
+            }
         }
     }
 });
