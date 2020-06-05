@@ -69,6 +69,11 @@ const server = Hapi.server({
         cors: {
             origin: config.api.cors,
             credentials: true
+        },
+        validate: {
+            async failAction(request, h, err) {
+                throw Boom.badRequest('Invalid request payload input: ' + err.message);
+            }
         }
     }
 });
