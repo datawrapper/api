@@ -1,6 +1,6 @@
 const test = require('ava');
 
-const { setup } = require('../../test/helpers/setup');
+const { setup } = require('../../../test/helpers/setup');
 
 function parseSetCookie(string) {
     const cookie = {};
@@ -133,123 +133,6 @@ test('Logout errors with token', async t => {
     t.is(res.result.message, 'Session not found');
 });
 
-test('Tokens can be created, fetched and deleted', async t => {
-    const auth = {
-        strategy: 'session',
-        credentials: { session: t.context.session },
-        artifacts: { id: t.context.user.id }
-    };
-
-    let res = await t.context.server.inject({
-        method: 'POST',
-        url: '/v3/auth/tokens',
-        payload: { comment: 'Test Token' },
-        auth
-    });
-
-    const tokenId = res.result.id;
-    t.is(res.result.comment, 'Test Token');
-    t.truthy(res.result);
-
-    res = await t.context.server.inject({
-        method: 'GET',
-        url: '/v3/auth/tokens',
-        auth
-    });
-
-    t.true(Array.isArray(res.result.list));
-    t.is(res.result.list.length, res.result.total);
-
-    res = await t.context.server.inject({
-        method: 'DELETE',
-        url: `/v3/auth/tokens/${tokenId}`,
-        auth
-    });
-
-    t.is(res.statusCode, 204);
-});
-
-test('Can create guest sessions', async t => {
-    let res = await t.context.server.inject({
-        method: 'POST',
-        url: '/v3/auth/session'
-    });
-
-    const sessionToken = res.result['DW-SESSION'];
-
-    t.truthy(res.result['DW-SESSION']);
-    t.true(res.headers['set-cookie'][0].includes(`DW-SESSION=${sessionToken}`));
-
-    res = await t.context.server.inject({
-        method: 'POST',
-        url: '/v3/auth/session',
-        headers: {
-            cookie: `DW-SESSION=${sessionToken}`
-        }
-    });
-
-    t.is(sessionToken, res.result['DW-SESSION']);
-
-    await t.context.server.inject({
-        method: 'POST',
-        url: '/v3/auth/logout',
-        headers: {
-            cookie: `DW-SESSION=${sessionToken}`
-        }
-    });
-});
-
-test('Guest charts are associated after signup', async t => {
-    /* Get guest session */
-    let res = await t.context.server.inject({
-        method: 'POST',
-        url: '/v3/auth/session'
-    });
-
-    t.is(res.statusCode, 200);
-
-    const session = res.result['DW-SESSION'];
-
-    /* Create chart as guest */
-    res = await t.context.server.inject({
-        method: 'POST',
-        url: '/v3/charts',
-        headers: {
-            cookie: `DW-SESSION=${session}`
-        },
-        payload: {
-            title: 'Test guest chart'
-        }
-    });
-
-    const chartId = res.result.id;
-    t.log('Chart ID:', chartId);
-    t.is(res.result.title, 'Test guest chart');
-    t.is(res.result.authorId, undefined);
-
-    res = await t.context.server.inject({
-        method: 'POST',
-        url: '/v3/auth/signup',
-        headers: {
-            cookie: `DW-SESSION=${session}`
-        },
-        payload: t.context.getCredentials()
-    });
-
-    const authorId = res.result.id;
-    t.log('Author ID:', authorId);
-    await t.context.addToCleanup('user', authorId);
-
-    const charts = await t.context.models.Chart.findAll({
-        where: {
-            author_id: authorId
-        }
-    });
-
-    t.is(charts.length, 1);
-    t.is(charts[0].id, chartId);
-});
-
 test('Guest charts are associated after login', async t => {
     /* Get guest session */
     let res = await t.context.server.inject({
@@ -299,62 +182,6 @@ test('Guest charts are associated after login', async t => {
 
     t.is(charts.length, 1);
     t.is(charts[0].id, chartId);
-});
-
-test('user activation after team invite', async t => {
-    const { addToCleanup, getTeamWithUser, getCredentials } = t.context;
-    // create a team with user who is team owner
-    const { team, session: ownerSession } = await getTeamWithUser();
-    // get credentials for new user
-    const credentials = getCredentials();
-    // invite a new user to this team
-    let res = await t.context.server.inject({
-        method: 'POST',
-        url: `/v3/teams/${team.id}/invites`,
-        headers: {
-            cookie: `DW-SESSION=${ownerSession.id}`
-        },
-        payload: {
-            email: credentials.email,
-            role: 'member'
-        }
-    });
-    t.is(res.statusCode, 201);
-
-    const { User } = t.context.models;
-    const invitee = await User.findOne({ where: { email: credentials.email } });
-    await addToCleanup('user', invitee.id);
-
-    // get guest session
-    res = await t.context.server.inject({
-        method: 'POST',
-        url: '/v3/auth/session'
-    });
-
-    t.is(res.statusCode, 200);
-    const guestSession = res.result['DW-SESSION'];
-
-    // activate new user using guest session
-    res = await t.context.server.inject({
-        method: 'POST',
-        url: `/v3/auth/activate/${invitee.activate_token}`,
-        headers: {
-            cookie: `DW-SESSION=${guestSession}`
-        }
-    });
-    t.is(res.statusCode, 204);
-
-    // check if user is logged in now
-    res = await t.context.server.inject({
-        method: 'GET',
-        url: `/v3/me`,
-        headers: {
-            cookie: `DW-SESSION=${guestSession}`
-        }
-    });
-
-    t.is(res.statusCode, 200);
-    t.is(res.result.email, credentials.email);
 });
 
 test('Login and logout updates session fields', async t => {
