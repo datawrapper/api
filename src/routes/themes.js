@@ -4,7 +4,7 @@ const assign = require('assign-deep');
 const { Theme } = require('@datawrapper/orm/models');
 
 module.exports = {
-    name: 'themes-routes',
+    name: 'routes/themes',
     version: '1.0.0',
     register: (server, options) => {
         server.route({

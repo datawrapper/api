@@ -64,7 +64,7 @@ const createUserPayloadValidation = [
 ];
 
 module.exports = {
-    name: 'users-routes',
+    name: 'routes/users',
     version: '1.0.0',
     register: (server, options) => {
         server.route({

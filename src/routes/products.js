@@ -1,7 +1,7 @@
 const { Product } = require('@datawrapper/orm/models');
 
 module.exports = {
-    name: 'products-routes',
+    name: 'routes/products',
     version: '1.0.0',
     register: (server, options) => {
         server.route({

@@ -193,7 +193,7 @@ const routes = [
 ];
 
 module.exports = {
-    name: 'teams-routes',
+    name: 'routes/teams',
     version: '1.0.0',
     register: (server, options) => {
         server.route({

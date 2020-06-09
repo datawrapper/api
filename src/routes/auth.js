@@ -10,7 +10,7 @@ const { listResponse, noContentResponse, createResponseConfig } = require('../sc
 const { createUserPayloadValidation } = require('./users');
 
 module.exports = {
-    name: 'auth-routes',
+    name: 'routes/auth',
     version: '1.0.0',
     register: (server, options) => {
         server.route({

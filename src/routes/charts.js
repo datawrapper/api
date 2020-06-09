@@ -27,7 +27,7 @@ const {
 } = require('../publish/publish');
 
 module.exports = {
-    name: 'chart-routes',
+    name: 'routes/charts',
     version: '1.0.0',
     register: register
 };

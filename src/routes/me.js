@@ -13,7 +13,7 @@ const meResponse = createResponseConfig({
 });
 
 module.exports = {
-    name: 'me-routes',
+    name: 'routes/me',
     version: '1.0.0',
     register: (server, options) => {
         server.route({
