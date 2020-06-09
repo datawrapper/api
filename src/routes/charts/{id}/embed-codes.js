@@ -5,18 +5,18 @@ const Joi = require('@hapi/joi');
 const get = require('lodash/get');
 const path = require('path');
 const fs = require('fs-extra');
-const { translate } = require('../../utils/l10n');
+const { translate } = require('../../../utils/l10n');
 const sanitizeHtml = require('sanitize-html');
 const chartCore = require('@datawrapper/chart-core');
 
-const { createResponseConfig } = require('../../schemas/response');
+const { createResponseConfig } = require('../../../schemas/response');
 
 module.exports = async (server, options) => {
     const embedJS = await fs.readFile(path.join(chartCore.path.dist, 'embed.js'), 'utf-8');
-
+    // GET /v3/charts/{id}/embed-codes
     server.route({
         method: 'GET',
-        path: '/{id}/embed-codes',
+        path: '/embed-codes',
         options: {
             tags: ['api'],
             description: 'Get embed codes for a chart',
