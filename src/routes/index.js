@@ -2,6 +2,12 @@ module.exports = {
     name: 'routes',
     version: '1.0.0',
     register: (server, options) => {
+        server.register(require('./admin'), {
+            routes: {
+                prefix: '/admin'
+            }
+        });
+
         server.register(require('./users'), {
             routes: {
                 prefix: '/users'
@@ -32,12 +38,6 @@ module.exports = {
             }
         });
 
-        server.register(require('./teams-admin'), {
-            routes: {
-                prefix: '/admin/teams'
-            }
-        });
-
         server.register(require('./themes'), {
             routes: {
                 prefix: '/themes'
@@ -53,12 +53,6 @@ module.exports = {
         server.register(require('./products'), {
             routes: {
                 prefix: '/products'
-            }
-        });
-
-        server.register(require('./plugins-admin'), {
-            routes: {
-                prefix: '/admin/plugins'
             }
         });
 

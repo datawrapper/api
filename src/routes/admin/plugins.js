@@ -17,7 +17,7 @@ function getNormalizedName(str) {
 }
 
 module.exports = {
-    name: 'admin-plugin-routes',
+    name: 'routes/admin/plugins',
     version: '1.0.0',
     register
 };

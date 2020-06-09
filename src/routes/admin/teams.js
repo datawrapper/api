@@ -5,7 +5,7 @@ const { camelizeKeys, decamelize } = require('humps');
 const { Team, User } = require('@datawrapper/orm/models');
 
 module.exports = {
-    name: 'admin-teams-routes',
+    name: 'routes/admin/teams',
     version: '1.0.0',
     register
 };
