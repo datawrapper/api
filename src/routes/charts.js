@@ -242,7 +242,9 @@ function register(server, options) {
                 payload: Joi.object({
                     unit: Joi.string().default('px'),
                     mode: Joi.string().default('rgb'),
-                    width: Joi.number().default(600),
+                    width: Joi.number()
+                        .min(1)
+                        .optional(),
                     height: Joi.number()
                         .min(1)
                         .allow('auto'),
@@ -290,7 +292,6 @@ function register(server, options) {
                         .valid('rgb', 'cmyk')
                         .default('rgb'),
                     width: Joi.number()
-                        .default(600)
                         .min(1)
                         .optional(),
                     height: Joi.number()
