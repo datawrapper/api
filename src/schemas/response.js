@@ -29,4 +29,11 @@ schemas.chartResponse = createResponseConfig({
     }).unknown()
 });
 
+schemas.teamResponse = createResponseConfig({
+    schema: Joi.object({
+        id: Joi.string(),
+        name: Joi.string()
+    }).unknown()
+});
+
 module.exports = schemas;
