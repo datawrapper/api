@@ -1,109 +1,22 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { decamelize, decamelizeKeys, camelizeKeys } = require('humps');
+const { decamelizeKeys, camelizeKeys } = require('humps');
 const set = require('lodash/set');
-const keyBy = require('lodash/keyBy');
 const { logAction } = require('@datawrapper/orm/utils/action');
 const { User, Chart, Team, UserTeam, Session } = require('@datawrapper/orm/models');
-const { queryUsers } = require('../utils/raw-queries');
+const { serializeTeam } = require('../../teams/utils');
+const { noContentResponse, userResponse } = require('../../../schemas/response');
 
-const { createResponseConfig, noContentResponse, listResponse } = require('../schemas/response.js');
-
-const userResponse = createResponseConfig({
-    schema: Joi.object({
-        id: Joi.number().integer(),
-        email: Joi.string()
-    }).unknown()
-});
-
-const { Op } = require('@datawrapper/orm').db;
 const attributes = ['id', 'email', 'name', 'role', 'language'];
 
-const createUserPayloadValidation = [
-    // normal sign-up
-    Joi.object({
-        name: Joi.string()
-            .allow(null)
-            .example('Carol Danvers')
-            .description('Name of the user that should get created. This can be omitted.'),
-        email: Joi.string()
-            .email()
-            .required()
-            .example('cpt-marvel@shield.com')
-            .description('User email address'),
-        role: Joi.string()
-            .valid('editor', 'admin')
-            .description('User role. This can be omitted.'),
-        language: Joi.string()
-            .example('en_US')
-            .description('User language preference. This can be omitted.'),
-        password: Joi.string()
-            .example('13-binary-1968')
-            .min(8)
-            .required()
-            .description('Strong user password.'),
-        invitation: Joi.boolean()
-            .valid(false)
-            .allow(null)
-    }),
-    // for invitation sign-ups
-    Joi.object({
-        email: Joi.string()
-            .email()
-            .required()
-            .example('cpt-marvel@shield.com')
-            .description('User email address'),
-        invitation: Joi.boolean()
-            .valid(true)
-            .required(),
-        chartId: Joi.string().optional(),
-        role: Joi.string()
-            .valid('editor', 'admin')
-            .description('User role. This can be omitted.')
-    })
-];
-
 module.exports = {
-    name: 'routes/users',
+    name: 'routes/users/{id}',
     version: '1.0.0',
     register: (server, options) => {
+        // GET /v3/users/{id}
         server.route({
             method: 'GET',
             path: '/',
-            options: {
-                tags: ['api'],
-                description: 'List users',
-                validate: {
-                    query: Joi.object({
-                        teamId: Joi.string().description('Filter users by team.'),
-                        search: Joi.string().description('Search for a user.'),
-                        order: Joi.string()
-                            .uppercase()
-                            .valid('ASC', 'DESC')
-                            .default('ASC')
-                            .description('Result order (ascending or descending)'),
-                        orderBy: Joi.string()
-                            .valid('id', 'email', 'name', 'createdAt', 'chartCount')
-                            .default('id')
-                            .description('Attribute to order by'),
-                        limit: Joi.number()
-                            .integer()
-                            .default(100)
-                            .description('Maximum items to fetch. Useful for pagination.'),
-                        offset: Joi.number()
-                            .integer()
-                            .default(0)
-                            .description('Number of items to skip. Useful for pagination.')
-                    })
-                },
-                response: listResponse
-            },
-            handler: getAllUsers
-        });
-
-        server.route({
-            method: 'GET',
-            path: '/{id}',
             options: {
                 tags: ['api'],
                 description: 'Fetch user information',
@@ -119,9 +32,10 @@ module.exports = {
             handler: getUser
         });
 
+        // PATCH /v3/users/{id}
         server.route({
             method: 'PATCH',
-            path: '/{id}',
+            path: '/',
             options: {
                 tags: ['api'],
                 description: 'Update user information',
@@ -163,36 +77,10 @@ module.exports = {
             handler: editUser
         });
 
-        server.route({
-            method: 'POST',
-            path: '/{id}/setup',
-            options: {
-                validate: {
-                    params: Joi.object({
-                        id: Joi.number()
-                            .required()
-                            .description('User ID')
-                    })
-                }
-            },
-            handler: handleSetup
-        });
-
-        server.route({
-            method: 'POST',
-            path: '/',
-            options: {
-                auth: false,
-                validate: {
-                    payload: createUserPayloadValidation
-                }
-            },
-            handler: createUser
-        });
-
+        // DELETE /v3/users/{id}
         server.route({
             method: 'DELETE',
-            path: '/{id}',
+            path: '/',
             options: {
                 tags: ['api'],
                 description: 'Delete user',
@@ -215,112 +103,11 @@ module.exports = {
             handler: deleteUser
         });
 
-        // GET /v3/users/:id/settings
-        require('./users/settings')(server, options);
-
-        // GET /v3/users/:id/data
-        require('./users/data')(server, options);
-
-        server.method('userIsDeleted', isDeleted);
-    },
-    createUserPayloadValidation
+        require('./data')(server, options);
+        require('./settings')(server, options);
+        require('./setup')(server, options);
+    }
 };
-
-async function isDeleted(id) {
-    const user = await User.findByPk(id, {
-        attributes: ['email']
-    });
-
-    if (!user || user.email === 'DELETED') {
-        throw Boom.notFound();
-    }
-}
-
-function serializeTeam(team) {
-    return {
-        id: team.id,
-        name: team.name,
-        url: `/v3/teams/${team.id}`
-    };
-}
-
-async function getAllUsers(request, h) {
-    const { query, auth, url, server } = request;
-    const isAdmin = server.methods.isAdmin(request);
-
-    const userList = {
-        list: [],
-        total: 0
-    };
-
-    const { rows, count } = await queryUsers({
-        attributes: ['user.id', 'COUNT(chart.id) AS chart_count'],
-        orderBy: decamelize(
-            query.orderBy === 'createdAt' ? `user.${query.orderBy}` : query.orderBy
-        ),
-        order: query.order,
-        search: query.search,
-        limit: query.limit,
-        offset: query.offset,
-        teamId: isAdmin ? query.teamId : null
-    });
-
-    const options = {
-        attributes,
-        where: {
-            id: { [Op.in]: rows.map(row => row.id) }
-        },
-        include: [
-            {
-                model: Team,
-                attributes: ['id', 'name']
-            }
-        ]
-    };
-
-    if (isAdmin) {
-        options.attributes = options.attributes.concat([
-            'created_at',
-            'activate_token',
-            'reset_password_token'
-        ]);
-    } else {
-        set(options, ['where', 'id'], auth.artifacts.id);
-    }
-
-    const users = await User.findAll(options);
-    const keyedUsers = keyBy(users, 'id');
-
-    userList.total = count;
-    userList.list = rows.map((row, i) => {
-        const { role, dataValues } = keyedUsers[row.id];
-
-        const { teams, ...data } = dataValues;
-
-        if (teams) {
-            data.teams = teams.map(serializeTeam);
-        }
-
-        return camelizeKeys({
-            ...data,
-            role,
-            chartCount: row.chart_count,
-            url: `${url.pathname}/${data.id}`
-        });
-    });
-
-    if (query.limit + query.offset < count) {
-        const nextParams = new URLSearchParams({
-            ...query,
-            offset: query.limit + query.offset,
-            limit: query.limit
-        });
-
-        set(userList, 'next', `${url.pathname}?${nextParams.toString()}`);
-    }
-
-    return userList;
-}
 
 async function getUser(request, h) {
     const { params, url, auth } = request;
@@ -476,73 +263,6 @@ async function editUser(request, h) {
     };
 }
 
-async function createUser(request, h) {
-    const { hashPassword, isAdmin, generateToken, config } = request.server.methods;
-    const { password = '', ...data } = request.payload;
-
-    const existingUser = await User.findOne({ where: { email: data.email } });
-
-    if (existingUser) {
-        return Boom.conflict('User already exists');
-    }
-
-    const isInvitation = !!data.invitation;
-    const newUser = {
-        role: 'pending',
-        name: data.name,
-        email: data.email,
-        language: data.language, // session language?
-        activate_token: generateToken()
-    };
-
-    if (!isInvitation) {
-        if (password === '') {
-            return Boom.badRequest('Password must not be empty');
-        }
-        const hash = await hashPassword(password);
-        newUser.pwd = hash;
-    } else {
-        newUser.pwd = '';
-    }
-
-    if (data.role && isAdmin(request)) {
-        // only admins are allowed to set a user role
-        newUser.role = data.role;
-    }
-
-    const user = await User.create(newUser);
-
-    const { count } = await Chart.findAndCountAll({ where: { author_id: user.id } });
-
-    const { https, domain } = config('frontend');
-    const accountBaseUrl = `${https ? 'https' : 'http'}://${domain}/account`;
-
-    // send activation/invitation link
-    await request.server.app.events.emit(request.server.app.event.SEND_EMAIL, {
-        type: isInvitation ? (data.chartId ? 'new-invite' : 'mobile-activation') : 'activation',
-        to: newUser.email,
-        language: newUser.language,
-        data: isInvitation
-            ? {
-                  confirmation_link: `${accountBaseUrl}/invite/${newUser.activate_token}${
-                      data.chartId ? `?chart=${data.chartId}` : ''
-                  }`
-              }
-            : {
-                  activation_link: `${accountBaseUrl}/activate/${newUser.activate_token}`
-              }
-    });
-
-    return h
-        .response({
-            ...camelizeKeys(user.serialize()),
-            url: `${request.url.pathname}/${user.id}`,
-            chartCount: count,
-            createdAt: request.server.methods.isAdmin(request) ? user.created_at : undefined
-        })
-        .code(201);
-}
-
 async function deleteUser(request, h) {
     const { auth, server, payload } = request;
     const { id } = request.params;
@@ -621,32 +341,4 @@ async function deleteUser(request, h) {
     });
 
     return response;
-}
-
-async function handleSetup(request, h) {
-    const { params, server } = request;
-    const { generateToken, isAdmin, config } = server.methods;
-
-    if (!isAdmin(request)) return Boom.unauthorized();
-
-    const user = await User.findByPk(params.id, { attributes: ['id', 'email', 'language'] });
-
-    if (!user) return Boom.notFound();
-
-    const token = generateToken();
-
-    await user.update({ pwd: '', activate_token: token });
-
-    const { https, domain } = config('frontend');
-    await server.app.events.emit(request.server.app.event.SEND_EMAIL, {
-        type: 'user-setup',
-        to: user.email,
-        language: user.language,
-        data: {
-            email: user.email,
-            invite_link: `${https ? 'https' : 'http'}://${domain}/account/invite/${token}`
-        }
-    });
-
-    return { token };
 }

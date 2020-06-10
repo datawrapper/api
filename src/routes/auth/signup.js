@@ -1,7 +1,7 @@
 const Boom = require('@hapi/boom');
 const { Session } = require('@datawrapper/orm/models');
 const { associateChartsWithUser, createSession, getStateOpts } = require('../../auth/utils');
-const { createUserPayloadValidation } = require('../users');
+const { createUserPayload } = require('../../schemas/payload');
 
 module.exports = async (server, options) => {
     // POST /v3/auth/signup
@@ -14,7 +14,7 @@ module.exports = async (server, options) => {
                 strategy: 'session'
             },
             validate: {
-                payload: createUserPayloadValidation
+                payload: createUserPayload
             }
         },
         handler: signup

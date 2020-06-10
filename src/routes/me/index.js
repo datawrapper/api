@@ -16,6 +16,7 @@ module.exports = {
     name: 'routes/me',
     version: '1.0.0',
     register: (server, options) => {
+        // GET /v3/me
         server.route({
             method: 'GET',
             path: '/',
@@ -27,6 +28,7 @@ module.exports = {
             handler: getMe
         });
 
+        // PATCH /v3/me
         server.route({
             method: 'PATCH',
             path: '/',
@@ -63,12 +65,10 @@ module.exports = {
             handler: updateMe
         });
 
-        // GET /v3/me/:id/settings
         require('./settings')(server, options);
-
-        // GET /v3/me/:id/data
         require('./data')(server, options);
 
+        // DELETE /v3/me
         server.route({
             method: 'DELETE',
             path: '/',

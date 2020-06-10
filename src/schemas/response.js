@@ -36,4 +36,11 @@ schemas.teamResponse = createResponseConfig({
     }).unknown()
 });
 
+schemas.userResponse = createResponseConfig({
+    schema: Joi.object({
+        id: Joi.number().integer(),
+        email: Joi.string()
+    }).unknown()
+});
+
 module.exports = schemas;

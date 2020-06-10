@@ -18,6 +18,7 @@ module.exports = {
     getPendingTeamInvites,
     canChangeMemberStatus,
     convertKeys,
+    serializeTeam,
     ROLE_OWNER,
     ROLE_ADMIN,
     ROLE_MEMBER,
@@ -110,4 +111,12 @@ function convertKeys(input, method) {
         output[method(k)] = input[k];
     }
     return output;
+}
+
+function serializeTeam(team) {
+    return {
+        id: team.id,
+        name: team.name,
+        url: `/v3/teams/${team.id}`
+    };
 }
