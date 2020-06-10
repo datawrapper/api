@@ -10,91 +10,93 @@ const { listResponse, chartResponse } = require('../../schemas/response');
 module.exports = {
     name: 'routes/charts',
     version: '1.0.0',
-    register: register
-};
-
-function register(server, options) {
-    server.route({
-        method: 'GET',
-        path: '/',
-        options: {
-            tags: ['api'],
-            description: 'List charts',
-            notes: `Search and filter a list of your charts.
+    register(server, options) {
+        server.route({
+            method: 'GET',
+            path: '/',
+            options: {
+                tags: ['api'],
+                description: 'List charts',
+                notes: `Search and filter a list of your charts.
                         The returned chart objects, do not include the full chart metadata.
                         To get the full metadata use [/v3/charts/{id}](ref:getchartsid).`,
-            validate: {
-                query: Joi.object({
-                    userId: Joi.any().description('ID of the user to fetch charts for.'),
-                    published: Joi.boolean().description(
-                        'Flag to filter results by publish status'
-                    ),
-                    search: Joi.string().description('Search for charts with a specific title.'),
-                    order: Joi.string()
-                        .uppercase()
-                        .valid('ASC', 'DESC')
-                        .default('DESC')
-                        .description('Result order (ascending or descending)'),
-                    orderBy: Joi.string()
-                        .valid('id', 'email', 'name', 'createdAt')
-                        .default('createdAt')
-                        .description('Attribute to order by'),
-                    limit: Joi.number()
-                        .integer()
-                        .default(100)
-                        .description('Maximum items to fetch. Useful for pagination.'),
-                    offset: Joi.number()
-                        .integer()
-                        .default(0)
-                        .description('Number of items to skip. Useful for pagination.')
-                })
-            },
-            response: listResponse
-        },
-        handler: getAllCharts
-    });
-
-    server.route({
-        method: 'POST',
-        path: '/',
-        options: {
-            tags: ['api'],
-            description: 'Create new chart',
-            validate: {
-                payload: Joi.object({
-                    title: Joi.string()
-                        .example('My cool chart')
-                        .description('Title of your chart. This will be the chart headline.'),
-                    theme: Joi.string()
-                        .example('datawrapper')
-                        .description('Chart theme to use.'),
-                    type: Joi.string()
-                        .example('d3-lines')
-                        .description(
-                            'Type of the chart, like line chart, bar chart, ... Type keys can be found [here].'
+                validate: {
+                    query: Joi.object({
+                        userId: Joi.any().description('ID of the user to fetch charts for.'),
+                        published: Joi.boolean().description(
+                            'Flag to filter results by publish status'
                         ),
-                    metadata: Joi.object({
-                        data: Joi.object({
-                            transpose: Joi.boolean()
-                        }).unknown(true)
+                        search: Joi.string().description(
+                            'Search for charts with a specific title.'
+                        ),
+                        order: Joi.string()
+                            .uppercase()
+                            .valid('ASC', 'DESC')
+                            .default('DESC')
+                            .description('Result order (ascending or descending)'),
+                        orderBy: Joi.string()
+                            .valid('id', 'email', 'name', 'createdAt')
+                            .default('createdAt')
+                            .description('Attribute to order by'),
+                        limit: Joi.number()
+                            .integer()
+                            .default(100)
+                            .description('Maximum items to fetch. Useful for pagination.'),
+                        offset: Joi.number()
+                            .integer()
+                            .default(0)
+                            .description('Number of items to skip. Useful for pagination.')
                     })
-                        .description('Metadata that saves all chart specific settings and options.')
-                        .unknown(true)
-                })
-                    .unknown(true)
-                    .allow(null)
+                },
+                response: listResponse
             },
-            response: chartResponse
-        },
-        handler: createChart
-    });
+            handler: getAllCharts
+        });
 
-    server.register(require('./{id}'), {
-        routes: {
-            prefix: '/{id}'
-        }
-    });
-}
+        server.route({
+            method: 'POST',
+            path: '/',
+            options: {
+                tags: ['api'],
+                description: 'Create new chart',
+                validate: {
+                    payload: Joi.object({
+                        title: Joi.string()
+                            .example('My cool chart')
+                            .description('Title of your chart. This will be the chart headline.'),
+                        theme: Joi.string()
+                            .example('datawrapper')
+                            .description('Chart theme to use.'),
+                        type: Joi.string()
+                            .example('d3-lines')
+                            .description(
+                                'Type of the chart, like line chart, bar chart, ... Type keys can be found [here].'
+                            ),
+                        metadata: Joi.object({
+                            data: Joi.object({
+                                transpose: Joi.boolean()
+                            }).unknown(true)
+                        })
+                            .description(
+                                'Metadata that saves all chart specific settings and options.'
+                            )
+                            .unknown(true)
+                    })
+                        .unknown(true)
+                        .allow(null)
+                },
+                response: chartResponse
+            },
+            handler: createChart
+        });
+
+        server.register(require('./{id}'), {
+            routes: {
+                prefix: '/{id}'
+            }
+        });
+    }
+};
 
 async function getAllCharts(request, h) {
     const { query, url, auth } = request;
