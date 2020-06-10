@@ -23,6 +23,7 @@ module.exports = {
 };
 
 function register(server, options) {
+    // GET /v3/admin/plugins
     server.route({
         method: 'GET',
         path: '/',
@@ -48,6 +49,7 @@ function register(server, options) {
         return { list: plugins, count: plugins.length };
     }
 
+    // POST /v3/admin/plugins/update
     server.route({
         method: 'POST',
         path: '/update',

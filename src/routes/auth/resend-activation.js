@@ -5,6 +5,7 @@ const get = require('lodash/get');
 const { Op } = require('@datawrapper/orm').db;
 
 module.exports = async (server, options) => {
+    // POST /v3/auth/resend-activation
     server.route({
         method: 'POST',
         path: '/resend-activation',

@@ -4,6 +4,7 @@ const { associateChartsWithUser, createSession, getStateOpts } = require('../../
 const { createUserPayloadValidation } = require('../users');
 
 module.exports = async (server, options) => {
+    // POST /v3/auth/signup
     server.route({
         method: 'POST',
         path: '/signup',

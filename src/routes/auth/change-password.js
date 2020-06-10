@@ -3,6 +3,7 @@ const Boom = require('@hapi/boom');
 const { User } = require('@datawrapper/orm/models');
 
 module.exports = async (server, options) => {
+    // POST /v3/auth/change-password
     server.route({
         method: 'POST',
         path: '/change-password',

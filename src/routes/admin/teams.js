@@ -11,6 +11,7 @@ module.exports = {
 };
 
 function register(server, options) {
+    // GET /v3/admin/teams
     server.route({
         method: 'GET',
         path: '/',

@@ -1,6 +1,7 @@
 const { createSession, getStateOpts } = require('../../auth/utils');
 
 module.exports = async (server, options) => {
+    // POST /v3/auth/session
     server.route({
         method: 'POST',
         path: '/session',

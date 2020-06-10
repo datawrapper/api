@@ -4,6 +4,7 @@ const { User } = require('@datawrapper/orm/models');
 const { associateChartsWithUser, createSession, getStateOpts } = require('../../auth/utils');
 
 module.exports = async (server, options) => {
+    // POST /v3/auth/login
     server.route({
         method: 'POST',
         path: '/login',

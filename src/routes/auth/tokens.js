@@ -10,6 +10,7 @@ const { AuthToken } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 
 module.exports = async (server, options) => {
+    // GET /v3/auth/tokens
     server.route({
         method: 'GET',
         path: '/tokens',
@@ -34,6 +35,7 @@ module.exports = async (server, options) => {
         handler: getAllTokens
     });
 
+    // POST /v3/auth/tokens
     server.route({
         method: 'POST',
         path: '/tokens',
@@ -65,6 +67,7 @@ module.exports = async (server, options) => {
         handler: createToken
     });
 
+    // DELETE /v3/auth/tokens/{id}
     server.route({
         method: 'DELETE',
         path: '/tokens/{id}',
