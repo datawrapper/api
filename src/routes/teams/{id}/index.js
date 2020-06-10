@@ -13,7 +13,7 @@ const {
 
 const { noContentResponse, teamResponse } = require('../../../schemas/response.js');
 
-const { ROLE_MEMBER, ROLE_OWNER, convertKeys } = require('../utils');
+const { ROLE_MEMBER, ROLE_OWNER, convertKeys, getMemberRole } = require('../utils');
 
 module.exports = {
     name: 'routes/teams/{id}',
@@ -236,19 +236,4 @@ async function deleteTeam(request, h) {
     }
 
     return h.response().code(204);
-}
-
-async function getMemberRole(userId, teamId) {
-    const userTeamRow = await UserTeam.findOne({
-        where: {
-            user_id: userId,
-            organization_id: teamId
-        }
-    });
-
-    if (!userTeamRow) {
-        throw Boom.unauthorized();
-    }
-
-    return userTeamRow.team_role;
 }
