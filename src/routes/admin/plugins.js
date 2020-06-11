@@ -17,12 +17,13 @@ function getNormalizedName(str) {
 }
 
 module.exports = {
-    name: 'admin-plugin-routes',
+    name: 'routes/admin/plugins',
     version: '1.0.0',
     register
 };
 
 function register(server, options) {
+    // GET /v3/admin/plugins
     server.route({
         method: 'GET',
         path: '/',
@@ -48,6 +49,7 @@ function register(server, options) {
         return { list: plugins, count: plugins.length };
     }
 
+    // POST /v3/admin/plugins/update
     server.route({
         method: 'POST',
         path: '/update',

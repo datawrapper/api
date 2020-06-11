@@ -3,12 +3,13 @@ const { setUserData } = require('@datawrapper/orm/utils/userData');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 
-const { createResponseConfig } = require('../../schemas/response');
+const { createResponseConfig } = require('../../../schemas/response');
 
 module.exports = async (server, options) => {
+    // PATCH /v3/users/:id/settings
     server.route({
         method: 'PATCH',
-        path: '/{id}/settings',
+        path: '/settings',
         options: {
             tags: ['api'],
             description: 'Update user settings',

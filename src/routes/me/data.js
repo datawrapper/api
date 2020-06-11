@@ -2,6 +2,7 @@ const Joi = require('@hapi/joi');
 const { createResponseConfig } = require('../../schemas/response');
 
 module.exports = async (server, options) => {
+    // PATCH /v3/me/data
     server.route({
         method: 'PATCH',
         path: '/data',

@@ -4,7 +4,6 @@ const path = require('path');
 const jsesc = require('jsesc');
 const crypto = require('crypto');
 const fs = require('fs-extra');
-
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
 const utils = {};

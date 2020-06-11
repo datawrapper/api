@@ -1,10 +1,81 @@
+const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { Op } = require('@datawrapper/orm').db;
-const { User, Chart, ChartPublic, ChartAccessToken, Action } = require('@datawrapper/orm/models');
+const { createResponseConfig } = require('../../../schemas/response');
+const { Chart, Action, ChartPublic, ChartAccessToken, User } = require('@datawrapper/orm/models');
 const get = require('lodash/get');
 const set = require('lodash/set');
-const { prepareChart } = require('../utils/index.js');
-const { getScope } = require('../utils/l10n');
+const { prepareChart } = require('../../../utils/index.js');
+const { Op } = require('@datawrapper/orm').db;
+const { getScope } = require('../../../utils/l10n');
+
+module.exports = (server, options) => {
+    // POST /v3/charts/{id}/publish
+    server.route({
+        method: 'POST',
+        path: '/publish',
+        options: {
+            tags: ['api'],
+            description: 'Publish a chart',
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                })
+            },
+            response: createResponseConfig({
+                schema: Joi.object({
+                    data: Joi.object(),
+                    version: Joi.number().integer(),
+                    url: Joi.string().uri()
+                }).unknown()
+            })
+        },
+        handler: publishChart
+    });
+
+    // GET /v3/charts/{id}/publish/data
+    server.route({
+        method: 'GET',
+        path: '/publish/data',
+        options: {
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                })
+            }
+        },
+        handler: publishData
+    });
+
+    // GET /v3/charts/{id}/publish/status/{version}
+    server.route({
+        method: 'GET',
+        path: '/publish/status/{version}',
+        options: {
+            tags: ['api'],
+            description: 'Check the publish status of a chart',
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required(),
+                    version: Joi.number()
+                        .integer()
+                        .min(0)
+                })
+            },
+            response: createResponseConfig({
+                schema: Joi.object({
+                    progress: Joi.array().items(Joi.string())
+                }).unknown()
+            })
+        },
+        handler: publishChartStatus
+    });
+};
 
 async function publishChart(request, h) {
     const { params, auth, server } = request;
@@ -300,5 +371,3 @@ async function getAdditionalMetadata(chart, { server }) {
 
     return data;
 }
-
-module.exports = { publishChart, publishChartStatus, publishData, getAdditionalMetadata };

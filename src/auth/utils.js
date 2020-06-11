@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { cookieTTL } = require('../utils');
-const { User } = require('@datawrapper/orm/models');
+const { User, Session, Chart } = require('@datawrapper/orm/models');
 
 const DEFAULT_SALT = 'uRPAqgUJqNuBdW62bmq3CLszRFkvq4RW';
 
@@ -134,9 +134,42 @@ function getStateOpts(domain, ttl) {
     };
 }
 
+async function associateChartsWithUser(sessionId, userId) {
+    /* Sequelize returns [0] when no row was updated */
+    if (!sessionId) return [0];
+
+    return Chart.update(
+        {
+            author_id: userId,
+            guest_session: null
+        },
+        {
+            where: {
+                author_id: null,
+                guest_session: sessionId
+            }
+        }
+    );
+}
+
+async function createSession(id, userId, keepSession = true) {
+    return Session.create({
+        id,
+        user_id: userId,
+        persistent: keepSession,
+        data: {
+            'dw-user-id': userId,
+            persistent: keepSession,
+            last_action_time: Math.floor(Date.now() / 1000)
+        }
+    });
+}
+
 module.exports = {
     legacyHash,
     createHashPassword,
     createComparePassword,
-    getStateOpts
+    getStateOpts,
+    associateChartsWithUser,
+    createSession
 };

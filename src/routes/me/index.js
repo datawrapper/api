@@ -1,7 +1,7 @@
 const Joi = require('@hapi/joi');
 const get = require('lodash/get');
 
-const { createResponseConfig, noContentResponse } = require('../schemas/response.js');
+const { createResponseConfig, noContentResponse } = require('../../schemas/response.js');
 
 const meResponse = createResponseConfig({
     schema: Joi.object({
@@ -13,9 +13,10 @@ const meResponse = createResponseConfig({
 });
 
 module.exports = {
-    name: 'me-routes',
+    name: 'routes/me',
     version: '1.0.0',
     register: (server, options) => {
+        // GET /v3/me
         server.route({
             method: 'GET',
             path: '/',
@@ -27,6 +28,7 @@ module.exports = {
             handler: getMe
         });
 
+        // PATCH /v3/me
         server.route({
             method: 'PATCH',
             path: '/',
@@ -63,12 +65,10 @@ module.exports = {
             handler: updateMe
         });
 
-        // GET /v3/me/:id/settings
-        require('./me/settings')(server, options);
+        require('./settings')(server, options);
+        require('./data')(server, options);
 
-        // GET /v3/me/:id/data
-        require('./me/data')(server, options);
-
+        // DELETE /v3/me
         server.route({
             method: 'DELETE',
             path: '/',

@@ -156,7 +156,7 @@ const routes = [
 ];
 
 module.exports = {
-    name: 'folders-routes',
+    name: 'routes/folders',
     version: '1.0.0',
     register: (server, options) => {
         routes.forEach(route => {

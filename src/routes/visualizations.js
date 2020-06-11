@@ -6,7 +6,7 @@ const chartCore = require('@datawrapper/chart-core');
 const { compileCSS } = require('../publish/compile-css.js');
 
 module.exports = {
-    name: 'visualization-routes',
+    name: 'routes/visualizations',
     version: '1.0.0',
     register
 };

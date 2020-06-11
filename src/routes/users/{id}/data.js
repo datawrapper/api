@@ -2,12 +2,13 @@ const { setUserData, unsetUserData } = require('@datawrapper/orm/utils/userData'
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 
-const { createResponseConfig } = require('../../schemas/response');
+const { createResponseConfig } = require('../../../schemas/response');
 
 module.exports = async (server, options) => {
+    // PATCH /v3/users/{id}/data
     server.route({
         method: 'PATCH',
-        path: '/{id}/data',
+        path: '/data',
         options: {
             description: 'Update user data',
             validate: {
