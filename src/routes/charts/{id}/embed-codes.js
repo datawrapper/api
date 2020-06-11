@@ -129,6 +129,7 @@ module.exports = async (server, options) => {
                     template,
                     code: template
                         .replace(/%chart_id%/g, chart.id)
+                        .replace(/%chart_public_version%/g, chart.public_version)
                         .replace(/%chart_url%/g, chart.public_url)
                         .replace(
                             /%chart_url_without_protocol%/g,
