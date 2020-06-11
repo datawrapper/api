@@ -55,6 +55,7 @@ module.exports = (server, options) => {
             },
             response: noContentResponse,
             payload: {
+                maxBytes: 2048 * 1024, // 2MiB
                 defaultContentType: 'text/csv',
                 allow: ['text/csv', 'application/json']
             }
