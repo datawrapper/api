@@ -46,10 +46,10 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/chart-core": "^8.12.1",
+        "@datawrapper/chart-core": "^8.12.4",
         "@datawrapper/locales": "1.0.1",
         "@datawrapper/orm": "^3.15.0",
-        "@datawrapper/schemas": "^1.4.0",
+        "@datawrapper/schemas": "^1.5.1",
         "@datawrapper/shared": "0.25.3",
         "@hapi/boom": "9.1.0",
         "@hapi/hapi": "19.1.1",
