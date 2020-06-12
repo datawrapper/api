@@ -45,12 +45,10 @@ async function compileCSS({ theme, filePaths }) {
     const inputLess = [varString, createFontEntries(theme.fonts), lessString, theme.less].join('');
 
     // todo: find a better solution or clean up map styles
-    if (
-        theme.data.vis &&
-        theme.data.vis['locator-maps'] &&
-        theme.data.vis['locator-maps'].mapStyles
-    )
+    if (theme.data.vis && theme.data.vis['locator-maps']) {
         delete theme.data.vis['locator-maps'].mapStyles;
+        delete theme.data.vis['locator-maps'].markerPresets;
+    }
 
     let { css } = await less.render(inputLess, {
         paths: paths,
