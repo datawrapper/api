@@ -214,7 +214,6 @@ async function getTeamMembers(request, h) {
                 charts: user.charts.length,
                 isAdmin: user.role === 'admin' || user.role === 'sysadmin',
                 role: user_team.team_role,
-                token,
                 isNewUser: token ? user.activate_token === token : undefined,
                 url: `/v3/users/${user.id}`
             };
