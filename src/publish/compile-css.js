@@ -34,6 +34,8 @@ module.exports = { compileCSS, findLessVariables, createFontEntries, flatten };
 async function compileCSS({ theme, filePaths }) {
     const paths = filePaths.map(path.dirname);
 
+    theme = JSON.parse(JSON.stringify(theme));
+
     const lessString = (await Promise.all(filePaths.map(saveReadFile))).join('');
 
     const lessVariables = await findLessVariables(lessString, { paths });
