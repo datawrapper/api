@@ -210,6 +210,13 @@ async function editChart(request, h) {
         return Boom.unauthorized('User does not have access to the specified team.');
     }
 
+    if (payload && payload.type) {
+        // validate chart type
+        if (!server.app.visualizations.has(payload.type)) {
+            return Boom.badRequest('Invalid chart type');
+        }
+    }
+
     if (payload.folderId) {
         // check if folder belongs to user to team
         const folder = await Folder.findOne({ where: { id: payload.folderId } });
