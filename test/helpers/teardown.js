@@ -43,7 +43,7 @@ async function main() {
         models.Action.destroy({ where: { id: { [Op.not]: null } } }),
         models.Chart.destroy({ where: { author_id: { [Op.in]: list.user } } }),
         models.UserTeam.destroy({ where: { organization_id: { [Op.in]: list.team } } }),
-        models.AuthToken.destroy({ where: { token: { [Op.in]: list.token } } }),
+        models.AccessToken.destroy({ where: { token: { [Op.in]: list.token } } }),
         models.Session.destroy({ where: { session_id: { [Op.in]: list.session } } }),
         models.Theme.destroy({ where: { id: { [Op.in]: list.theme } } }),
         models.UserData.destroy({ where: { user_id: { [Op.in]: list.user } } })
