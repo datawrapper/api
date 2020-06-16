@@ -45,8 +45,9 @@ async function setup(options) {
             }
         });
 
-        const { token } = await models.AuthToken.newToken({
+        const { token } = await models.AccessToken.newToken({
             user_id: user.id,
+            type: 'api-token',
             comment: 'API TEST'
         });
 
