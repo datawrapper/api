@@ -75,11 +75,17 @@ module.exports = (server, options) => {
 };
 
 async function getChartAsset(request, h) {
-    const { params } = request;
+    const { params, auth } = request;
     const { events, event } = request.server.app;
     const chart = await loadChart(request);
 
     const filename = params.asset;
+
+    const isEditable = await chart.isEditableBy(request.auth.artifacts, auth.credentials.session);
+
+    if (filename !== `${chart.id}.public.csv` && !isEditable) {
+        return Boom.forbidden();
+    }
 
     try {
         const contentStream = await events.emit(
@@ -108,9 +114,13 @@ async function getChartAsset(request, h) {
 }
 
 function getAssetWhitelist(id) {
-    return ['{id}.csv', '{id}.map.json', '{id}.minimap.json', '{id}.highlight.json'].map(name =>
-        name.replace('{id}', id)
-    );
+    return [
+        '{id}.csv',
+        '{id}.public.csv',
+        '{id}.map.json',
+        '{id}.minimap.json',
+        '{id}.highlight.json'
+    ].map(name => name.replace('{id}', id));
 }
 
 async function writeChartAsset(request, h) {
