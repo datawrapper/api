@@ -4,10 +4,10 @@ const AuthBearer = require('hapi-auth-bearer-token');
 const AuthCookie = require('./cookie-auth');
 const getUser = require('./get-user');
 const authUtils = require('./utils.js');
-const { AuthToken } = require('@datawrapper/orm/models');
+const { AccessToken } = require('@datawrapper/orm/models');
 
 async function bearerValidation(request, token, h) {
-    const row = await AuthToken.findOne({ where: { token } });
+    const row = await AccessToken.findOne({ where: { token, type: 'api-token' } });
 
     if (!row) {
         return { isValid: false, message: Boom.unauthorized('Token not found', 'Token') };
