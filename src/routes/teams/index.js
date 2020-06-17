@@ -17,6 +17,9 @@ module.exports = {
                 tags: ['api'],
                 description: 'List teams',
                 notes: 'Get a list of teams you are part of.',
+                auth: {
+                    scope: ['team', 'all']
+                },
                 validate: {
                     query: Joi.object({
                         search: Joi.string().description(
@@ -53,6 +56,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Create a team',
+                auth: {
+                    scope: ['team', 'all']
+                },
                 validate: {
                     payload: Joi.object({
                         id: Joi.string()

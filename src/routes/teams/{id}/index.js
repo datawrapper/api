@@ -26,6 +26,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Fetch team information',
+                auth: {
+                    scope: ['team', 'all']
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -46,6 +49,9 @@ module.exports = {
                 tags: ['api'],
                 description: 'Delete a team',
                 notes: `**Be careful!** This is a destructive action that can only be performed by team owners.`,
+                auth: {
+                    scope: ['team', 'all']
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
@@ -65,6 +71,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Update a team',
+                auth: {
+                    scope: ['team', 'all']
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.string()
