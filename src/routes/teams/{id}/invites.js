@@ -32,7 +32,7 @@ module.exports = async (server, options) => {
                         .required()
                         .description('Team ID (eg. guardians-of-the-galaxy)')
                 },
-                payload: {
+                payload: Joi.object({
                     email: Joi.string()
                         .email()
                         .required()
@@ -40,7 +40,7 @@ module.exports = async (server, options) => {
                     role: Joi.string()
                         .valid(...ROLES)
                         .required()
-                }
+                })
             },
             response: createResponseConfig({
                 status: { '201': Joi.any().empty() }
