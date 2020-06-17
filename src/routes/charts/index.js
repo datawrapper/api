@@ -17,6 +17,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'List charts',
+                auth: {
+                    scope: ['chart', 'all']
+                },
                 notes: `Search and filter a list of your charts.
                         The returned chart objects, do not include the full chart metadata.
                         To get the full metadata use [/v3/charts/{id}](ref:getchartsid).`,

@@ -16,6 +16,9 @@ module.exports = (server, options) => {
         options: {
             tags: ['api'],
             description: 'Publish a chart',
+            auth: {
+                scope: ['chart', 'all']
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.string()
@@ -39,6 +42,9 @@ module.exports = (server, options) => {
         method: 'GET',
         path: '/publish/data',
         options: {
+            auth: {
+                scope: ['chart', 'all']
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.string()
@@ -57,6 +63,9 @@ module.exports = (server, options) => {
         options: {
             tags: ['api'],
             description: 'Check the publish status of a chart',
+            auth: {
+                scope: ['chart', 'all']
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.string()

@@ -11,6 +11,9 @@ module.exports = (server, options) => {
             tags: ['api'],
             description: 'Fetch chart data',
             notes: `Request the data of a chart, which is usually a CSV.`,
+            auth: {
+                scope: ['chart', 'all']
+            },
             plugins: {
                 'hapi-swagger': {
                     produces: ['text/csv', 'application/json']
@@ -35,6 +38,9 @@ module.exports = (server, options) => {
             tags: ['api'],
             description: 'Upload chart data',
             notes: `Upload data for a chart or map.`,
+            auth: {
+                scope: ['chart', 'all']
+            },
             plugins: {
                 'hapi-swagger': {
                     consumes: ['text/csv', 'application/json']
