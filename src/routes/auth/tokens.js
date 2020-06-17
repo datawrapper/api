@@ -16,6 +16,9 @@ module.exports = async (server, options) => {
         path: '/tokens',
         options: {
             tags: ['api'],
+            auth: {
+                scope: ['auth', 'all']
+            },
             description: 'List API tokens',
             notes: 'Response will not include full tokens for security reasons.',
             validate: {

@@ -7,7 +7,8 @@ module.exports = async (server, options) => {
         path: '/session',
         options: {
             auth: {
-                mode: 'try'
+                mode: 'try',
+                scope: ['auth', 'all']
             }
         },
         async handler(request, h) {

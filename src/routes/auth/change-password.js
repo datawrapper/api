@@ -9,7 +9,8 @@ module.exports = async (server, options) => {
         path: '/change-password',
         options: {
             auth: {
-                mode: 'try'
+                mode: 'try',
+                scope: ['auth', 'all']
             },
             validate: {
                 payload: Joi.object({
