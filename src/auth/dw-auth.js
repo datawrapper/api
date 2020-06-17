@@ -15,7 +15,10 @@ async function bearerValidation(request, token, h) {
 
     await row.update({ last_used_at: new Date() });
 
-    return getUser(row.user_id, { credentials: { token }, strategy: 'Token' });
+    return getUser(row.user_id, {
+        credentials: { token, scope: row.data.scopes || ['all'] },
+        strategy: 'Token'
+    });
 }
 
 function dwAuth(server, options = {}) {
