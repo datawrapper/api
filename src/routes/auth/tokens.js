@@ -48,6 +48,9 @@ module.exports = async (server, options) => {
             notes: `This endpoint will create a new API Token and show it in the response body.
                      It is possible to create a comment with every token to have a reference where it is used.
                      Make sure to save the token somewhere, since you won't be able to see it again.`,
+            auth: {
+                scope: ['auth', 'all']
+            },
             validate: {
                 payload: Joi.object({
                     comment: Joi.string()
@@ -116,6 +119,9 @@ module.exports = async (server, options) => {
             description: 'Delete API token',
             notes:
                 'Delete an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
+            auth: {
+                scope: ['auth', 'all']
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.number()
@@ -147,7 +153,10 @@ module.exports = async (server, options) => {
         path: '/token-scopes',
         options: {
             tags: ['api'],
-            description: 'Get list of valid token scopes'
+            description: 'Get list of valid token scopes',
+            auth: {
+                scope: ['auth', 'all']
+            }
         },
         async handler(request, h) {
             const scopes = Array.from(server.app.scopes.values());
