@@ -11,6 +11,7 @@ module.exports = {
     name: 'routes/charts',
     version: '1.0.0',
     register(server, options) {
+        server.app.scopes.add('chart');
         server.route({
             method: 'GET',
             path: '/',

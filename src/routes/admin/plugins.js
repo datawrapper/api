@@ -23,6 +23,7 @@ module.exports = {
 };
 
 function register(server, options) {
+    server.app.adminScopes.add('plugin');
     // GET /v3/admin/plugins
     server.route({
         method: 'GET',

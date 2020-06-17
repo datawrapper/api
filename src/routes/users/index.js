@@ -17,6 +17,7 @@ module.exports = {
     name: 'routes/users',
     version: '1.0.0',
     register: (server, options) => {
+        server.app.scopes.add('user');
         // GET /v3/users
         server.route({
             method: 'GET',

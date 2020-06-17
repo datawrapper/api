@@ -12,6 +12,7 @@ module.exports = {
 };
 
 async function register(server, options) {
+    server.app.adminScopes.add('visualization');
     server.route({
         method: 'GET',
         path: '/{id}',

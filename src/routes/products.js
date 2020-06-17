@@ -4,6 +4,7 @@ module.exports = {
     name: 'routes/products',
     version: '1.0.0',
     register: (server, options) => {
+        server.app.adminScopes.add('product');
         server.route({
             method: 'GET',
             path: '/',

@@ -55,7 +55,12 @@ module.exports = async (server, options) => {
                         .example('Token for fun project')
                         .description(
                             'The comment can be everything. Tip: Use something to remember where this specific token is used.'
-                        )
+                        ),
+                    scopes: Joi.array().items(
+                        Joi.string()
+                            .regex(/^[a-z-]+$/)
+                            .description('scopes to be granted for this token')
+                    )
                 })
             },
             response: createResponseConfig({
@@ -71,11 +76,22 @@ module.exports = async (server, options) => {
         async handler(request, h) {
             const { payload, auth, url } = request;
 
+            if (payload.scopes) {
+                // validate scopes
+                for (let i = 0; i < payload.scopes.length; i++) {
+                    const scope = payload.scopes[i];
+                    if (!server.app.scopes.has(scope) || !server.app.adminScopes.has(scope)) {
+                        return Boom.badRequest(`Invalid scope "${scope}"`);
+                    }
+                }
+            }
+
             const token = await AccessToken.newToken({
                 type: 'api-token',
                 user_id: auth.artifacts.id,
                 data: {
-                    comment: payload.comment
+                    comment: payload.comment,
+                    scopes: payload.scopes
                 }
             });
 

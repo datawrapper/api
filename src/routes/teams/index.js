@@ -9,6 +9,7 @@ module.exports = {
     name: 'routes/teams',
     version: '1.0.0',
     register: (server, options) => {
+        server.app.scopes.add('team');
         // GET /v3/teams
         server.route({
             method: 'GET',

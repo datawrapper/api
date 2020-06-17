@@ -159,6 +159,7 @@ module.exports = {
     name: 'routes/folders',
     version: '1.0.0',
     register: (server, options) => {
+        server.app.scopes.add('folder');
         routes.forEach(route => {
             server.route({
                 method: route.method,
