@@ -18,7 +18,7 @@ async function cookieValidation(request, session, h) {
     });
 
     return getUser(row.data['dw-user-id'], {
-        credentials: { session, data: row },
+        credentials: { session, data: row, scope: ['all'] },
         strategy: 'Session',
         logger: request.server.logger()
     });
