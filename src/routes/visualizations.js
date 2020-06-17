@@ -17,7 +17,8 @@ async function register(server, options) {
         path: '/{id}',
         options: {
             auth: {
-                mode: 'try'
+                mode: 'try',
+                scope: ['visualization', 'all']
             }
         },
         handler: getVisualization

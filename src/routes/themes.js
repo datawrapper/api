@@ -11,7 +11,10 @@ module.exports = {
             method: 'GET',
             path: '/{id}',
             options: {
-                auth: { mode: 'try' },
+                auth: {
+                    mode: 'try',
+                    scope: ['theme', 'all']
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.string().required()
