@@ -6,7 +6,7 @@ const {
     createResponseConfig
 } = require('../../schemas/response.js');
 const { camelizeKeys } = require('humps');
-const { AuthToken } = require('@datawrapper/orm/models');
+const { AccessToken } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 
 module.exports = async (server, options) => {
@@ -60,11 +60,32 @@ module.exports = async (server, options) => {
                     id: Joi.number().integer(),
                     comment: Joi.string(),
                     token: Joi.string(),
-                    createdAt: Joi.date()
+                    createdAt: Joi.date(),
+                    url: Joi.string()
                 }).unknown()
             })
         },
-        handler: createToken
+        async handler(request, h) {
+            const { payload, auth, url } = request;
+
+            const token = await AccessToken.newToken({
+                type: 'api-token',
+                user_id: auth.artifacts.id,
+                data: {
+                    comment: payload.comment
+                }
+            });
+
+            return h
+                .response({
+                    id: token.id,
+                    token: token.token,
+                    createdAt: token.createdAt,
+                    comment: token.data.comment,
+                    url: `${url.pathname}/${token.id}`
+                })
+                .code(201);
+        }
     });
 
     // DELETE /v3/auth/tokens/{id}
@@ -86,35 +107,45 @@ module.exports = async (server, options) => {
             },
             response: noContentResponse
         },
-        handler: deleteToken
+        async handler(request, h) {
+            const { params, auth } = request;
+            const token = await AccessToken.destroy({
+                where: {
+                    type: 'api-token',
+                    user_id: auth.artifacts.id,
+                    id: params.id
+                },
+                limit: 1
+            });
+            if (!token) return Boom.notFound();
+            return h.response().code(204);
+        }
     });
 };
 
 async function getAllTokens(request, h) {
     const { query, auth, url } = request;
 
-    if (auth.artifacts.role === 'guest') {
-        return Boom.unauthorized();
-    }
-
     const options = {
-        attributes: ['id', 'token', 'last_used_at', 'comment'],
         where: {
+            type: 'api-token',
             user_id: auth.artifacts.id
         },
         limit: query.limit,
         offset: query.offset
     };
 
-    const { count, rows } = await AuthToken.findAndCountAll(options);
+    const { count, rows } = await AccessToken.findAndCountAll(options);
 
     const tokenList = {
-        list: rows.map(({ dataValues }) => {
-            const { token, ...data } = dataValues;
+        list: rows.map(({ token, id, createdAt, last_used_at, data: { comment } }) => {
             return camelizeKeys({
-                ...data,
+                id,
+                createdAt,
+                last_used_at,
+                comment,
                 lastTokenCharacters: token.slice(-4),
-                url: `${url.pathname}/${data.id}`
+                url: `${url.pathname}/${id}`
             });
         }),
         total: count
@@ -131,36 +162,4 @@ async function getAllTokens(request, h) {
     }
 
     return tokenList;
-}
-
-async function createToken(request, h) {
-    if (request.auth.artifacts.role === 'guest') {
-        return Boom.unauthorized();
-    }
-
-    const token = await AuthToken.newToken({
-        user_id: request.auth.artifacts.id,
-        comment: request.payload.comment
-    });
-
-    const { user_id, ...data } = token.dataValues;
-
-    return camelizeKeys(data);
-}
-
-async function deleteToken(request, h) {
-    if (request.auth.artifacts.role === 'guest') {
-        return Boom.unauthorized();
-    }
-
-    const token = await AuthToken.findByPk(request.params.id, {
-        where: { user_id: request.auth.artifacts.id }
-    });
-
-    if (!token) {
-        return Boom.notFound();
-    }
-
-    await token.destroy();
-    return h.response().code(204);
 }
