@@ -15,8 +15,7 @@ const PASSWORD_HASH = '$2a$05$6B584QgS5SOXi1m.jM/H9eV.2tCaqNc5atHnWfYlFe5riXVW9z
 function getCredentials() {
     return {
         email: `test-${nanoid(5)}@ava.de`,
-        password: 'test-password',
-        scopes: ['all']
+        password: 'test-password'
     };
 }
 
@@ -61,7 +60,13 @@ async function setup(options) {
             addToCleanup('user', user.id)
         ]);
 
-        return { user, session, token };
+        session.scope = ['all'];
+
+        return {
+            user,
+            session,
+            token
+        };
     }
 
     async function getTeamWithUser(role = 'owner') {
