@@ -8,6 +8,9 @@ module.exports = async (server, options) => {
         path: '/data',
         options: {
             description: 'Update your account data',
+            auth: {
+                scope: ['user', 'all']
+            },
             validate: {
                 payload: Joi.object()
             },

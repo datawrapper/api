@@ -8,6 +8,9 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Update your account settings',
+            auth: {
+                scope: ['user', 'all']
+            },
             notes: 'Use this endpoint to change your active team.',
             validate: {
                 payload: {

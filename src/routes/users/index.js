@@ -23,6 +23,9 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                auth: {
+                    scope: ['user', 'all']
+                },
                 description: 'List users',
                 validate: {
                     query: Joi.object({

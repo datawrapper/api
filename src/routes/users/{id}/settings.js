@@ -13,6 +13,9 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Update user settings',
+            auth: {
+                scope: ['user', 'all']
+            },
             validate: {
                 params: {
                     id: Joi.number()

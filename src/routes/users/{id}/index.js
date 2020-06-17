@@ -20,6 +20,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Fetch user information',
+                auth: {
+                    scope: ['user', 'all']
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.number()
@@ -39,6 +42,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Update user information',
+                auth: {
+                    scope: ['user', 'all']
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.number()
@@ -83,6 +89,9 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                auth: {
+                    scope: ['user', 'all']
+                },
                 description: 'Delete user',
                 validate: {
                     params: Joi.object({

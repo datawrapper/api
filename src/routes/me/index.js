@@ -22,6 +22,9 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                auth: {
+                    scope: ['user', 'all']
+                },
                 description: 'Fetch your account information',
                 response: meResponse
             },
@@ -34,6 +37,9 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                auth: {
+                    scope: ['user', 'all']
+                },
                 description: 'Update your account information',
                 validate: {
                     payload: Joi.object({
@@ -74,6 +80,9 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                auth: {
+                    scope: ['user', 'all']
+                },
                 description: 'Delete your account',
                 notes: `**Be careful!** This is a destructive action.
                         By deleting your account you will loose access to all of your charts.
