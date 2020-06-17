@@ -140,6 +140,22 @@ module.exports = async (server, options) => {
             return h.response().code(204);
         }
     });
+
+    // GET /v3/auth/token-scopes
+    server.route({
+        method: 'GET',
+        path: '/token-scopes',
+        options: {
+            tags: ['api'],
+            description: 'Get list of valid token scopes'
+        },
+        async handler(request, h) {
+            const scopes = Array.from(server.app.scopes.values());
+            if (!request.server.methods.isAdmin(request)) return scopes;
+            const adminScopes = Array.from(server.app.adminScopes.values());
+            return [...scopes, ...adminScopes];
+        }
+    });
 };
 
 async function getAllTokens(request, h) {
