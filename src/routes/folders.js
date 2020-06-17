@@ -166,6 +166,9 @@ module.exports = {
                 options: {
                     tags: ['api'],
                     description: route.description,
+                    auth: {
+                        scope: ['folder', 'all']
+                    },
                     validate: {
                         params: route.params,
                         query: route.query,
