@@ -70,6 +70,7 @@ module.exports = async (server, options) => {
                 schema: Joi.object({
                     id: Joi.number().integer(),
                     comment: Joi.string(),
+                    scopes: Joi.array().items(Joi.string()),
                     token: Joi.string(),
                     createdAt: Joi.date(),
                     url: Joi.string()
@@ -83,7 +84,7 @@ module.exports = async (server, options) => {
                 // validate scopes
                 for (let i = 0; i < payload.scopes.length; i++) {
                     const scope = payload.scopes[i];
-                    if (!server.app.scopes.has(scope) || !server.app.adminScopes.has(scope)) {
+                    if (!server.app.scopes.has(scope) && !server.app.adminScopes.has(scope)) {
                         return Boom.badRequest(`Invalid scope "${scope}"`);
                     }
                 }
@@ -94,7 +95,7 @@ module.exports = async (server, options) => {
                 user_id: auth.artifacts.id,
                 data: {
                     comment: payload.comment,
-                    scopes: payload.scopes
+                    scopes: payload.scopes || ['all']
                 }
             });
 
@@ -104,6 +105,7 @@ module.exports = async (server, options) => {
                     token: token.token,
                     createdAt: token.createdAt,
                     comment: token.data.comment,
+                    scopes: token.data.scopes,
                     url: `${url.pathname}/${token.id}`
                 })
                 .code(201);
@@ -182,12 +184,13 @@ async function getAllTokens(request, h) {
     const { count, rows } = await AccessToken.findAndCountAll(options);
 
     const tokenList = {
-        list: rows.map(({ token, id, createdAt, last_used_at, data: { comment } }) => {
+        list: rows.map(({ token, id, createdAt, last_used_at, data: { comment, scopes } }) => {
             return camelizeKeys({
                 id,
                 createdAt,
                 last_used_at,
                 comment,
+                scopes,
                 lastTokenCharacters: token.slice(-4),
                 url: `${url.pathname}/${id}`
             });
