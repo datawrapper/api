@@ -22,7 +22,7 @@ test('Should accept valid token', async t => {
     const { auth } = res.request;
 
     t.true(auth.isAuthenticated);
-    t.deepEqual(auth.credentials, { token: token });
+    t.deepEqual(auth.credentials, { token: token, scope: ['all'] });
     t.is(auth.artifacts.id, user.id);
 });
 

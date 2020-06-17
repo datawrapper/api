@@ -15,7 +15,8 @@ const PASSWORD_HASH = '$2a$05$6B584QgS5SOXi1m.jM/H9eV.2tCaqNc5atHnWfYlFe5riXVW9z
 function getCredentials() {
     return {
         email: `test-${nanoid(5)}@ava.de`,
-        password: 'test-password'
+        password: 'test-password',
+        scopes: ['all']
     };
 }
 
@@ -48,7 +49,10 @@ async function setup(options) {
         const { token } = await models.AccessToken.newToken({
             user_id: user.id,
             type: 'api-token',
-            comment: 'API TEST'
+            data: {
+                comment: 'API TEST',
+                scopes: ['all']
+            }
         });
 
         await Promise.all([
