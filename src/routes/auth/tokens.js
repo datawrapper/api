@@ -163,7 +163,7 @@ module.exports = async (server, options) => {
         async handler(request, h) {
             const scopes = Array.from(server.app.scopes);
             if (!request.server.methods.isAdmin(request)) return scopes;
-            const adminScopes = Array.from(server.app.adminScopes.values());
+            const adminScopes = Array.from(server.app.adminScopes);
             return [...scopes, ...adminScopes];
         }
     });
