@@ -286,7 +286,7 @@ async function publishData(request, h) {
 
     // the csv dataset
     const res = await request.server.inject({
-        url: `/v3/charts/${params.id}/data`,
+        url: `/v3/charts/${params.id}/data${query.published ? '?published=1' : ''}`,
         auth
     });
 
