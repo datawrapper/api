@@ -65,9 +65,9 @@ module.exports = (server, options) => {
 };
 
 async function getChartData(request, h) {
-    const { params } = request;
+    const { params, query } = request;
 
-    let filename = `${params.id}.csv`;
+    let filename = `${params.id}.${query.published ? 'public.' : ''}csv`;
 
     const res = await request.server.inject({
         method: 'GET',
