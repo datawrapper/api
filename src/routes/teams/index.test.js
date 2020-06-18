@@ -162,7 +162,7 @@ test('admins can create teams', async t => {
     const { user: admin } = await t.context.getUser('admin');
     const auth = {
         strategy: 'simple',
-        credentials: { session: '', scope: ['team'] },
+        credentials: { session: '', access: { scope: ['team'] } },
         artifacts: admin
     };
 

@@ -23,7 +23,7 @@ test.before(async t => {
 test('Tokens can be created, fetched and deleted', async t => {
     const auth = {
         strategy: 'session',
-        credentials: { session: t.context.session, scope: ['auth'] },
+        credentials: { session: t.context.session, access: { scope: ['auth'] } },
         artifacts: { id: t.context.user.id }
     };
 

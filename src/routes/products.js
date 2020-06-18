@@ -11,7 +11,7 @@ module.exports = {
             options: {
                 auth: {
                     strategy: 'admin',
-                    scope: ['product', 'all']
+                    access: { scope: ['product', 'all'] }
                 }
             },
             handler: async function getAllProducts(request, h) {

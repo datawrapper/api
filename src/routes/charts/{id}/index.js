@@ -21,7 +21,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'Fetch chart metadata',
                 auth: {
-                    scope: ['chart', 'all']
+                    access: { scope: ['chart:read', 'all'] }
                 },
                 validate: {
                     params: Joi.object({
@@ -50,7 +50,7 @@ module.exports = {
                         If this endpoint should be used in an application (CMS), it is recommended to
                         ask the user for confirmation.`,
                 auth: {
-                    scope: ['chart', 'all']
+                    access: { scope: ['chart', 'chart:write', 'all'] }
                 },
                 validate: {
                     params: Joi.object({
@@ -105,7 +105,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'Update chart. Allows for partial metadata updates (JSON merge patch)',
                 auth: {
-                    scope: ['chart', 'all']
+                    access: { scope: ['chart', 'all'] }
                 },
                 validate: {
                     params: Joi.object({
@@ -129,7 +129,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'Update chart. Replaces the entire metadata object.',
                 auth: {
-                    scope: ['chart', 'all']
+                    access: { scope: ['chart', 'all'] }
                 },
                 validate: {
                     params: Joi.object({

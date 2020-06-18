@@ -9,7 +9,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Update your account settings',
             auth: {
-                scope: ['user', 'all']
+                access: { scope: ['user', 'all'] }
             },
             notes: 'Use this endpoint to change your active team.',
             validate: {

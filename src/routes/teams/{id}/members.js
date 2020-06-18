@@ -32,7 +32,7 @@ module.exports = async (server, options) => {
             notes:
                 'Get a list of team members and some additional information like their team role.',
             auth: {
-                scope: ['team', 'all']
+                access: { scope: ['team', 'all'] }
             },
             validate: {
                 params: Joi.object({
@@ -75,7 +75,7 @@ module.exports = async (server, options) => {
         options: {
             description: 'Add a team member',
             auth: {
-                scope: ['team', 'all']
+                access: { scope: ['team', 'all'] }
             },
             validate: {
                 params: Joi.object({
@@ -108,7 +108,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Remove a team member',
             auth: {
-                scope: ['team', 'all']
+                access: { scope: ['team', 'all'] }
             },
             validate: {
                 params: Joi.object({
@@ -133,7 +133,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Set team member status',
             auth: {
-                scope: ['team', 'all']
+                access: { scope: ['team', 'all'] }
             },
             validate: {
                 params: Joi.object({

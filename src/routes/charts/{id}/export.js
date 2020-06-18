@@ -9,6 +9,11 @@ module.exports = (server, options) => {
         method: 'POST',
         path: '/export/{format}',
         options: {
+            auth: {
+                access: {
+                    scope: ['chart:read', 'all']
+                }
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.string()
@@ -52,6 +57,11 @@ module.exports = (server, options) => {
             description: 'Export chart',
             notes: `Export your chart as image or document for use in print or presentations.
                         Not all formats might be available to you, based on your account.`,
+            auth: {
+                access: {
+                    scope: ['chart:read', 'all']
+                }
+            },
             plugins: {
                 'hapi-swagger': {
                     produces: ['image/png', 'image/svg+xml', 'application/pdf']

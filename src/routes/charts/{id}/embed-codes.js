@@ -21,6 +21,11 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Get embed codes for a chart',
             notes: `Request the responsive and static embed code of a chart.`,
+            auth: {
+                access: {
+                    scope: ['chart:read', 'all']
+                }
+            },
             plugins: {
                 'hapi-swagger': {
                     produces: ['application/json']

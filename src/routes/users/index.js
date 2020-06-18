@@ -25,7 +25,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 auth: {
-                    scope: ['user', 'all']
+                    access: { scope: ['user', 'all'] }
                 },
                 description: 'List users',
                 validate: {

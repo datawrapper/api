@@ -31,7 +31,7 @@ function register(server, options) {
         options: {
             auth: {
                 strategy: 'admin',
-                scope: ['plugin', 'all']
+                access: { scope: ['plugin', 'all'] }
             }
         },
         handler: getAllPlugins

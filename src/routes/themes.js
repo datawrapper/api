@@ -14,7 +14,7 @@ module.exports = {
             options: {
                 auth: {
                     mode: 'try',
-                    scope: ['theme', 'all']
+                    access: { scope: ['theme', 'all'] }
                 },
                 validate: {
                     params: Joi.object({

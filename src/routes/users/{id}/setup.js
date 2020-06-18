@@ -9,7 +9,7 @@ module.exports = (server, options) => {
         path: '/setup',
         options: {
             auth: {
-                scope: ['user', 'all']
+                access: { scope: ['user', 'all'] }
             },
             validate: {
                 params: Joi.object({

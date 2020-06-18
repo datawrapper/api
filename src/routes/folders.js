@@ -168,7 +168,7 @@ module.exports = {
                     tags: ['api'],
                     description: route.description,
                     auth: {
-                        scope: ['folder', 'all']
+                        access: { scope: ['folder', 'all'] }
                     },
                     validate: {
                         params: route.params,
