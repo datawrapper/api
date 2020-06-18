@@ -23,7 +23,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 auth: {
-                    access: { scope: ['user', 'all'] }
+                    access: { scope: ['user:read'] }
                 },
                 description: 'Fetch your account information',
                 response: meResponse
@@ -38,7 +38,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 auth: {
-                    access: { scope: ['user', 'all'] }
+                    access: { scope: ['user:write'] }
                 },
                 description: 'Update your account information',
                 validate: {
@@ -81,7 +81,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 auth: {
-                    access: { scope: ['user', 'all'] }
+                    access: { scope: ['user:write'] }
                 },
                 description: 'Delete your account',
                 notes: `**Be careful!** This is a destructive action.

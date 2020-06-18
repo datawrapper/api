@@ -8,7 +8,7 @@ module.exports = async (server, options) => {
         options: {
             auth: {
                 mode: 'try',
-                access: { scope: ['auth', 'all'] }
+                access: { scope: ['auth'] }
             }
         },
         async handler(request, h) {

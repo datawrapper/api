@@ -9,7 +9,7 @@ module.exports = async (server, options) => {
         path: '/products',
         options: {
             auth: {
-                access: { scope: ['team', 'all'] }
+                access: { scope: ['+team:read', '+product:read'] }
             },
             validate: {
                 params: {
@@ -56,7 +56,7 @@ module.exports = async (server, options) => {
         path: '/products',
         options: {
             auth: {
-                access: { scope: ['team', 'all'] }
+                access: { scope: ['team'] }
             },
             validate: {
                 params: {
@@ -107,7 +107,7 @@ module.exports = async (server, options) => {
         path: '/products/{productId}',
         options: {
             auth: {
-                access: { scope: ['team', 'all'] }
+                access: { scope: ['team'] }
             },
             validate: {
                 params: {
@@ -157,7 +157,7 @@ module.exports = async (server, options) => {
         path: '/products/{productId}',
         options: {
             auth: {
-                access: { scope: ['team', 'all'] }
+                access: { scope: ['team'] }
             },
             validate: {
                 params: {

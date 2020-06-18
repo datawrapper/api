@@ -10,7 +10,7 @@ module.exports = async (server, options) => {
         options: {
             auth: {
                 mode: 'try',
-                access: { scope: ['auth', 'all'] }
+                access: { scope: ['auth'] }
             },
             validate: {
                 payload: Joi.object({

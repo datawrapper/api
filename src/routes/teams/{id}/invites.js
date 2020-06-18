@@ -27,7 +27,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Invite a person',
             auth: {
-                access: { scope: ['team', 'all'] }
+                access: { scope: ['team:write'] }
             },
             validate: {
                 params: {
@@ -63,7 +63,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Accept a team invitation',
             auth: {
-                access: { scope: ['team', 'all'] }
+                access: { scope: ['team:write'] }
             },
             validate: {
                 params: {

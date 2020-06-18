@@ -14,7 +14,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Update user settings',
             auth: {
-                access: { scope: ['user', 'all'] }
+                access: { scope: ['user:write'] }
             },
             validate: {
                 params: {

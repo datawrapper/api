@@ -17,7 +17,8 @@ module.exports = {
     name: 'routes/users',
     version: '1.0.0',
     register: (server, options) => {
-        server.app.scopes.add('user');
+        server.app.scopes.add('user:read');
+        server.app.scopes.add('user:write');
         // GET /v3/users
         server.route({
             method: 'GET',
@@ -25,7 +26,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 auth: {
-                    access: { scope: ['user', 'all'] }
+                    access: { scope: ['user:read'] }
                 },
                 description: 'List users',
                 validate: {

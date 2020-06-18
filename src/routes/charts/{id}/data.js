@@ -12,7 +12,7 @@ module.exports = (server, options) => {
             description: 'Fetch chart data',
             notes: `Request the data of a chart, which is usually a CSV.`,
             auth: {
-                access: { scope: ['chart:read', 'all'] }
+                access: { scope: ['chart:read'] }
             },
             plugins: {
                 'hapi-swagger': {
@@ -39,7 +39,7 @@ module.exports = (server, options) => {
             description: 'Upload chart data',
             notes: `Upload data for a chart or map.`,
             auth: {
-                access: { scope: ['chart:write', 'all'] }
+                access: { scope: ['chart:write'] }
             },
             plugins: {
                 'hapi-swagger': {

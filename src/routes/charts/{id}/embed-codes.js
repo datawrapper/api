@@ -23,7 +23,7 @@ module.exports = async (server, options) => {
             notes: `Request the responsive and static embed code of a chart.`,
             auth: {
                 access: {
-                    scope: ['chart:read', 'all']
+                    scope: ['chart:read']
                 }
             },
             plugins: {

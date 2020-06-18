@@ -18,7 +18,7 @@ function register(server, options) {
         options: {
             auth: {
                 strategy: 'admin',
-                access: { scope: ['team', 'all'] }
+                access: { scope: ['team:read'] }
             },
             validate: {
                 query: {

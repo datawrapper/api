@@ -19,7 +19,7 @@ async function register(server, options) {
         options: {
             auth: {
                 mode: 'try',
-                access: { scope: ['visualization', 'all'] }
+                access: { scope: ['visualization'] }
             }
         },
         handler: getVisualization

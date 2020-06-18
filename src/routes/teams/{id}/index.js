@@ -27,7 +27,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'Fetch team information',
                 auth: {
-                    access: { scope: ['team', 'all'] }
+                    access: { scope: ['team:read'] }
                 },
                 validate: {
                     params: Joi.object({
@@ -50,7 +50,7 @@ module.exports = {
                 description: 'Delete a team',
                 notes: `**Be careful!** This is a destructive action that can only be performed by team owners.`,
                 auth: {
-                    access: { scope: ['team', 'all'] }
+                    access: { scope: ['team:write'] }
                 },
                 validate: {
                     params: Joi.object({
@@ -72,7 +72,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'Update a team',
                 auth: {
-                    access: { scope: ['team', 'all'] }
+                    access: { scope: ['team:write'] }
                 },
                 validate: {
                     params: Joi.object({

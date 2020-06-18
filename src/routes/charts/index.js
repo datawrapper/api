@@ -20,7 +20,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'List charts',
                 auth: {
-                    access: { scope: ['chart:read', 'all'] }
+                    access: { scope: ['chart:read'] }
                 },
                 notes: `Search and filter a list of your charts.
                         The returned chart objects, do not include the full chart metadata.
@@ -65,7 +65,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'Create new chart',
                 auth: {
-                    access: { scope: ['chart:write', 'all'] }
+                    access: { scope: ['chart:write'] }
                 },
                 validate: {
                     payload: Joi.object({

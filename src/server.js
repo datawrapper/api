@@ -192,6 +192,11 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             server.app.visualizations.set(vis.id, vis);
         });
     });
+    server.method('getScopes', (admin = false) => {
+        return admin
+            ? [...server.app.scopes, ...server.app.adminScopes]
+            : Array.from(server.app.scopes);
+    });
 
     const { validateThemeData } = schemas.initialize({
         getSchema: config.api.schemaBaseUrl

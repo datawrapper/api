@@ -11,7 +11,7 @@ module.exports = async (server, options) => {
         path: '/resend-activation',
         options: {
             auth: {
-                access: { scope: ['auth', 'all'] }
+                access: { scope: ['auth'] }
             },
             validate: {
                 payload: Joi.object({

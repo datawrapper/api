@@ -12,7 +12,7 @@ module.exports = async (server, options) => {
         options: {
             description: 'Update user data',
             auth: {
-                access: { scope: ['user', 'all'] }
+                access: { scope: ['user:write'] }
             },
             validate: {
                 params: {

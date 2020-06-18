@@ -8,6 +8,7 @@ const routes = [
     {
         method: 'GET',
         path: '/',
+        scope: 'folder:read',
         description: 'List folders',
         notes: 'Get a list of folders and their associated charts.',
         response: listResponse,
@@ -91,6 +92,7 @@ const routes = [
         method: 'POST',
         path: '/',
         description: 'Create a folder',
+        scope: 'folder:write',
         payload: Joi.object({
             organizationId: Joi.string()
                 .optional()
@@ -159,7 +161,8 @@ module.exports = {
     name: 'routes/folders',
     version: '1.0.0',
     register: (server, options) => {
-        server.app.scopes.add('folder');
+        server.app.scopes.add('folder:read');
+        server.app.scopes.add('folder:write');
         routes.forEach(route => {
             server.route({
                 method: route.method,
@@ -168,7 +171,7 @@ module.exports = {
                     tags: ['api'],
                     description: route.description,
                     auth: {
-                        access: { scope: ['folder', 'all'] }
+                        access: { scope: [route.scope] }
                     },
                     validate: {
                         params: route.params,

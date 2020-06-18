@@ -4,14 +4,14 @@ module.exports = {
     name: 'routes/products',
     version: '1.0.0',
     register: (server, options) => {
-        server.app.adminScopes.add('product');
+        server.app.adminScopes.add('product:read');
         server.route({
             method: 'GET',
             path: '/',
             options: {
                 auth: {
                     strategy: 'admin',
-                    access: { scope: ['product', 'all'] }
+                    access: { scope: ['product:read'] }
                 }
             },
             handler: async function getAllProducts(request, h) {

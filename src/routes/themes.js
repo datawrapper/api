@@ -7,14 +7,14 @@ module.exports = {
     name: 'routes/themes',
     version: '1.0.0',
     register: (server, options) => {
-        server.app.adminScopes.add('theme');
+        server.app.adminScopes.add('theme:read');
         server.route({
             method: 'GET',
             path: '/{id}',
             options: {
                 auth: {
                     mode: 'try',
-                    access: { scope: ['theme', 'all'] }
+                    access: { scope: ['theme:read'] }
                 },
                 validate: {
                     params: Joi.object({

@@ -11,7 +11,7 @@ module.exports = (server, options) => {
         options: {
             auth: {
                 access: {
-                    scope: ['chart:read', 'all']
+                    scope: ['chart:read']
                 }
             },
             validate: {
@@ -59,7 +59,7 @@ module.exports = (server, options) => {
                         Not all formats might be available to you, based on your account.`,
             auth: {
                 access: {
-                    scope: ['chart:read', 'all']
+                    scope: ['chart:read']
                 }
             },
             plugins: {
