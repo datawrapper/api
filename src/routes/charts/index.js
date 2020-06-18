@@ -195,6 +195,13 @@ async function createChart(request, h) {
         return Boom.unauthorized('User is not allowed to create a chart in that team.');
     }
 
+    if (payload && payload.type) {
+        // validate chart type
+        if (!server.app.visualizations.has(payload.type)) {
+            return Boom.badRequest('Invalid chart type');
+        }
+    }
+
     if (payload && payload.folderId) {
         // check if folder belongs to user to team
         const folder = await Folder.findOne({ where: { id: payload.folderId } });
