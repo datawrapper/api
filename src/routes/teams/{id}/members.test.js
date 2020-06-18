@@ -237,7 +237,6 @@ test('admins can remove members, themselves but not owners', async t => {
             artifacts: admin
         }
     });
-
     /* check if api call was successful */
     t.is(res.statusCode, 204);
 

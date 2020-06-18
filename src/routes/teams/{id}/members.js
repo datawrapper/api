@@ -108,7 +108,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Remove a team member',
             auth: {
-                access: { scope: ['team'] }
+                access: { scope: ['team:write'] }
             },
             validate: {
                 params: Joi.object({
@@ -133,7 +133,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Set team member status',
             auth: {
-                access: { scope: ['team'] }
+                access: { scope: ['team:write'] }
             },
             validate: {
                 params: Joi.object({

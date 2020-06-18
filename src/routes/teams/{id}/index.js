@@ -27,7 +27,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'Fetch team information',
                 auth: {
-                    access: { scope: ['team:read'] }
+                    access: { scope: ['team:read', 'team:write'] }
                 },
                 validate: {
                     params: Joi.object({

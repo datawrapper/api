@@ -21,7 +21,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'Fetch chart metadata',
                 auth: {
-                    access: { scope: ['chart:read'] }
+                    access: { scope: ['chart:read', 'chart:write'] }
                 },
                 validate: {
                     params: Joi.object({

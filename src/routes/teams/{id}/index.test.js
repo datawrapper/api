@@ -158,7 +158,7 @@ test('admin can edit team', async t => {
         url: `/v3/teams/${t.context.data.team.id}`,
         auth: {
             strategy: 'simple',
-            credentials: { session: '', access: { scope: ['team'] } },
+            credentials: { session: '', access: { scope: ['team:write'] } },
             artifacts: user
         },
         payload: {
@@ -179,7 +179,7 @@ test('member can not edit team', async t => {
         url: `/v3/teams/${t.context.data.team.id}`,
         auth: {
             strategy: 'simple',
-            credentials: { session: '', access: { scope: ['team'] } },
+            credentials: { session: '', access: { scope: ['team:write'] } },
             artifacts: user
         },
         payload: {

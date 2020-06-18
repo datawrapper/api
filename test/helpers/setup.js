@@ -27,6 +27,24 @@ async function setup(options) {
         await appendFile(cleanupFile, `${name};${id}\n`, { encoding: 'utf-8' });
     }
 
+    const allScopes = [
+        'user:read',
+        'user:write',
+        'auth:read',
+        'auth:write',
+        'chart:read',
+        'chart:write',
+        'team:read',
+        'team:write',
+        'folder:read',
+        'folder:write',
+        'plugin:read',
+        'plugin:write',
+        'theme:read',
+        'product:read',
+        'visualization'
+    ];
+
     async function getUser(role = 'editor', pwd = PASSWORD_HASH) {
         const credentials = getCredentials();
         const user = await models.User.create({
@@ -50,7 +68,7 @@ async function setup(options) {
             type: 'api-token',
             data: {
                 comment: 'API TEST',
-                scopes: ['all']
+                scopes: allScopes
             }
         });
 
@@ -60,7 +78,7 @@ async function setup(options) {
             addToCleanup('user', user.id)
         ]);
 
-        session.scope = ['all'];
+        session.scope = allScopes;
 
         return {
             user,
@@ -100,6 +118,8 @@ async function setup(options) {
         const data = `team;${team.id}\n`;
 
         await appendFile(cleanupFile, data, { encoding: 'utf-8' });
+
+        session.scope = allScopes;
 
         return { team, user, session, addUser };
     }

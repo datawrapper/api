@@ -17,7 +17,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             auth: {
-                access: { scope: ['auth'] }
+                access: { scope: ['auth:read'] }
             },
             description: 'List API tokens',
             notes: 'Response will not include full tokens for security reasons.',
@@ -49,7 +49,7 @@ module.exports = async (server, options) => {
                      It is possible to create a comment with every token to have a reference where it is used.
                      Make sure to save the token somewhere, since you won't be able to see it again.`,
             auth: {
-                access: { scope: ['auth'] }
+                access: { scope: ['auth:write'] }
             },
             validate: {
                 payload: Joi.object({
@@ -122,7 +122,7 @@ module.exports = async (server, options) => {
             notes:
                 'Delete an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
             auth: {
-                access: { scope: ['auth'] }
+                access: { scope: ['auth:write'] }
             },
             validate: {
                 params: Joi.object({
@@ -157,7 +157,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Get list of valid token scopes',
             auth: {
-                access: { scope: ['auth'] }
+                access: { scope: ['auth:read'] }
             }
         },
         async handler(request, h) {

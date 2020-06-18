@@ -2,7 +2,8 @@ module.exports = {
     name: 'routes/auth',
     version: '1.0.0',
     register(server, options) {
-        server.app.scopes.add('auth');
+        server.app.scopes.add('auth:read');
+        server.app.scopes.add('auth:write');
 
         require('./activate')(server, options);
         require('./change-password')(server, options);
