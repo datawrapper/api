@@ -3,7 +3,7 @@ const mime = require('mime');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { noContentResponse } = require('../../../schemas/response');
-const { Chart } = require('@datawrapper/orm/models');
+const { Chart, ChartAccessToken } = require('@datawrapper/orm/models');
 
 module.exports = (server, options) => {
     // GET /v3/charts/{id}/assets/{asset}
@@ -75,13 +75,29 @@ module.exports = (server, options) => {
 };
 
 async function getChartAsset(request, h) {
-    const { params, auth } = request;
+    const { params, auth, query } = request;
     const { events, event } = request.server.app;
     const chart = await loadChart(request);
 
     const filename = params.asset;
 
-    const isEditable = await chart.isEditableBy(request.auth.artifacts, auth.credentials.session);
+    let isEditable = await chart.isEditableBy(request.auth.artifacts, auth.credentials.session);
+
+    if (!isEditable && query.ott) {
+        // we do not destroy the access token here, because this request might
+        // have been internally injected from the /chart/:id/publish/data endpoint
+        const count = await ChartAccessToken.count({
+            where: {
+                chart_id: params.id,
+                token: query.ott
+            },
+            limit: 1
+        });
+
+        if (count === 1) {
+            isEditable = true;
+        }
+    }
 
     if (filename !== `${chart.id}.public.csv` && !isEditable) {
         return Boom.forbidden();

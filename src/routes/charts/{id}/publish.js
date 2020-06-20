@@ -264,8 +264,9 @@ async function publishData(request, h) {
 
     let hasAccess =
         query.published || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
+
     if (!hasAccess && query.ott) {
-        const count = await ChartAccessToken.destroy({
+        const count = await ChartAccessToken.count({
             where: {
                 chart_id: params.id,
                 token: query.ott
@@ -286,9 +287,21 @@ async function publishData(request, h) {
 
     // the csv dataset
     const res = await request.server.inject({
-        url: `/v3/charts/${params.id}/data${query.published ? '?published=1' : ''}`,
+        url: `/v3/charts/${params.id}/data${
+            query.published ? '?published=1' : query.ott ? `?ott=${query.ott}` : ''
+        }`,
         auth
     });
+
+    if (query.ott) {
+        await ChartAccessToken.destroy({
+            where: {
+                chart_id: params.id,
+                token: query.ott
+            },
+            limit: 1
+        });
+    }
 
     const additionalData = await getAdditionalMetadata(chart, { server });
 
