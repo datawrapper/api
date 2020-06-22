@@ -293,16 +293,6 @@ async function publishData(request, h) {
         auth
     });
 
-    if (query.ott) {
-        await ChartAccessToken.destroy({
-            where: {
-                chart_id: params.id,
-                token: query.ott
-            },
-            limit: 1
-        });
-    }
-
     const additionalData = await getAdditionalMetadata(chart, { server });
 
     const data = { data: res.result, chart: prepareChart(chart, additionalData) };
@@ -324,8 +314,19 @@ async function publishData(request, h) {
     await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
         chart,
         auth,
+        ott: query.ott,
         data
     });
+
+    if (query.ott) {
+        await ChartAccessToken.destroy({
+            where: {
+                chart_id: params.id,
+                token: query.ott
+            },
+            limit: 1
+        });
+    }
 
     const chartBlocks = await server.app.events.emit(
         server.app.event.CHART_BLOCKS,
