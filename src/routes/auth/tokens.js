@@ -52,19 +52,7 @@ module.exports = async (server, options) => {
                 access: { scope: ['auth:write'] }
             },
             validate: {
-                payload: Joi.object({
-                    comment: Joi.string()
-                        .required()
-                        .example('Token for fun project')
-                        .description(
-                            'The comment can be everything. Tip: Use something to remember where this specific token is used.'
-                        ),
-                    scopes: Joi.array().items(
-                        Joi.string()
-                            .regex(/^[a-z-]+$/)
-                            .description('scopes to be granted for this token')
-                    )
-                })
+                payload: tokenPayload()
             },
             response: createResponseConfig({
                 schema: Joi.object({
@@ -81,17 +69,7 @@ module.exports = async (server, options) => {
             const { payload, auth, url } = request;
 
             if (payload.scopes) {
-                // validate scopes
-                for (let i = 0; i < payload.scopes.length; i++) {
-                    const scope = payload.scopes[i];
-                    if (
-                        scope !== 'all' &&
-                        !server.app.scopes.has(scope) &&
-                        !server.app.adminScopes.has(scope)
-                    ) {
-                        return Boom.badRequest(`Invalid scope "${scope}"`);
-                    }
-                }
+                validateScopes(payload.scopes);
             }
 
             const token = await AccessToken.newToken({
@@ -116,6 +94,51 @@ module.exports = async (server, options) => {
         }
     });
 
+    // PUT /v3/auth/tokens/{id}
+    server.route({
+        method: 'PUT',
+        path: '/tokens/{id}',
+        options: {
+            tags: ['api'],
+            description: 'Edit API token',
+            notes:
+                'Edit an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
+            auth: {
+                access: { scope: ['auth:write'] }
+            },
+            validate: {
+                payload: tokenPayload(),
+                params: Joi.object({
+                    id: Joi.number()
+                        .integer()
+                        .required()
+                        .description('ID of the token to be edited.')
+                })
+            },
+            response: noContentResponse
+        },
+        async handler(request, h) {
+            const { params, auth, payload } = request;
+            const token = await AccessToken.findOne({
+                where: {
+                    type: 'api-token',
+                    user_id: auth.artifacts.id,
+                    id: params.id
+                }
+            });
+            if (!token) return Boom.notFound();
+            const data = {
+                comment: payload.comment
+            };
+            if (payload.scopes) {
+                validateScopes(payload.scopes);
+                data.scopes = payload.scopes;
+            }
+            await token.update({ data });
+            return h.response().code(204);
+        }
+    });
+
     // DELETE /v3/auth/tokens/{id}
     server.route({
         method: 'DELETE',
@@ -124,7 +147,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Delete API token',
             notes:
-                'Delete an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
+                'Delete (=revoke) an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
             auth: {
                 access: { scope: ['auth:write'] }
             },
@@ -171,6 +194,35 @@ module.exports = async (server, options) => {
             return [...scopes, ...adminScopes];
         }
     });
+
+    function tokenPayload() {
+        return Joi.object({
+            comment: Joi.string()
+                .required()
+                .example('Token for fun project')
+                .description(
+                    'The comment can be everything. Tip: Use something to remember where this specific token is used.'
+                ),
+            scopes: Joi.array().items(
+                Joi.string()
+                    .regex(/^[a-z-:]+$/)
+                    .description('scopes to be granted for this token')
+            )
+        });
+    }
+
+    function validateScopes(scopes) {
+        for (let i = 0; i < scopes.length; i++) {
+            const scope = scopes[i];
+            if (
+                scope !== 'all' &&
+                !server.app.scopes.has(scope) &&
+                !server.app.adminScopes.has(scope)
+            ) {
+                throw Boom.badRequest(`Invalid scope "${scope}"`);
+            }
+        }
+    }
 };
 
 async function getAllTokens(request, h) {
