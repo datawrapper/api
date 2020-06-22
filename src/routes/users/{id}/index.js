@@ -90,7 +90,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 auth: {
-                    access: { scope: ['user'] }
+                    access: { scope: ['user:write'] }
                 },
                 description: 'Delete user',
                 validate: {
@@ -276,7 +276,6 @@ async function deleteUser(request, h) {
     const { auth, server, payload } = request;
     const { id } = request.params;
     const { isAdmin, userIsDeleted, comparePassword } = server.methods;
-
     await userIsDeleted(id);
 
     const isSameUser = id === auth.artifacts.id;
