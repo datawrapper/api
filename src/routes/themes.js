@@ -7,7 +7,7 @@ module.exports = {
     name: 'routes/themes',
     version: '1.0.0',
     register: (server, options) => {
-        server.app.adminScopes.add('theme:read');
+        server.app.scopes.add('theme:read');
         server.route({
             method: 'GET',
             path: '/{id}',

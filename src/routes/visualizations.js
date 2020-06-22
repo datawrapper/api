@@ -12,7 +12,7 @@ module.exports = {
 };
 
 async function register(server, options) {
-    server.app.adminScopes.add('visualization:read');
+    server.app.scopes.add('visualization:read');
     server.route({
         method: 'GET',
         path: '/{id}',
