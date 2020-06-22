@@ -84,7 +84,11 @@ module.exports = async (server, options) => {
                 // validate scopes
                 for (let i = 0; i < payload.scopes.length; i++) {
                     const scope = payload.scopes[i];
-                    if (!server.app.scopes.has(scope) && !server.app.adminScopes.has(scope)) {
+                    if (
+                        scope !== 'all' &&
+                        !server.app.scopes.has(scope) &&
+                        !server.app.adminScopes.has(scope)
+                    ) {
                         return Boom.badRequest(`Invalid scope "${scope}"`);
                     }
                 }
