@@ -105,7 +105,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'Update chart. Allows for partial metadata updates (JSON merge patch)',
                 auth: {
-                    access: { scope: ['chart'] }
+                    access: { scope: ['chart:write'] }
                 },
                 validate: {
                     params: Joi.object({
@@ -129,7 +129,7 @@ module.exports = {
                 tags: ['api'],
                 description: 'Update chart. Replaces the entire metadata object.',
                 auth: {
-                    access: { scope: ['chart'] }
+                    access: { scope: ['chart:write'] }
                 },
                 validate: {
                     params: Joi.object({

@@ -12,14 +12,14 @@ module.exports = {
 };
 
 async function register(server, options) {
-    server.app.adminScopes.add('visualization');
+    server.app.adminScopes.add('visualization:read');
     server.route({
         method: 'GET',
         path: '/{id}',
         options: {
             auth: {
                 mode: 'try',
-                access: { scope: ['visualization'] }
+                access: { scope: ['visualization:read'] }
             }
         },
         handler: getVisualization
@@ -39,7 +39,8 @@ async function register(server, options) {
         path: '/{id}/styles.css',
         options: {
             auth: {
-                mode: 'try'
+                mode: 'try',
+                access: { scope: ['visualization:read'] }
             },
             validate: {
                 query: Joi.object({
@@ -75,7 +76,8 @@ async function register(server, options) {
         path: '/{id}/script.js',
         options: {
             auth: {
-                mode: 'try'
+                mode: 'try',
+                access: { scope: ['visualization:read'] }
             }
         },
         handler: getVisualizationScript

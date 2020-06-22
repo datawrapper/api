@@ -42,7 +42,7 @@ async function setup(options) {
         'plugin:write',
         'theme:read',
         'product:read',
-        'visualization'
+        'visualization:read'
     ];
 
     async function getUser(role = 'editor', pwd = PASSWORD_HASH) {
