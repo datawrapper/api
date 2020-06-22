@@ -58,12 +58,12 @@ module.exports = async (server, options) => {
                         .required()
                         .description('ID of the team to create the product for.')
                 },
-                payload: {
+                payload: Joi.object({
                     expires: Joi.date()
                         .allow(null)
                         .optional(),
                     productId: Joi.number()
-                }
+                })
             }
         },
         async handler(request, h) {
