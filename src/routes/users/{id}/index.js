@@ -20,6 +20,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Fetch user information',
+                auth: {
+                    access: { scope: ['user:read'] }
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.number()
@@ -39,6 +42,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Update user information',
+                auth: {
+                    access: { scope: ['user:write'] }
+                },
                 validate: {
                     params: Joi.object({
                         id: Joi.number()
@@ -83,6 +89,9 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
+                auth: {
+                    access: { scope: ['user:write'] }
+                },
                 description: 'Delete user',
                 validate: {
                     params: Joi.object({
@@ -267,7 +276,6 @@ async function deleteUser(request, h) {
     const { auth, server, payload } = request;
     const { id } = request.params;
     const { isAdmin, userIsDeleted, comparePassword } = server.methods;
-
     await userIsDeleted(id);
 
     const isSameUser = id === auth.artifacts.id;

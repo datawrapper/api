@@ -9,7 +9,8 @@ module.exports = async (server, options) => {
         path: '/reset-password',
         options: {
             auth: {
-                mode: 'try'
+                mode: 'try',
+                access: { scope: ['auth:write'] }
             },
             validate: {
                 payload: Joi.object({

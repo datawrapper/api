@@ -165,6 +165,8 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.app.events = new ApiEventEmitter({ logger: server.logger });
     server.app.visualizations = new Map();
     server.app.exportFormats = new Set();
+    server.app.scopes = new Set();
+    server.app.adminScopes = new Set();
 
     server.method('getModel', name => ORM.db.models[name]);
     server.method('config', key => (key ? config[key] : config));
@@ -190,6 +192,11 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             server.app.visualizations.set(vis.id, vis);
         });
     });
+    server.method('getScopes', (admin = false) => {
+        return admin
+            ? [...server.app.scopes, ...server.app.adminScopes]
+            : Array.from(server.app.scopes);
+    });
 
     const { validateThemeData } = schemas.initialize({
         getSchema: config.api.schemaBaseUrl
@@ -207,11 +214,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     const routeOptions = {
         routes: { prefix: '/v3' }
     };
-
     if (options.useOpenAPI) {
         await server.register(OpenAPI, routeOptions);
     }
-
     if (options.usePlugins) {
         await server.register([require('./plugin-loader')], routeOptions);
     }

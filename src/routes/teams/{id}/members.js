@@ -31,6 +31,9 @@ module.exports = async (server, options) => {
             description: 'List team members',
             notes:
                 'Get a list of team members and some additional information like their team role.',
+            auth: {
+                access: { scope: ['+team:read', '+user:read'] }
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.string()
@@ -70,6 +73,10 @@ module.exports = async (server, options) => {
         method: 'POST',
         path: `/members`,
         options: {
+            description: 'Add a team member',
+            auth: {
+                access: { scope: ['team:write'] }
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.string()
@@ -80,7 +87,7 @@ module.exports = async (server, options) => {
                     userId: Joi.number()
                         .integer()
                         .required()
-                        .description('ID of the team member you want to change the status of.'),
+                        .description('ID of the team member you want add.'),
                     role: Joi.string()
                         .valid(...ROLES)
                         .required()
@@ -100,6 +107,9 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Remove a team member',
+            auth: {
+                access: { scope: ['team:write'] }
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.string()
@@ -122,6 +132,9 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Set team member status',
+            auth: {
+                access: { scope: ['team:write'] }
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.string()

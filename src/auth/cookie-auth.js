@@ -17,11 +17,16 @@ async function cookieValidation(request, session, h) {
         }
     });
 
-    return getUser(row.data['dw-user-id'], {
+    const auth = await getUser(row.data['dw-user-id'], {
         credentials: { session, data: row },
         strategy: 'Session',
         logger: request.server.logger()
     });
+    if (auth.isValid) {
+        // add all scopes to cookie session
+        auth.credentials.scope = request.server.methods.getScopes(auth.artifacts.isAdmin());
+    }
+    return auth;
 }
 
 function cookieAuth(server, options) {

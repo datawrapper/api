@@ -156,7 +156,11 @@ test('admin can edit team', async t => {
     const team = await t.context.server.inject({
         method: 'PATCH',
         url: `/v3/teams/${t.context.data.team.id}`,
-        auth: { strategy: 'simple', credentials: { session: '' }, artifacts: user },
+        auth: {
+            strategy: 'simple',
+            credentials: { session: '', scope: ['team:write'] },
+            artifacts: user
+        },
         payload: {
             name: 'Testy'
         }
@@ -173,7 +177,11 @@ test('member can not edit team', async t => {
     const team = await t.context.server.inject({
         method: 'PATCH',
         url: `/v3/teams/${t.context.data.team.id}`,
-        auth: { strategy: 'simple', credentials: { session: '' }, artifacts: user },
+        auth: {
+            strategy: 'simple',
+            credentials: { session: '', scope: ['team:write'] },
+            artifacts: user
+        },
         payload: {
             name: 'Testy'
         }

@@ -15,7 +15,17 @@ async function bearerValidation(request, token, h) {
 
     await row.update({ last_used_at: new Date() });
 
-    return getUser(row.user_id, { credentials: { token }, strategy: 'Token' });
+    const auth = await getUser(row.user_id, {
+        credentials: { token },
+        strategy: 'Token'
+    });
+    if (auth.isValid) {
+        auth.credentials.scope =
+            !row.data.scopes || row.data.scopes.includes('all')
+                ? request.server.methods.getScopes(auth.artifacts.isAdmin())
+                : row.data.scopes;
+    }
+    return auth;
 }
 
 function dwAuth(server, options = {}) {
