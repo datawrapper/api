@@ -158,7 +158,7 @@ test('Guest charts are associated after login', async t => {
     const chartId = res.result.id;
     t.log('Chart ID:', chartId);
     t.is(res.result.title, 'Test guest chart');
-    t.is(res.result.authorId, undefined);
+    t.is(res.result.authorId, null);
 
     const { user } = await t.context.getUser();
 
