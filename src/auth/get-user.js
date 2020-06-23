@@ -3,10 +3,18 @@ const { User } = require('@datawrapper/orm/models');
 
 module.exports = async function getUser(userId, { credentials, strategy, logger } = {}) {
     let user = await User.findByPk(userId, {
-        attributes: ['id', 'email', 'role', 'language', 'activate_token', 'reset_password_token']
+        attributes: [
+            'id',
+            'email',
+            'role',
+            'language',
+            'activate_token',
+            'reset_password_token',
+            'deleted'
+        ]
     });
 
-    if (user && user.email === 'DELETED') {
+    if (user && user.deleted) {
         return { isValid: false, message: Boom.unauthorized('User not found', strategy) };
     }
 
