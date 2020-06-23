@@ -25,11 +25,13 @@ module.exports = async function getUser(userId, { credentials, strategy, logger 
                 return false;
             };
         };
+        // use non-persistant User model instance
         user = User.build({
             role: 'guest',
             id: undefined,
             language: 'en-US'
         });
+        // make sure it never ends up in our DB
         user.save = notSupported('save');
         user.update = notSupported('update');
         user.destroy = notSupported('destroy');
