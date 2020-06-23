@@ -67,6 +67,10 @@ module.exports = async (server, options) => {
         },
         async handler(request, h) {
             const { payload, auth, url } = request;
+            if (!auth.artifacts.isActivated()) {
+                // only activated users may create api tokens
+                return Boom.unauthorized('You need to activate your account first');
+            }
 
             if (payload.scopes) {
                 validateScopes(payload.scopes);
@@ -119,6 +123,10 @@ module.exports = async (server, options) => {
         },
         async handler(request, h) {
             const { params, auth, payload } = request;
+            if (!auth.artifacts.isActivated()) {
+                // only activated users may edit api tokens
+                return Boom.unauthorized('You need to activate your account first');
+            }
             const token = await AccessToken.findOne({
                 where: {
                     type: 'api-token',

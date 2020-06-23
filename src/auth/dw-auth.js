@@ -19,6 +19,10 @@ async function bearerValidation(request, token, h) {
         credentials: { token },
         strategy: 'Token'
     });
+    if (!auth.artifacts.isActivated()) {
+        // only activated users may authenticate through bearer tokens
+        return { isValid: false, message: Boom.unauthorized('User not activated', 'Token') };
+    }
     if (auth.isValid) {
         auth.credentials.scope =
             !row.data.scopes || row.data.scopes.includes('all')
