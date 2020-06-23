@@ -19,18 +19,21 @@ module.exports = async function getUser(userId, { credentials, strategy, logger 
     }
 
     if (!user && credentials.session) {
-        user = new Proxy(
-            { role: 'guest', id: undefined, language: 'en-US' },
-            {
-                get: (obj, prop) => {
-                    if (prop in obj) {
-                        return obj[prop];
-                    }
-                    logger && logger.debug(`Property "${prop}" does not exist on anonymous user.`);
-                    return () => {};
-                }
-            }
-        );
+        const notSupported = name => {
+            return () => {
+                logger && logger.warn(`user.${name} is not supported for guests`);
+                return false;
+            };
+        };
+        user = User.build({
+            role: 'guest',
+            id: undefined,
+            language: 'en-US'
+        });
+        user.save = notSupported('save');
+        user.update = notSupported('update');
+        user.destroy = notSupported('destroy');
+        user.reload = notSupported('reload');
     }
 
     return { isValid: true, credentials, artifacts: user };
