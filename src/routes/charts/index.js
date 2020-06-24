@@ -11,12 +11,17 @@ module.exports = {
     name: 'routes/charts',
     version: '1.0.0',
     register(server, options) {
+        server.app.scopes.add('chart:read');
+        server.app.scopes.add('chart:write');
         server.route({
             method: 'GET',
             path: '/',
             options: {
                 tags: ['api'],
                 description: 'List charts',
+                auth: {
+                    access: { scope: ['chart:read'] }
+                },
                 notes: `Search and filter a list of your charts.
                         The returned chart objects, do not include the full chart metadata.
                         To get the full metadata use [/v3/charts/{id}](ref:getchartsid).`,
@@ -59,6 +64,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Create new chart',
+                auth: {
+                    access: { scope: ['chart:write'] }
+                },
                 validate: {
                     payload: Joi.object({
                         title: Joi.string()

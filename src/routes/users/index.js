@@ -17,12 +17,17 @@ module.exports = {
     name: 'routes/users',
     version: '1.0.0',
     register: (server, options) => {
+        server.app.scopes.add('user:read');
+        server.app.scopes.add('user:write');
         // GET /v3/users
         server.route({
             method: 'GET',
             path: '/',
             options: {
                 tags: ['api'],
+                auth: {
+                    access: { scope: ['user:read'] }
+                },
                 description: 'List users',
                 validate: {
                     query: Joi.object({

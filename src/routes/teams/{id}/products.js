@@ -8,6 +8,9 @@ module.exports = async (server, options) => {
         method: 'GET',
         path: '/products',
         options: {
+            auth: {
+                access: { scope: ['+team:read', '+product:read'] }
+            },
             validate: {
                 params: {
                     id: Joi.string()
@@ -52,6 +55,9 @@ module.exports = async (server, options) => {
         method: 'POST',
         path: '/products',
         options: {
+            auth: {
+                access: { scope: ['team'] }
+            },
             validate: {
                 params: {
                     id: Joi.string()
@@ -100,6 +106,9 @@ module.exports = async (server, options) => {
         method: 'PUT',
         path: '/products/{productId}',
         options: {
+            auth: {
+                access: { scope: ['team'] }
+            },
             validate: {
                 params: {
                     id: Joi.string()
@@ -147,6 +156,9 @@ module.exports = async (server, options) => {
         method: 'DELETE',
         path: '/products/{productId}',
         options: {
+            auth: {
+                access: { scope: ['team'] }
+            },
             validate: {
                 params: {
                     id: Joi.string()

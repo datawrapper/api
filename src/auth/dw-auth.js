@@ -4,10 +4,10 @@ const AuthBearer = require('hapi-auth-bearer-token');
 const AuthCookie = require('./cookie-auth');
 const getUser = require('./get-user');
 const authUtils = require('./utils.js');
-const { AuthToken } = require('@datawrapper/orm/models');
+const { AccessToken } = require('@datawrapper/orm/models');
 
 async function bearerValidation(request, token, h) {
-    const row = await AuthToken.findOne({ where: { token } });
+    const row = await AccessToken.findOne({ where: { token, type: 'api-token' } });
 
     if (!row) {
         return { isValid: false, message: Boom.unauthorized('Token not found', 'Token') };
@@ -15,7 +15,21 @@ async function bearerValidation(request, token, h) {
 
     await row.update({ last_used_at: new Date() });
 
-    return getUser(row.user_id, { credentials: { token }, strategy: 'Token' });
+    const auth = await getUser(row.user_id, {
+        credentials: { token },
+        strategy: 'Token'
+    });
+    if (!auth.artifacts.isActivated()) {
+        // only activated users may authenticate through bearer tokens
+        return { isValid: false, message: Boom.unauthorized('User not activated', 'Token') };
+    }
+    if (auth.isValid) {
+        auth.credentials.scope =
+            !row.data.scopes || row.data.scopes.includes('all')
+                ? request.server.methods.getScopes(auth.artifacts.isAdmin())
+                : row.data.scopes;
+    }
+    return auth;
 }
 
 function dwAuth(server, options = {}) {

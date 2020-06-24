@@ -9,6 +9,8 @@ module.exports = {
     name: 'routes/teams',
     version: '1.0.0',
     register: (server, options) => {
+        server.app.scopes.add('team:read');
+        server.app.scopes.add('team:write');
         // GET /v3/teams
         server.route({
             method: 'GET',
@@ -17,6 +19,9 @@ module.exports = {
                 tags: ['api'],
                 description: 'List teams',
                 notes: 'Get a list of teams you are part of.',
+                auth: {
+                    access: { scope: ['team:read'] }
+                },
                 validate: {
                     query: Joi.object({
                         search: Joi.string().description(
@@ -53,6 +58,9 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Create a team',
+                auth: {
+                    access: { scope: ['team:write'] }
+                },
                 validate: {
                     payload: Joi.object({
                         id: Joi.string()

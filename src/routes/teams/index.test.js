@@ -160,7 +160,11 @@ test('[/v3/teams] check that owners and admins can see settings, but members can
 test('admins can create teams', async t => {
     const teamId = `team-admin-${nanoid(5)}`;
     const { user: admin } = await t.context.getUser('admin');
-    const auth = { strategy: 'simple', credentials: { session: '' }, artifacts: admin };
+    const auth = {
+        strategy: 'simple',
+        credentials: { session: '', scope: ['team:write'] },
+        artifacts: admin
+    };
 
     await t.context.addToCleanup('team', teamId);
 

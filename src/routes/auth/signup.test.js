@@ -46,7 +46,7 @@ test('Guest charts are associated after signup', async t => {
     const chartId = res.result.id;
     t.log('Chart ID:', chartId);
     t.is(res.result.title, 'Test guest chart');
-    t.is(res.result.authorId, undefined);
+    t.is(res.result.authorId, null);
 
     res = await t.context.server.inject({
         method: 'POST',

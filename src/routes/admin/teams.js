@@ -16,7 +16,10 @@ function register(server, options) {
         method: 'GET',
         path: '/',
         options: {
-            auth: 'admin',
+            auth: {
+                strategy: 'admin',
+                access: { scope: ['team:read'] }
+            },
             validate: {
                 query: {
                     userId: Joi.number(),

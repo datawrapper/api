@@ -8,6 +8,9 @@ module.exports = (server, options) => {
         method: 'POST',
         path: '/setup',
         options: {
+            auth: {
+                access: { scope: ['user:write'] }
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.number()

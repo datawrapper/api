@@ -27,6 +27,24 @@ async function setup(options) {
         await appendFile(cleanupFile, `${name};${id}\n`, { encoding: 'utf-8' });
     }
 
+    const allScopes = [
+        'user:read',
+        'user:write',
+        'auth:read',
+        'auth:write',
+        'chart:read',
+        'chart:write',
+        'team:read',
+        'team:write',
+        'folder:read',
+        'folder:write',
+        'plugin:read',
+        'plugin:write',
+        'theme:read',
+        'product:read',
+        'visualization:read'
+    ];
+
     async function getUser(role = 'editor', pwd = PASSWORD_HASH) {
         const credentials = getCredentials();
         const user = await models.User.create({
@@ -45,9 +63,13 @@ async function setup(options) {
             }
         });
 
-        const { token } = await models.AuthToken.newToken({
+        const { token } = await models.AccessToken.newToken({
             user_id: user.id,
-            comment: 'API TEST'
+            type: 'api-token',
+            data: {
+                comment: 'API TEST',
+                scopes: allScopes
+            }
         });
 
         await Promise.all([
@@ -56,7 +78,13 @@ async function setup(options) {
             addToCleanup('user', user.id)
         ]);
 
-        return { user, session, token };
+        session.scope = allScopes;
+
+        return {
+            user,
+            session,
+            token
+        };
     }
 
     async function getTeamWithUser(role = 'owner') {
@@ -90,6 +118,8 @@ async function setup(options) {
         const data = `team;${team.id}\n`;
 
         await appendFile(cleanupFile, data, { encoding: 'utf-8' });
+
+        session.scope = allScopes;
 
         return { team, user, session, addUser };
     }

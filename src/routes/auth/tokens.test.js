@@ -21,10 +21,11 @@ test.before(async t => {
 });
 
 test('Tokens can be created, fetched and deleted', async t => {
+    const { User } = t.context.models;
     const auth = {
         strategy: 'session',
-        credentials: { session: t.context.session },
-        artifacts: { id: t.context.user.id }
+        credentials: { session: t.context.session, scope: ['auth:read', 'auth:write'] },
+        artifacts: User.build({ id: t.context.user.id })
     };
 
     let res = await t.context.server.inject({

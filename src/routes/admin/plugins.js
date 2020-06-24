@@ -23,12 +23,17 @@ module.exports = {
 };
 
 function register(server, options) {
+    server.app.adminScopes.add('plugin:read');
+    server.app.adminScopes.add('plugin:write');
     // GET /v3/admin/plugins
     server.route({
         method: 'GET',
         path: '/',
         options: {
-            auth: 'admin'
+            auth: {
+                strategy: 'admin',
+                access: { scope: ['plugin:read'] }
+            }
         },
         handler: getAllPlugins
     });
@@ -54,7 +59,10 @@ function register(server, options) {
         method: 'POST',
         path: '/update',
         options: {
-            auth: 'admin',
+            auth: {
+                strategy: 'admin',
+                access: { scope: ['plugin:write'] }
+            },
             validate: {
                 payload: {
                     name: Joi.string().required(),

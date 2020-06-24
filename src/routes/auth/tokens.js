@@ -6,7 +6,7 @@ const {
     createResponseConfig
 } = require('../../schemas/response.js');
 const { camelizeKeys } = require('humps');
-const { AuthToken } = require('@datawrapper/orm/models');
+const { AccessToken } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 
 module.exports = async (server, options) => {
@@ -16,6 +16,9 @@ module.exports = async (server, options) => {
         path: '/tokens',
         options: {
             tags: ['api'],
+            auth: {
+                access: { scope: ['auth:read'] }
+            },
             description: 'List API tokens',
             notes: 'Response will not include full tokens for security reasons.',
             validate: {
@@ -45,26 +48,103 @@ module.exports = async (server, options) => {
             notes: `This endpoint will create a new API Token and show it in the response body.
                      It is possible to create a comment with every token to have a reference where it is used.
                      Make sure to save the token somewhere, since you won't be able to see it again.`,
+            auth: {
+                access: { scope: ['auth:write'] }
+            },
             validate: {
-                payload: Joi.object({
-                    comment: Joi.string()
-                        .required()
-                        .example('Token for fun project')
-                        .description(
-                            'The comment can be everything. Tip: Use something to remember where this specific token is used.'
-                        )
-                })
+                payload: tokenPayload()
             },
             response: createResponseConfig({
                 schema: Joi.object({
                     id: Joi.number().integer(),
                     comment: Joi.string(),
+                    scopes: Joi.array().items(Joi.string()),
                     token: Joi.string(),
-                    createdAt: Joi.date()
+                    createdAt: Joi.date(),
+                    url: Joi.string()
                 }).unknown()
             })
         },
-        handler: createToken
+        async handler(request, h) {
+            const { payload, auth, url } = request;
+            if (!auth.artifacts.isActivated()) {
+                // only activated users may create api tokens
+                return Boom.unauthorized('You need to activate your account first');
+            }
+
+            if (payload.scopes) {
+                validateScopes(payload.scopes);
+            }
+
+            const token = await AccessToken.newToken({
+                type: 'api-token',
+                user_id: auth.artifacts.id,
+                data: {
+                    comment: payload.comment,
+                    scopes: payload.scopes || ['all']
+                }
+            });
+
+            return h
+                .response({
+                    id: token.id,
+                    token: token.token,
+                    createdAt: token.createdAt,
+                    comment: token.data.comment,
+                    scopes: token.data.scopes,
+                    url: `${url.pathname}/${token.id}`
+                })
+                .code(201);
+        }
+    });
+
+    // PUT /v3/auth/tokens/{id}
+    server.route({
+        method: 'PUT',
+        path: '/tokens/{id}',
+        options: {
+            tags: ['api'],
+            description: 'Edit API token',
+            notes:
+                'Edit an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
+            auth: {
+                access: { scope: ['auth:write'] }
+            },
+            validate: {
+                payload: tokenPayload(),
+                params: Joi.object({
+                    id: Joi.number()
+                        .integer()
+                        .required()
+                        .description('ID of the token to be edited.')
+                })
+            },
+            response: noContentResponse
+        },
+        async handler(request, h) {
+            const { params, auth, payload } = request;
+            if (!auth.artifacts.isActivated()) {
+                // only activated users may edit api tokens
+                return Boom.unauthorized('You need to activate your account first');
+            }
+            const token = await AccessToken.findOne({
+                where: {
+                    type: 'api-token',
+                    user_id: auth.artifacts.id,
+                    id: params.id
+                }
+            });
+            if (!token) return Boom.notFound();
+            const data = {
+                comment: payload.comment
+            };
+            if (payload.scopes) {
+                validateScopes(payload.scopes);
+                data.scopes = payload.scopes;
+            }
+            await token.update({ data });
+            return h.response().code(204);
+        }
     });
 
     // DELETE /v3/auth/tokens/{id}
@@ -75,7 +155,10 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Delete API token',
             notes:
-                'Delete an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
+                'Delete (=revoke) an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
+            auth: {
+                access: { scope: ['auth:write'] }
+            },
             validate: {
                 params: Joi.object({
                     id: Joi.number()
@@ -86,35 +169,94 @@ module.exports = async (server, options) => {
             },
             response: noContentResponse
         },
-        handler: deleteToken
+        async handler(request, h) {
+            const { params, auth } = request;
+            const token = await AccessToken.destroy({
+                where: {
+                    type: 'api-token',
+                    user_id: auth.artifacts.id,
+                    id: params.id
+                },
+                limit: 1
+            });
+            if (!token) return Boom.notFound();
+            return h.response().code(204);
+        }
     });
+
+    // GET /v3/auth/token-scopes
+    server.route({
+        method: 'GET',
+        path: '/token-scopes',
+        options: {
+            tags: ['api'],
+            description: 'Get list of valid token scopes',
+            auth: {
+                access: { scope: ['auth:read'] }
+            }
+        },
+        async handler(request, h) {
+            const scopes = Array.from(server.app.scopes);
+            if (!request.server.methods.isAdmin(request)) return scopes;
+            const adminScopes = Array.from(server.app.adminScopes);
+            return [...scopes, ...adminScopes];
+        }
+    });
+
+    function tokenPayload() {
+        return Joi.object({
+            comment: Joi.string()
+                .required()
+                .example('Token for fun project')
+                .description(
+                    'The comment can be everything. Tip: Use something to remember where this specific token is used.'
+                ),
+            scopes: Joi.array().items(
+                Joi.string()
+                    .regex(/^[a-z-:]+$/)
+                    .description('scopes to be granted for this token')
+            )
+        });
+    }
+
+    function validateScopes(scopes) {
+        for (let i = 0; i < scopes.length; i++) {
+            const scope = scopes[i];
+            if (
+                scope !== 'all' &&
+                !server.app.scopes.has(scope) &&
+                !server.app.adminScopes.has(scope)
+            ) {
+                throw Boom.badRequest(`Invalid scope "${scope}"`);
+            }
+        }
+    }
 };
 
 async function getAllTokens(request, h) {
     const { query, auth, url } = request;
 
-    if (auth.artifacts.role === 'guest') {
-        return Boom.unauthorized();
-    }
-
     const options = {
-        attributes: ['id', 'token', 'last_used_at', 'comment'],
         where: {
+            type: 'api-token',
             user_id: auth.artifacts.id
         },
         limit: query.limit,
         offset: query.offset
     };
 
-    const { count, rows } = await AuthToken.findAndCountAll(options);
+    const { count, rows } = await AccessToken.findAndCountAll(options);
 
     const tokenList = {
-        list: rows.map(({ dataValues }) => {
-            const { token, ...data } = dataValues;
+        list: rows.map(({ token, id, createdAt, last_used_at, data: { comment, scopes } }) => {
             return camelizeKeys({
-                ...data,
+                id,
+                createdAt,
+                last_used_at,
+                comment,
+                scopes,
                 lastTokenCharacters: token.slice(-4),
-                url: `${url.pathname}/${data.id}`
+                url: `${url.pathname}/${id}`
             });
         }),
         total: count
@@ -131,36 +273,4 @@ async function getAllTokens(request, h) {
     }
 
     return tokenList;
-}
-
-async function createToken(request, h) {
-    if (request.auth.artifacts.role === 'guest') {
-        return Boom.unauthorized();
-    }
-
-    const token = await AuthToken.newToken({
-        user_id: request.auth.artifacts.id,
-        comment: request.payload.comment
-    });
-
-    const { user_id, ...data } = token.dataValues;
-
-    return camelizeKeys(data);
-}
-
-async function deleteToken(request, h) {
-    if (request.auth.artifacts.role === 'guest') {
-        return Boom.unauthorized();
-    }
-
-    const token = await AuthToken.findByPk(request.params.id, {
-        where: { user_id: request.auth.artifacts.id }
-    });
-
-    if (!token) {
-        return Boom.notFound();
-    }
-
-    await token.destroy();
-    return h.response().code(204);
 }

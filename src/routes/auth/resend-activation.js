@@ -10,6 +10,9 @@ module.exports = async (server, options) => {
         method: 'POST',
         path: '/resend-activation',
         options: {
+            auth: {
+                access: { scope: ['auth:write'] }
+            },
             validate: {
                 payload: Joi.object({
                     email: Joi.string()
