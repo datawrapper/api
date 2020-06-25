@@ -306,7 +306,7 @@ async function publishData(request, h) {
 
     const data = { data: res.result, chart: prepareChart(chart, additionalData) };
 
-    const htmlResults = await server.app.events.emit(
+    const htmlBodyResults = await server.app.events.emit(
         server.app.event.CHART_AFTER_BODY_HTML,
         {
             chart,
@@ -315,7 +315,18 @@ async function publishData(request, h) {
         },
         { filter: 'success' }
     );
-    data.chartAfterBodyHTML = htmlResults.join('\n');
+    data.chartAfterBodyHTML = htmlBodyResults.join('\n');
+
+    const htmlHeadResults = await server.app.events.emit(
+        server.app.event.CHART_AFTER_HEAD_HTML,
+        {
+            chart,
+            data,
+            publish: query.publish === 'true'
+        },
+        { filter: 'success' }
+    );
+    data.chartAfterHeadHTML = htmlHeadResults.join('\n');
 
     // chart locales
     data.locales = getScope('chart', chart.language || 'en-US');
