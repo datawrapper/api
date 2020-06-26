@@ -56,7 +56,7 @@ module.exports = async (server, options) => {
         path: '/products',
         options: {
             auth: {
-                access: { scope: ['team'] }
+                access: { scope: ['team:write'] }
             },
             validate: {
                 params: {
@@ -107,7 +107,7 @@ module.exports = async (server, options) => {
         path: '/products/{productId}',
         options: {
             auth: {
-                access: { scope: ['team'] }
+                access: { scope: ['team:write'] }
             },
             validate: {
                 params: {
