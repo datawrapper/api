@@ -243,7 +243,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
             const filePath = path.join(
                 localChartAssetRoot,
-                getDataPath(chart.dataValues.created_at),
+                getDataPath(chart.dataValues.created_at || chart.dataValues.createdAt),
                 filename
             );
             try {
@@ -257,7 +257,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
             const outPath = path.join(
                 localChartAssetRoot,
-                getDataPath(chart.dataValues.created_at)
+                getDataPath(chart.dataValues.created_at || chart.dataValues.createdAt)
             );
 
             await fs.mkdir(outPath, { recursive: true });
