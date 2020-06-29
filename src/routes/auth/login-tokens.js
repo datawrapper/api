@@ -1,10 +1,8 @@
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
+const { AccessToken } = require('@datawrapper/orm/models');
 
 module.exports = async (server, options) => {
-    const { models } = options;
-    const { AccessToken } = models;
-
     server.route({
         method: 'GET',
         path: '/login-tokens/{token}',
