@@ -29,13 +29,18 @@ test('User can write chart asset with almost 2MB', async t => {
         big += Math.round(Math.random() * 32).toString(32);
     }
 
-    // write some JSON to another asset
+    // write some big JSON
     let res = await putAsset(`${chart.result.id}.map.json`, { data: big }, 'application/json');
     t.is(res.statusCode, 204);
     // see if that worked
     res = await getAsset(`${chart.result.id}.map.json`);
     t.is(res.statusCode, 200);
     t.is(JSON.parse(res.result).data.length, bytes);
+
+    // try writing some oversize JSON
+    res = await putAsset(`${chart.result.id}.map.json`, { data: big + big }, 'application/json');
+    // that should not work
+    t.is(res.statusCode, 413);
 
     async function getAsset(asset) {
         return t.context.server.inject({
