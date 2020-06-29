@@ -165,11 +165,24 @@ async function createSession(id, userId, keepSession = true) {
     });
 }
 
+async function login(request, userId, keepSession = true) {
+    const { generateToken } = request.server.methods;
+    const { api } = request.server.methods.config();
+
+    const session = await createSession(generateToken(), userId);
+
+    return {
+        sessionID: session.dataValues.id,
+        opts: getStateOpts(api.domain, keepSession ? 90 : 30)
+    };
+}
+
 module.exports = {
     legacyHash,
     createHashPassword,
     createComparePassword,
     getStateOpts,
     associateChartsWithUser,
-    createSession
+    createSession,
+    login
 };

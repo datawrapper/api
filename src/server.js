@@ -204,6 +204,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             : undefined
     });
     server.method('validateThemeData', validateThemeData);
+    server.method('login', require('./auth/utils').login);
 
     if (DW_DEV_MODE) {
         server.register([require('@hapi/inert'), require('@hapi/vision')]);
