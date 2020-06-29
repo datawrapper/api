@@ -1,5 +1,6 @@
 const generate = require('nanoid/generate');
 const { camelizeKeys } = require('humps');
+const Boom = require('@hapi/boom');
 const path = require('path');
 const jsesc = require('jsesc');
 const crypto = require('crypto');
@@ -90,5 +91,23 @@ utils.generateToken = (length = 25) => {
 };
 
 utils.noop = () => {};
+
+utils.loadChart = async function(id) {
+    const { Op } = require('@datawrapper/orm').db;
+    const { Chart } = require('@datawrapper/orm/models');
+
+    const chart = await Chart.findOne({
+        where: {
+            id,
+            deleted: { [Op.not]: true }
+        }
+    });
+
+    if (!chart) {
+        throw Boom.notFound();
+    }
+
+    return chart;
+};
 
 module.exports = utils;

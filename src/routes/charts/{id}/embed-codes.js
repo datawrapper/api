@@ -1,4 +1,3 @@
-const { Chart } = require('@datawrapper/orm/models');
 const { getUserData } = require('@datawrapper/orm/utils/userData');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
@@ -51,9 +50,9 @@ module.exports = async (server, options) => {
             })
         },
         async handler(request, h) {
-            const { params, auth } = request;
+            const { params, auth, server } = request;
 
-            const chart = await Chart.findByPk(params.id);
+            const chart = await server.methods.loadChart(params.id);
 
             if (!chart) {
                 return Boom.notFound();
