@@ -1,5 +1,7 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
+const { Chart } = require('@datawrapper/orm/models');
+const fetchSafely = require('@datawrapper/shared/node/fetchSafely');
 const { noContentResponse } = require('../../../schemas/response');
 
 module.exports = (server, options) => {
@@ -67,6 +69,59 @@ module.exports = (server, options) => {
             }
         },
         handler: writeChartData
+    });
+
+    // POST /v3/charts/{id}/data/refresh
+    server.route({
+        method: 'POST',
+        path: '/data/refresh',
+        options: {
+            tags: ['api'],
+            description: "Updates a chart's external data source.",
+            notes: `If a chart has an external data source configured, this endpoint fetches the data and saves it to the chart.`,
+            auth: {
+                access: { scope: ['chart:write'] }
+            },
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                })
+            }
+        },
+        handler: async (request, h) => {
+            const { params, server, auth } = request;
+            const { events, event } = server;
+
+            const chart = await Chart.findByPk(params.chartId);
+
+            if (!chart) {
+                return Boom.notFound();
+            }
+
+            const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
+
+            if (!isEditable) {
+                return Boom.notFound();
+            }
+
+            if (chart.external_data) {
+                const data = await fetchSafely(chart.external_data).body;
+
+                await events.emit(event.PUT_CHART_ASSET, {
+                    chart,
+                    data,
+                    filename: `${chart.id}.csv`
+                });
+            }
+
+            await events.emit(event.CUSTOM_EXTERNAL_DATA, {
+                chart
+            });
+
+            return h.response().code(204);
+        }
     });
 };
 
