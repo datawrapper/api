@@ -221,7 +221,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     if (options.usePlugins) {
         await server.register([require('./plugin-loader')], routeOptions);
     }
-    await server.register([require('./routes')], routeOptions);
+
+    await server.register([require('./v1')]);
+    await server.register([require('./v3')], routeOptions);
 
     const { events, event } = server.app;
     const { general, frontend } = server.methods.config();
