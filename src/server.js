@@ -6,7 +6,12 @@ const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
 const fs = require('fs-extra');
 const path = require('path');
-const { validateAPI, validateORM, validateFrontend } = require('@datawrapper/schemas/config');
+const {
+    validateAPI,
+    validateORM,
+    validateFrontend,
+    validateRedis
+} = require('@datawrapper/schemas/config');
 const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
 
@@ -25,6 +30,14 @@ const DW_DEV_MODE = JSON.parse(process.env.DW_DEV_MODE || 'false');
 validateAPI(config.api);
 validateORM(config.orm);
 validateFrontend(config.frontend);
+
+let useRedis = false;
+try {
+    validateRedis(config.redis);
+    useRedis = true;
+} catch (error) {
+    console.warn('[Cache] Invalid Redis configuration, falling back to in memory cache.');
+}
 
 const host = config.api.subdomain
     ? `${config.api.subdomain}.${config.api.domain}`
@@ -65,6 +78,22 @@ const server = Hapi.server({
     router: { stripTrailingSlash: true },
     /* https://hapijs.com/api#-serveroptionsdebug */
     debug: DW_DEV_MODE ? { request: ['implementation'] } : false,
+    cache: [
+        {
+            name: 'dw_cache',
+            provider: useRedis
+                ? {
+                      constructor: require('@hapi/catbox-redis'),
+                      options: config.redis
+                  }
+                : {
+                      constructor: require('@hapi/catbox-memory'),
+                      options: {
+                          maxByteSize: 52_480_000
+                      }
+                  }
+        }
+    ],
     routes: {
         cors: {
             origin: config.api.cors,
@@ -167,6 +196,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.app.exportFormats = new Set();
     server.app.scopes = new Set();
     server.app.adminScopes = new Set();
+    server.app.caches = new Map();
 
     server.method('getModel', name => ORM.db.models[name]);
     server.method('config', key => (key ? config[key] : config));
@@ -217,10 +247,12 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     if (options.useOpenAPI) {
         await server.register(OpenAPI, routeOptions);
     }
+
+    await server.register([require('./routes')], routeOptions);
+
     if (options.usePlugins) {
         await server.register([require('./plugin-loader')], routeOptions);
     }
-    await server.register([require('./routes')], routeOptions);
 
     const { events, event } = server.app;
     const { general, frontend } = server.methods.config();

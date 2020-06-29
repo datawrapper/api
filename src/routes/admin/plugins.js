@@ -8,6 +8,7 @@ const get = require('lodash/get');
 const intersection = require('lodash/intersection');
 const got = require('got');
 const tar = require('tar');
+const { Theme } = require('@datawrapper/orm/models');
 
 const pipeline = promisify(stream.pipeline);
 
@@ -25,6 +26,7 @@ module.exports = {
 function register(server, options) {
     server.app.adminScopes.add('plugin:read');
     server.app.adminScopes.add('plugin:write');
+
     // GET /v3/admin/plugins
     server.route({
         method: 'GET',
@@ -160,6 +162,16 @@ function register(server, options) {
             log.info('[Done] Restoring backup', payload.name);
 
             return Boom.badGateway();
+        }
+
+        /* bust visualization css cache */
+        if (server.app.visualizations.has(name)) {
+            const styleCache = server.app.caches.get('style-cache');
+            const themes = await Theme.findAll({ attributes: ['id'] });
+
+            for (const { id } of themes) {
+                await styleCache.drop(`${id}__${name}`);
+            }
         }
 
         log.info('[Done] Update plugin', payload.name);

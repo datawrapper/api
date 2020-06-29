@@ -13,6 +13,15 @@ module.exports = {
 
 async function register(server, options) {
     server.app.scopes.add('visualization:read');
+
+    const styleCache = server.cache({
+        cache: 'dw_cache',
+        segment: 'style_cache',
+        expiresIn: 86_400_000 /* 1 day */
+    });
+
+    server.app.caches.set('style-cache', styleCache);
+
     server.route({
         method: 'GET',
         path: '/{id}',
@@ -63,10 +72,19 @@ async function register(server, options) {
 
         if (themeCode !== 200) return Boom.badRequest(`Theme [${query.theme}] does not exist.`);
 
+        const cacheKey = `${query.theme}__${params.id}`;
+        const cachedCSS = await styleCache.get(cacheKey);
+
+        if (cachedCSS) {
+            return h.response(cachedCSS).header('Content-Type', 'text/css');
+        }
+
         const css = await compileCSS({
             theme,
             filePaths: [chartCore.less, vis.less]
         });
+
+        await styleCache.set(cacheKey, css);
 
         return h.response(css).header('Content-Type', 'text/css');
     }
