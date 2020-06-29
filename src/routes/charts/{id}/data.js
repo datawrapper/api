@@ -1,8 +1,9 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Chart } = require('@datawrapper/orm/models');
-const fetchSafely = require('@datawrapper/shared/node/fetchSafely');
 const { noContentResponse } = require('../../../schemas/response');
+const checkUrl = require('@datawrapper/shared/node/checkUrl');
+const got = require('got');
 
 module.exports = (server, options) => {
     // GET /v3/charts/{id}/data
@@ -106,8 +107,8 @@ module.exports = (server, options) => {
                 return Boom.notFound();
             }
 
-            if (chart.external_data) {
-                const data = await fetchSafely(chart.external_data).body;
+            if (chart.external_data && checkUrl(chart.external_data)) {
+                const data = await got(chart.external_data).body;
 
                 await events.emit(event.PUT_CHART_ASSET, {
                     chart,
