@@ -91,7 +91,8 @@ async function publishChart(request, h) {
     const { events, event } = server.app;
     const { createChartWebsite } = server.methods;
     const user = auth.artifacts;
-    const chart = await Chart.findByPk(params.id, { attributes: { include: ['created_at'] } });
+    const chart = await server.methods.loadChart(params.id);
+
     if (!chart || !(await chart.isPublishableBy(user))) {
         throw Boom.unauthorized();
     }
@@ -223,9 +224,9 @@ async function publishChart(request, h) {
 }
 
 async function publishChartStatus(request, h) {
-    const { params, auth } = request;
+    const { params, auth, server } = request;
 
-    const chart = await Chart.findByPk(params.id);
+    const chart = await server.methods.loadChart(params.id);
     if (!(await chart.isEditableBy(auth.artifacts, auth.credentials.session))) {
         return Boom.unauthorized();
     }

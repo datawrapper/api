@@ -12,7 +12,7 @@ const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
 
 const CodedError = require('@datawrapper/shared/CodedError');
 
-const { generateToken } = require('./utils');
+const { generateToken, loadChart } = require('./utils');
 const { addScope } = require('./utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
@@ -204,6 +204,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             : undefined
     });
     server.method('validateThemeData', validateThemeData);
+    server.method('loadChart', loadChart);
 
     if (DW_DEV_MODE) {
         server.register([require('@hapi/inert'), require('@hapi/vision')]);
