@@ -123,12 +123,12 @@ function createComparePassword(server) {
     };
 }
 
-function getStateOpts(domain, ttl) {
+function getStateOpts(domain, ttl, sameSite) {
     return {
         isSecure: process.env.NODE_ENV === 'production',
         strictHeader: false,
         domain: `.${domain}`,
-        isSameSite: false,
+        isSameSite: sameSite || 'Lax',
         path: '/',
         ttl: cookieTTL(ttl)
     };
@@ -165,7 +165,7 @@ async function createSession(id, userId, keepSession = true) {
     });
 }
 
-async function login(request, userId, keepSession = true) {
+async function login({ request, userId, keepSession = true, sameSite = false }) {
     const { generateToken } = request.server.methods;
     const { api } = request.server.methods.config();
 
@@ -173,7 +173,7 @@ async function login(request, userId, keepSession = true) {
 
     return {
         sessionID: session.dataValues.id,
-        opts: getStateOpts(api.domain, keepSession ? 90 : 30)
+        opts: getStateOpts(api.domain, keepSession ? 90 : 30, sameSite)
     };
 }
 
