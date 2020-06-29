@@ -14,5 +14,6 @@ module.exports = {
         require('./session')(server, options);
         require('./signup')(server, options);
         require('./tokens')(server, options);
+        require('./login-tokens')(server, options);
     }
 };
