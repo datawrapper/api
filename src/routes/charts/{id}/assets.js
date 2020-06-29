@@ -3,7 +3,7 @@ const mime = require('mime');
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { noContentResponse } = require('../../../schemas/response');
-const { Chart, ChartAccessToken } = require('@datawrapper/orm/models');
+const { ChartAccessToken } = require('@datawrapper/orm/models');
 
 module.exports = (server, options) => {
     // GET /v3/charts/{id}/assets/{asset}
@@ -81,9 +81,9 @@ module.exports = (server, options) => {
 };
 
 async function getChartAsset(request, h) {
-    const { params, auth, query } = request;
-    const { events, event } = request.server.app;
-    const chart = await loadChart(request);
+    const { params, auth, query, server } = request;
+    const { events, event } = server.app;
+    const chart = await server.methods.loadChart(request.params.id);
 
     const filename = params.asset;
 
@@ -146,10 +146,10 @@ function getAssetWhitelist(id) {
 }
 
 async function writeChartAsset(request, h) {
-    const { params, auth } = request;
-    const { events, event } = request.server.app;
+    const { params, auth, server } = request;
+    const { events, event } = server.app;
     const user = auth.artifacts;
-    const chart = await loadChart(request);
+    const chart = await server.methods.loadChart(request.params.id);
 
     const isEditable = await chart.isEditableBy(request.auth.artifacts, auth.credentials.session);
 
@@ -185,18 +185,4 @@ async function writeChartAsset(request, h) {
         request.logger.error(error.message);
         return Boom.notFound();
     }
-}
-
-async function loadChart(request) {
-    const { id } = request.params;
-
-    const chart = await Chart.findByPk(id, {
-        attributes: ['id', 'author_id', 'created_at', 'type', 'guest_session', 'organization_id']
-    });
-
-    if (!chart) {
-        throw Boom.notFound();
-    }
-
-    return chart;
 }

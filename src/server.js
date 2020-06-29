@@ -12,7 +12,7 @@ const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
 
 const CodedError = require('@datawrapper/shared/CodedError');
 
-const { generateToken } = require('./utils');
+const { generateToken, loadChart } = require('./utils');
 const { addScope } = require('./utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
@@ -205,6 +205,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     });
     server.method('validateThemeData', validateThemeData);
     server.method('login', require('./auth/utils').login);
+    server.method('loadChart', loadChart);
 
     if (DW_DEV_MODE) {
         server.register([require('@hapi/inert'), require('@hapi/vision')]);
@@ -242,11 +243,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     if (!hasRegisteredDataPlugins) {
         events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
-            const filePath = path.join(
-                localChartAssetRoot,
-                getDataPath(chart.dataValues.created_at),
-                filename
-            );
+            const filePath = path.join(localChartAssetRoot, getDataPath(chart.createdAt), filename);
             try {
                 await fs.access(filePath, fs.constants.R_OK);
             } catch (e) {
@@ -256,10 +253,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         });
 
         events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
-            const outPath = path.join(
-                localChartAssetRoot,
-                getDataPath(chart.dataValues.created_at)
-            );
+            const outPath = path.join(localChartAssetRoot, getDataPath(chart.createdAt));
 
             await fs.mkdir(outPath, { recursive: true });
             await fs.writeFile(path.join(outPath, filename), data);
