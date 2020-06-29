@@ -190,9 +190,7 @@ async function writeChartAsset(request, h) {
 async function loadChart(request) {
     const { id } = request.params;
 
-    const chart = await Chart.findByPk(id, {
-        attributes: ['id', 'author_id', 'created_at', 'type', 'guest_session', 'organization_id']
-    });
+    const chart = await Chart.findByPk(id);
 
     if (!chart) {
         throw Boom.notFound();
