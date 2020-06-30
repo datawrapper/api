@@ -16,7 +16,7 @@ test.before(async t => {
     };
 });
 
-test('Login token can be created and creates a session when used', async t => {
+test('Login token can be created and used once', async t => {
     const { auth } = t.context;
 
     const res = await t.context.server.inject({
@@ -35,6 +35,13 @@ test('Login token can be created and creates a session when used', async t => {
 
     t.truthy(res2.result['DW-SESSION']);
     t.is(res2.statusCode, 302);
+
+    const res3 = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/auth/login/${res.result.token}`
+    });
+
+    t.is(res3.statusCode, 404);
 });
 
 test('Login token can be created and deleted', async t => {
