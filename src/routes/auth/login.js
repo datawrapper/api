@@ -1,6 +1,6 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { User } = require('@datawrapper/orm/models');
+const { User, AccessToken } = require('@datawrapper/orm/models');
 const { associateChartsWithUser, createSession, getStateOpts } = require('../../auth/utils');
 
 module.exports = async (server, options) => {
@@ -27,6 +27,59 @@ module.exports = async (server, options) => {
             }
         },
         handler: login
+    });
+
+    // GET /v3/auth/login/{token}
+    server.route({
+        method: 'GET',
+        path: '/login/{token}',
+        options: {
+            auth: false,
+            description: 'Login using login token',
+            notes: 'Login using a one-time login token, for use in CMS integrations',
+            validate: {
+                params: Joi.object({
+                    token: Joi.string()
+                        .required()
+                        .description('A valid login token.')
+                })
+            }
+        },
+        async handler(request, h) {
+            const { params } = request;
+
+            const token = await AccessToken.findOne({
+                where: {
+                    type: 'login-token',
+                    token: params.token
+                }
+            });
+
+            if (!token) return Boom.notFound();
+
+            // token found, create a session
+            await AccessToken.destroy({
+                where: {
+                    type: 'login-token',
+                    token: params.token
+                }
+            });
+
+            const { generateToken, config } = request.server.methods;
+            const { api, frontend } = config();
+            const session = await createSession(generateToken(), token.user_id, false);
+
+            return h
+                .response({
+                    [api.sessionID]: session.id
+                })
+                .state(api.sessionID, session.id, getStateOpts(api.domain, 30))
+                .redirect(
+                    `${frontend.https ? 'https' : 'http'}://${frontend.domain}${
+                        token.data.redirect_url
+                    }`
+                );
+        }
     });
 };
 

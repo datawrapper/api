@@ -1,66 +1,15 @@
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 const { AccessToken } = require('@datawrapper/orm/models');
-const { createSession, getStateOpts } = require('../../auth/utils');
 
 module.exports = async (server, options) => {
-    server.route({
-        method: 'GET',
-        path: '/login-tokens/{token}',
-        options: {
-            auth: false,
-            validate: {
-                params: Joi.object({
-                    token: Joi.string()
-                        .required()
-                        .description('A valid login token.')
-                })
-            }
-        },
-        async handler(request, h) {
-            const { params } = request;
-
-            const token = await AccessToken.findOne({
-                where: {
-                    type: 'login-token',
-                    token: params.token
-                }
-            });
-
-            if (!token) return Boom.notFound();
-
-            // token found, create a session
-            await AccessToken.destroy({
-                where: {
-                    type: 'login-token',
-                    token: params.token
-                }
-            });
-
-            const { generateToken, config } = request.server.methods;
-            const { api, frontend } = config();
-            const session = await createSession(generateToken(), token.user_id, false);
-
-            return h
-                .response({
-                    [api.sessionID]: session.id
-                })
-                .state(api.sessionID, session.id, getStateOpts(api.domain, 30))
-                .redirect(
-                    `${frontend.https ? 'https' : 'http'}://${frontend.domain}${
-                        token.data.redirect_url
-                    }`
-                );
-        }
-    });
-
     server.route({
         method: 'POST',
         path: '/login-tokens',
         options: {
             tags: ['api'],
             description: 'Creates a login token',
-            notes: 'Creates a new login token to authenticate a user.',
+            notes: 'Creates a new login token to authenticate a user, for use in CMS integrations.',
             auth: {
                 access: { scope: ['auth:write'] }
             },
@@ -117,7 +66,7 @@ module.exports = async (server, options) => {
                     token: token.token,
                     redirect_url: `${api.https ? 'https' : 'http'}://${api.subdomain}.${
                         api.domain
-                    }/v3/auth/login-tokens/${token.token}`
+                    }/v3/auth/login/${token.token}`
                 })
                 .code(201);
         }

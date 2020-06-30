@@ -29,7 +29,7 @@ test('Login token can be created and creates a session when used', async t => {
 
     const res2 = await t.context.server.inject({
         method: 'GET',
-        url: `/v3/auth/login-tokens/${res.result.token}`
+        url: `/v3/auth/login/${res.result.token}`
     });
 
     t.truthy(res2.result['DW-SESSION']);
@@ -58,7 +58,7 @@ test('Login token can be created and deleted', async t => {
 
     const res3 = await t.context.server.inject({
         method: 'GET',
-        url: `/v3/auth/login-tokens/${res.result.token}`
+        url: `/v3/auth/login/${res.result.token}`
     });
 
     t.is(res3.statusCode, 404);
@@ -90,7 +90,7 @@ test('Login token with chart ID can be created and forwards correctly', async t 
 
     const res2 = await t.context.server.inject({
         method: 'GET',
-        url: `/v3/auth/login-tokens/${res.result.token}`,
+        url: `/v3/auth/login/${res.result.token}`,
         auth
     });
 
@@ -132,7 +132,7 @@ test('Token with invalid chart ID cannot be created', async t => {
 test('Invalid login token returns 404', async t => {
     const res = await t.context.server.inject({
         method: 'GET',
-        url: `/v3/auth/login-tokens/thisisafaketoken`
+        url: `/v3/auth/login/thisisafaketoken`
     });
 
     t.is(res.statusCode, 404);
