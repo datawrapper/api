@@ -58,7 +58,7 @@ test('Login token can be created and deleted', async t => {
 
     const res2 = await t.context.server.inject({
         method: 'DELETE',
-        url: `/v3/auth/login-tokens/${res.result.token}`,
+        url: `/v3/auth/login-tokens/${res.result.id}`,
         auth
     });
 
@@ -70,6 +70,35 @@ test('Login token can be created and deleted', async t => {
     });
 
     t.is(res3.statusCode, 404);
+});
+
+test('Login token can be created and retrieved', async t => {
+    const { auth } = t.context;
+
+    const res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/login-tokens',
+        auth
+    });
+
+    t.is(res.statusCode, 201);
+    t.is(typeof res.result.token, 'string');
+
+    const res2 = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/auth/login-tokens`,
+        auth
+    });
+
+    t.is(res2.statusCode, 200);
+    t.truthy(res2.result.total > 0);
+    t.is(res2.result.list[0].lastTokenCharacters.length, 4);
+
+    await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/auth/login-tokens/${res.result.id}`,
+        auth
+    });
 });
 
 test('Login token with chart ID can be created and forwards correctly', async t => {

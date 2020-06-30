@@ -1,6 +1,10 @@
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
+const { db } = require('@datawrapper/orm');
 const { AccessToken } = require('@datawrapper/orm/models');
+const { Op } = db;
+const { camelizeKeys } = require('humps');
+const set = require('lodash/set');
 
 module.exports = async (server, options) => {
     server.route({
@@ -91,8 +95,77 @@ module.exports = async (server, options) => {
     });
 
     server.route({
+        method: 'GET',
+        path: '/login-tokens',
+        options: {
+            tags: ['api'],
+            description: 'Retrieves login tokens',
+            notes: 'Retrieves all login tokens associated to the current user.',
+            auth: {
+                access: { scope: ['auth:read'] }
+            },
+            validate: {
+                query: Joi.object({
+                    limit: Joi.number()
+                        .integer()
+                        .default(100)
+                        .description('Maximum items to fetch. Useful for pagination.'),
+                    offset: Joi.number()
+                        .integer()
+                        .default(0)
+                        .description('Number of items to skip. Useful for pagination.')
+                })
+            }
+        },
+        async handler(request, h) {
+            const { query, auth, url } = request;
+
+            const options = {
+                where: {
+                    [Op.and]: [
+                        { type: 'login-token' },
+                        { user_id: auth.artifacts.id },
+                        db.where(
+                            db.col('created_at'),
+                            Op.gt,
+                            db.fn('DATE_ADD', db.fn('NOW'), db.literal('INTERVAL -5 MINUTE'))
+                        )
+                    ]
+                },
+                limit: query.limit,
+                offset: query.offset
+            };
+
+            const { count, rows } = await AccessToken.findAndCountAll(options);
+
+            const tokenList = {
+                list: rows.map(({ token, id, createdAt }) => {
+                    return camelizeKeys({
+                        id,
+                        createdAt,
+                        lastTokenCharacters: token.slice(-4)
+                    });
+                }),
+                total: count
+            };
+
+            if (query.limit + query.offset < count) {
+                const nextParams = new URLSearchParams({
+                    ...query,
+                    offset: query.limit + query.offset,
+                    limit: query.limit
+                });
+
+                set(tokenList, 'next', `${url.pathname}?${nextParams.toString()}`);
+            }
+
+            return tokenList;
+        }
+    });
+
+    server.route({
         method: 'DELETE',
-        path: '/login-tokens/{token}',
+        path: '/login-tokens/{id}',
         options: {
             tags: ['api'],
             description: 'Deletes a login token',
@@ -102,7 +175,8 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    token: Joi.string()
+                    id: Joi.number()
+                        .integer()
                         .required()
                         .description('A valid login token.')
                 })
@@ -114,7 +188,7 @@ module.exports = async (server, options) => {
             await AccessToken.destroy({
                 where: {
                     type: 'login-token',
-                    token: params.token,
+                    id: params.id,
                     user_id: auth.artifacts.id
                 }
             });
