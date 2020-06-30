@@ -3,11 +3,12 @@ const test = require('ava');
 const { setup } = require('../../../test/helpers/setup');
 
 test.before(async t => {
-    const { server, getUser, addToCleanup } = await setup({ usePlugins: false });
+    const { server, models, getUser, addToCleanup } = await setup({ usePlugins: false });
     const data = await getUser();
 
     t.context.server = server;
     t.context.addToCleanup = addToCleanup;
+    t.context.models = models;
     t.context.auth = {
         strategy: 'session',
         credentials: data.session,
@@ -99,6 +100,40 @@ test('Login token with chart ID can be created and forwards correctly', async t 
     t.is(res2.headers.location.indexOf(`/chart/${chart.result.id}/edit`) > -1, true);
 });
 
+test('Login token expires after five minutes', async t => {
+    const { auth, models } = t.context;
+    const { AccessToken } = models;
+
+    const res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/login-tokens',
+        auth
+    });
+
+    t.is(res.statusCode, 201);
+    t.is(typeof res.result.token, 'string');
+
+    await AccessToken.update(
+        {
+            createdAt: new Date().getTime() - 6 * 60 * 1000 // 6m ago
+        },
+        {
+            where: {
+                token: res.result.token
+            }
+        }
+    );
+
+    const res2 = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/auth/login/${res.result.token}`
+    });
+
+    t.is(res2.statusCode, 404);
+
+    await AccessToken.destroy({ where: { token: res.result.token } });
+});
+
 test('Login token with chart ID that user cannot edit cannot be created', async t => {
     const { auth } = t.context;
 
@@ -132,7 +167,7 @@ test('Token with invalid chart ID cannot be created', async t => {
 test('Invalid login token returns 404', async t => {
     const res = await t.context.server.inject({
         method: 'GET',
-        url: `/v3/auth/login/thisisafaketoken`
+        url: `/v3/auth/login-tokens/thisisafaketoken`
     });
 
     t.is(res.statusCode, 404);

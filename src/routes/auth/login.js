@@ -1,6 +1,8 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { User, AccessToken } = require('@datawrapper/orm/models');
+const { db } = require('@datawrapper/orm');
+const { Op } = db;
 const { associateChartsWithUser, createSession, getStateOpts } = require('../../auth/utils');
 
 module.exports = async (server, options) => {
@@ -50,8 +52,15 @@ module.exports = async (server, options) => {
 
             const token = await AccessToken.findOne({
                 where: {
-                    type: 'login-token',
-                    token: params.token
+                    [Op.and]: [
+                        { type: 'login-token' },
+                        { token: params.token },
+                        db.where(
+                            db.col('created_at'),
+                            Op.gt,
+                            db.fn('DATE_ADD', db.fn('NOW'), db.literal('INTERVAL -5 MINUTE'))
+                        )
+                    ]
                 }
             });
 
