@@ -4,7 +4,7 @@ module.exports = {
     register: (server, options) => {
         server.register(require('./login-tokens'), {
             routes: {
-                prefix: '/plugin/login-tokens'
+                prefix: '/plugin/login-token'
             }
         });
     }

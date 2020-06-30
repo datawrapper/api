@@ -1,6 +1,7 @@
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 const { AccessToken } = require('@datawrapper/orm/models');
+const { createSession, getStateOpts } = require('../../auth/utils');
 
 module.exports = async (server, options) => {
     server.route({
@@ -29,15 +30,6 @@ module.exports = async (server, options) => {
             if (!token) return Boom.notFound();
 
             // token found, create a session
-            const { login } = request.server.methods;
-            const { api, frontend } = request.server.methods.config();
-            const { sessionID, opts } = await login({
-                request,
-                userId: token.user_id,
-                keepSession: false,
-                sameSite: 'None'
-            });
-
             await AccessToken.destroy({
                 where: {
                     type: 'login-token',
@@ -45,14 +37,18 @@ module.exports = async (server, options) => {
                 }
             });
 
+            const { generateToken, config } = request.server.methods;
+            const { api, frontend } = config();
+            const session = await createSession(generateToken(), token.user_id, false);
+
             return h
                 .response({
-                    [api.sessionID]: sessionID
+                    [api.sessionID]: session.id
                 })
-                .state(api.sessionID, sessionID, opts)
+                .state(api.sessionID, session.id, getStateOpts(api.domain, 30))
                 .redirect(
                     `${frontend.https ? 'https' : 'http'}://${frontend.domain}${
-                        token.data.redirect_uri
+                        token.data.redirect_url
                     }`
                 );
         }
@@ -73,19 +69,7 @@ module.exports = async (server, options) => {
                     chartId: Joi.string()
                         .length(5)
                         .required()
-                        .description('A chart ID.'),
-                    step: Joi.string()
-                        .description('An edit step in the visualization editor.')
-                        .required()
-                        .valid(
-                            'basemap',
-                            'data',
-                            'upload',
-                            'describe',
-                            'visualize',
-                            'publish',
-                            'preview'
-                        )
+                        .description('A chart ID.')
                 })
                     .optional()
                     .allow(null)
@@ -100,9 +84,9 @@ module.exports = async (server, options) => {
                 return Boom.unauthorized('You need to activate your account first');
             }
 
-            let redirectUri;
+            let redirectUrl;
 
-            if (payload && payload.chartId && payload.step) {
+            if (payload && payload.chartId) {
                 const chart = await server.methods.loadChart(payload.chartId);
 
                 /* this check isn't strictly necessary for security reasons
@@ -116,14 +100,14 @@ module.exports = async (server, options) => {
                     return Boom.forbidden();
                 }
 
-                redirectUri = `/chart/${chart.id}/${payload.step}`;
+                redirectUrl = `/chart/${chart.id}/edit`;
             }
 
             const token = await AccessToken.newToken({
                 type: 'login-token',
                 user_id: auth.artifacts.id,
                 data: {
-                    redirect_uri: redirectUri
+                    redirect_url: redirectUrl
                 }
             });
 
@@ -131,11 +115,44 @@ module.exports = async (server, options) => {
                 .response({
                     id: token.id,
                     token: token.token,
-                    redirect_uri: `${api.https ? 'https' : 'http'}://${api.subdomain}.${
+                    redirect_url: `${api.https ? 'https' : 'http'}://${api.subdomain}.${
                         api.domain
-                    }/v3/login-tokens/${token.token}`
+                    }/v3/auth/login-tokens/${token.token}`
                 })
                 .code(201);
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/login-tokens/{token}',
+        options: {
+            tags: ['api'],
+            description: 'Deletes a login token',
+            notes: 'Deletes an existing login token by the current user.',
+            auth: {
+                access: { scope: ['auth:write'] }
+            },
+            validate: {
+                params: Joi.object({
+                    token: Joi.string()
+                        .required()
+                        .description('A valid login token.')
+                })
+            }
+        },
+        async handler(request, h) {
+            const { params, auth } = request;
+
+            await AccessToken.destroy({
+                where: {
+                    type: 'login-token',
+                    token: params.token,
+                    user_id: auth.artifacts.id
+                }
+            });
+
+            return h.response().code(204);
         }
     });
 };
