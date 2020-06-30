@@ -1,3 +1,5 @@
+const Joi = require('@hapi/joi');
+
 module.exports = {
     name: 'v1-routes/login-tokens',
     version: '1.0.0',
@@ -7,7 +9,15 @@ module.exports = {
             method: 'GET',
             path: '/{token}',
             options: {
-                tags: ['api']
+                tags: ['api'],
+                auth: false,
+                validate: {
+                    params: Joi.object({
+                        token: Joi.string()
+                            .required()
+                            .description('A valid login token.')
+                    })
+                }
             },
             handler: (request, h) => {
                 const { params, server } = request;
@@ -49,7 +59,27 @@ module.exports = {
             method: 'POST',
             path: '/{chartId}/{step}',
             options: {
-                tags: ['api']
+                tags: ['api'],
+                validate: {
+                    params: Joi.object({
+                        chartId: Joi.string()
+                            .length(5)
+                            .required()
+                            .description('A chart ID.'),
+                        step: Joi.string()
+                            .required()
+                            .allow(
+                                'basemap',
+                                'data',
+                                'upload',
+                                'describe',
+                                'visualize',
+                                'publish',
+                                'preview'
+                            )
+                            .description('A step in the chart editor.')
+                    })
+                }
             },
             handler: async (request, h) => {
                 const { params } = request;
