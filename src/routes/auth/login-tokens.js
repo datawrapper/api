@@ -18,7 +18,25 @@ module.exports = async (server, options) => {
                     chartId: Joi.string()
                         .length(5)
                         .required()
-                        .description('A chart ID.')
+                        .description('A chart ID.'),
+                    step: Joi.string()
+                        .required()
+                        .optional()
+                        .valid(
+                            'edit',
+                            'upload',
+                            'describe',
+                            'visualize',
+                            'publish',
+                            'basemap',
+                            'data',
+                            'makers',
+                            'design',
+                            'annotate',
+                            'preview'
+                        )
+                        .default('edit')
+                        .description('An edit step in the chart editor.')
                 })
                     .optional()
                     .allow(null)
@@ -35,7 +53,7 @@ module.exports = async (server, options) => {
 
             let redirectUrl;
 
-            if (payload && payload.chartId) {
+            if (payload && payload.chartId && payload.step) {
                 const chart = await server.methods.loadChart(payload.chartId);
 
                 /* this check isn't strictly necessary for security reasons
@@ -49,7 +67,7 @@ module.exports = async (server, options) => {
                     return Boom.forbidden();
                 }
 
-                redirectUrl = `/chart/${chart.id}/edit`;
+                redirectUrl = `/chart/${chart.id}/${payload.step}`;
             }
 
             const token = await AccessToken.newToken({

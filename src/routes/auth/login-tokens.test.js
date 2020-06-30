@@ -89,7 +89,8 @@ test('Login token with chart ID can be created and forwards correctly', async t 
         url: '/v3/auth/login-tokens',
         auth,
         payload: {
-            chartId: chart.result.id
+            chartId: chart.result.id,
+            step: 'preview'
         }
     });
 
@@ -104,7 +105,7 @@ test('Login token with chart ID can be created and forwards correctly', async t 
 
     t.truthy(res2.result['DW-SESSION']);
     t.is(res2.statusCode, 302);
-    t.is(res2.headers.location.indexOf(`/chart/${chart.result.id}/edit`) > -1, true);
+    t.is(res2.headers.location.indexOf(`/chart/${chart.result.id}/preview`) > -1, true);
 });
 
 test('Login token expires after five minutes', async t => {
@@ -165,6 +166,22 @@ test('Token with invalid chart ID cannot be created', async t => {
         auth,
         payload: {
             chartId: `'"); DROP TABLE users;`
+        }
+    });
+
+    t.is(res.statusCode, 400);
+});
+
+test('Token with invalid edit step cannot be created', async t => {
+    const { auth } = t.context;
+
+    const res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/login-tokens',
+        auth,
+        payload: {
+            chartId: 'abcde',
+            step: `'"); DROP TABLE charts;`
         }
     });
 
