@@ -39,7 +39,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             auth: false,
             description: 'Login using login token',
-            notes: 'Login using a one-time login token, for use in CMS integrations',
+            notes: 'Login using a one-time login token and redirect to the URL associated with the token. For use in CMS integrations.',
             validate: {
                 params: Joi.object({
                     token: Joi.string()
