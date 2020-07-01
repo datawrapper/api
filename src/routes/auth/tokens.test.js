@@ -37,6 +37,9 @@ test('Tokens can be created, fetched and deleted', async t => {
 
     const tokenId = res.result.id;
     t.is(res.result.comment, 'Test Token');
+    // by default new api token scopes are limited to the
+    // session scopes
+    t.deepEqual(res.result.scopes, ['auth:read', 'auth:write']);
     t.truthy(res.result);
 
     res = await t.context.server.inject({
@@ -55,4 +58,62 @@ test('Tokens can be created, fetched and deleted', async t => {
     });
 
     t.is(res.statusCode, 204);
+});
+
+test('The scope of newly created tokens cannot exceed the session scopes', async t => {
+    const { User, AccessToken } = t.context.models;
+    const auth = {
+        strategy: 'session',
+        credentials: {
+            session: t.context.session,
+            scope: ['auth:read', 'chart:read', 'auth:write']
+        },
+        artifacts: User.build({ id: t.context.user.id })
+    };
+
+    let res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/tokens',
+        payload: {
+            comment: 'Test Token',
+            scopes: ['chart:read']
+        },
+        auth
+    });
+
+    const cleanup = [res.result.id];
+    t.is(res.statusCode, 201);
+    t.deepEqual(res.result.scopes, ['chart:read']);
+
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/tokens',
+        payload: {
+            comment: 'Test Token'
+        },
+        auth
+    });
+
+    t.is(res.statusCode, 201);
+    cleanup.push(res.result.id);
+    t.deepEqual(res.result.scopes, ['auth:read', 'chart:read', 'auth:write']);
+
+    // cleanup tokens
+    await AccessToken.destroy({
+        where: {
+            id: cleanup
+        }
+    });
+
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/tokens',
+        payload: {
+            comment: 'Test Token',
+            scopes: ['chart:write']
+        },
+        auth
+    });
+
+    t.is(res.statusCode, 401);
 });
