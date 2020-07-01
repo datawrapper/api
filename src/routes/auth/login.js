@@ -66,7 +66,7 @@ module.exports = async (server, options) => {
 
             if (!token) return Boom.notFound();
 
-            // token found, create a session
+            // token found, destroy it so it can’t be used again
             await AccessToken.destroy({
                 where: {
                     type: 'login-token',
