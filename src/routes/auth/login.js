@@ -39,7 +39,8 @@ module.exports = async (server, options) => {
             tags: ['api'],
             auth: false,
             description: 'Login using login token',
-            notes: 'Login using a one-time login token and redirect to the URL associated with the token. For use in CMS integrations.',
+            notes:
+                'Login using a one-time login token and redirect to the URL associated with the token. For use in CMS integrations.',
             validate: {
                 params: Joi.object({
                     token: Joi.string()
@@ -75,7 +76,7 @@ module.exports = async (server, options) => {
                 }
             });
 
-            // create a new user session 
+            // create a new user session
             const { generateToken, config } = request.server.methods;
             const { api, frontend } = config();
             const session = await createSession(generateToken(), token.user_id, false);
