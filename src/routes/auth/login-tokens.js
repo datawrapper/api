@@ -13,7 +13,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Creates a login token',
-            notes: 'Creates a new login token to authenticate a user, for use in CMS integrations.',
+            notes: 'Creates a new login token to authenticate a user, for use in CMS integrations. Login tokens are valid for five minutes and can only be used once.',
             auth: {
                 access: { scope: ['auth:write'] }
             },
