@@ -36,6 +36,7 @@ module.exports = async (server, options) => {
         method: 'GET',
         path: '/login/{token}',
         options: {
+            tags: ['api'],
             auth: false,
             description: 'Login using login token',
             notes: 'Login using a one-time login token, for use in CMS integrations',
