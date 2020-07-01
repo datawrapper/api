@@ -55,7 +55,7 @@ module.exports = async (server, options) => {
                 return Boom.unauthorized('You need to activate your account first');
             }
 
-            let redirectUrl;
+            let redirectUrl = '/';
 
             if (payload && payload.chartId && payload.step) {
                 const chart = await server.methods.loadChart(payload.chartId);
