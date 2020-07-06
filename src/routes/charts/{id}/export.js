@@ -1,7 +1,5 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { Chart } = require('@datawrapper/orm/models');
-const { Op } = require('@datawrapper/orm').db;
 
 module.exports = (server, options) => {
     // POST /v3/charts/{id}/export/{format}
@@ -109,14 +107,8 @@ async function exportChart(request, h) {
     const user = auth.artifacts;
 
     // authorize user
-    const chart = await Chart.findOne({
-        where: {
-            id: params.id,
-            deleted: { [Op.not]: true }
-        }
-    });
+    const chart = await server.methods.loadChart(params.id);
 
-    if (!chart) return Boom.notFound();
     const mayEdit = await user.mayEditChart(chart);
     if (!mayEdit) return Boom.notFound();
 
