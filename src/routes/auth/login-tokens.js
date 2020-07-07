@@ -25,7 +25,6 @@ module.exports = async (server, options) => {
                         .required()
                         .description('A chart ID.'),
                     step: Joi.string()
-                        .required()
                         .optional()
                         .valid(
                             'edit',
