@@ -73,7 +73,9 @@ module.exports = async (server, options) => {
             }
 
             if (payload.scopes) {
-                validateScopes(payload.scopes);
+                validateScopes(payload.scopes, auth.credentials.scope);
+            } else {
+                payload.scopes = auth.credentials.scope;
             }
 
             const token = await AccessToken.newToken({
@@ -81,7 +83,7 @@ module.exports = async (server, options) => {
                 user_id: auth.artifacts.id,
                 data: {
                     comment: payload.comment,
-                    scopes: payload.scopes || ['all']
+                    scopes: payload.scopes
                 }
             });
 
@@ -139,8 +141,10 @@ module.exports = async (server, options) => {
                 comment: payload.comment
             };
             if (payload.scopes) {
-                validateScopes(payload.scopes);
+                validateScopes(payload.scopes, auth.credentials.scope);
                 data.scopes = payload.scopes;
+            } else {
+                data.scopes = auth.credentials.scope;
             }
             await token.update({ data });
             return h.response().code(204);
@@ -219,15 +223,16 @@ module.exports = async (server, options) => {
         });
     }
 
-    function validateScopes(scopes) {
+    function validateScopes(scopes, sessionScopes) {
         for (let i = 0; i < scopes.length; i++) {
             const scope = scopes[i];
-            if (
-                scope !== 'all' &&
-                !server.app.scopes.has(scope) &&
-                !server.app.adminScopes.has(scope)
-            ) {
+            if (!server.app.scopes.has(scope) && !server.app.adminScopes.has(scope)) {
                 throw Boom.badRequest(`Invalid scope "${scope}"`);
+            }
+            if (!sessionScopes.includes(scope)) {
+                throw Boom.unauthorized(
+                    `You are not authorized to create tokens with the scope "${scope}"`
+                );
             }
         }
     }
