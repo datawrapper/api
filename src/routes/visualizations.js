@@ -15,12 +15,10 @@ async function register(server, options) {
     server.app.scopes.add('visualization:read');
 
     const styleCache = server.cache({
-        cache: 'dw_cache',
         segment: 'style_cache',
-        expiresIn: 86_400_000 /* 1 day */
+        expiresIn: 86_400_000 /* 1 day */,
+        shared: true
     });
-
-    server.app.caches.set('style-cache', styleCache);
 
     server.route({
         method: 'GET',

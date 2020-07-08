@@ -79,13 +79,12 @@ const server = Hapi.server({
     /* https://hapijs.com/api#-serveroptionsdebug */
     debug: DW_DEV_MODE ? { request: ['implementation'] } : false,
     cache: {
-        name: 'dw_cache',
         provider: useRedis
             ? {
                   constructor: require('@hapi/catbox-redis'),
                   options: {
                       ...config.redis,
-                      partition: 'dw_api_cache'
+                      partition: 'api'
                   }
               }
             : {
@@ -197,7 +196,6 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.app.exportFormats = new Set();
     server.app.scopes = new Set();
     server.app.adminScopes = new Set();
-    server.app.caches = new Map();
 
     server.method('getModel', name => ORM.db.models[name]);
     server.method('config', key => (key ? config[key] : config));

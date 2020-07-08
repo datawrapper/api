@@ -27,6 +27,8 @@ function register(server, options) {
     server.app.adminScopes.add('plugin:read');
     server.app.adminScopes.add('plugin:write');
 
+    const styleCache = server.cache({ segment: 'style_cache', shared: true });
+
     // GET /v3/admin/plugins
     server.route({
         method: 'GET',
@@ -170,7 +172,6 @@ function register(server, options) {
             if (value.__plugin === name) visualizations.push(key);
         }
 
-        const styleCache = server.app.caches.get('style-cache');
         const themes = await Theme.findAll({ attributes: ['id'] });
 
         const dropOperationPromises = [];
