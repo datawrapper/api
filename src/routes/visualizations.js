@@ -16,7 +16,7 @@ async function register(server, options) {
 
     const styleCache = server.cache({
         segment: 'vis-styles',
-        expiresIn: 86_400_000 /* 1 day */,
+        expiresIn: 86400000 * 365 /* 1 year */,
         shared: true
     });
 
