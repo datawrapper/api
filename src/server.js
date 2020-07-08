@@ -78,22 +78,23 @@ const server = Hapi.server({
     router: { stripTrailingSlash: true },
     /* https://hapijs.com/api#-serveroptionsdebug */
     debug: DW_DEV_MODE ? { request: ['implementation'] } : false,
-    cache: [
-        {
-            name: 'dw_cache',
-            provider: useRedis
-                ? {
-                      constructor: require('@hapi/catbox-redis'),
-                      options: config.redis
+    cache: {
+        name: 'dw_cache',
+        provider: useRedis
+            ? {
+                  constructor: require('@hapi/catbox-redis'),
+                  options: {
+                      ...config.redis,
+                      partition: 'dw_api_cache'
                   }
-                : {
-                      constructor: require('@hapi/catbox-memory'),
-                      options: {
-                          maxByteSize: 52_480_000
-                      }
+              }
+            : {
+                  constructor: require('@hapi/catbox-memory'),
+                  options: {
+                      maxByteSize: 52_480_000
                   }
-        }
-    ],
+              }
+    },
     routes: {
         cors: {
             origin: config.api.cors,
