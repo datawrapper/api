@@ -1,6 +1,8 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { User } = require('@datawrapper/orm/models');
+const { User, AccessToken } = require('@datawrapper/orm/models');
+const { db } = require('@datawrapper/orm');
+const { Op } = db;
 const { associateChartsWithUser, createSession, getStateOpts } = require('../../auth/utils');
 
 module.exports = async (server, options) => {
@@ -27,6 +29,69 @@ module.exports = async (server, options) => {
             }
         },
         handler: login
+    });
+
+    // GET /v3/auth/login/{token}
+    server.route({
+        method: 'GET',
+        path: '/login/{token}',
+        options: {
+            tags: ['api'],
+            auth: false,
+            description: 'Login using login token',
+            notes:
+                'Login using a one-time login token and redirect to the URL associated with the token. For use in CMS integrations.',
+            validate: {
+                params: Joi.object({
+                    token: Joi.string()
+                        .required()
+                        .description('A valid login token.')
+                })
+            }
+        },
+        async handler(request, h) {
+            const { params } = request;
+
+            const token = await AccessToken.findOne({
+                where: {
+                    [Op.and]: [
+                        { type: 'login-token' },
+                        { token: params.token },
+                        db.where(
+                            db.col('created_at'),
+                            Op.gt,
+                            db.fn('DATE_ADD', db.fn('NOW'), db.literal('INTERVAL -5 MINUTE'))
+                        )
+                    ]
+                }
+            });
+
+            if (!token) return Boom.notFound();
+
+            // token found, destroy it so it can’t be used again
+            await AccessToken.destroy({
+                where: {
+                    type: 'login-token',
+                    token: params.token
+                }
+            });
+
+            // create a new user session
+            const { generateToken, config } = request.server.methods;
+            const { api, frontend } = config();
+            const session = await createSession(generateToken(), token.user_id, false);
+
+            return h
+                .response({
+                    [api.sessionID]: session.id
+                })
+                .state(api.sessionID, session.id, getStateOpts(api.domain, 30))
+                .redirect(
+                    `${frontend.https ? 'https' : 'http'}://${frontend.domain}${
+                        token.data.redirect_url
+                    }`
+                );
+        }
     });
 };
 

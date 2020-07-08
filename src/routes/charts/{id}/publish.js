@@ -260,6 +260,8 @@ async function publishData(request, h) {
             where: { id: params.id }
         });
 
+        if (!chart) throw Boom.notFound();
+
         chart.dataValues.theme = ogChart.theme;
     } else {
         chart = await Chart.findOne({
