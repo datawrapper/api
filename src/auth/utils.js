@@ -152,7 +152,7 @@ async function associateChartsWithUser(sessionId, userId) {
     );
 }
 
-async function createSession(id, userId, keepSession = true, type = 'login') {
+async function createSession(id, userId, keepSession = true, type = 'password') {
     return Session.create({
         id,
         user_id: userId,

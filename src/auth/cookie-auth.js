@@ -69,7 +69,7 @@ function cookieAuth(server, options) {
                 h.state(
                     opts.cookie,
                     session,
-                    getStateOpts(api.domain, 90, sessionType === 'login-token' ? 'None' : 'Strict')
+                    getStateOpts(api.domain, 90, sessionType === 'token' ? 'None' : 'Strict')
                 );
                 return h.authenticated({ credentials, artifacts });
             }

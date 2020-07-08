@@ -79,12 +79,7 @@ module.exports = async (server, options) => {
             // create a new user session
             const { generateToken, config } = request.server.methods;
             const { api, frontend } = config();
-            const session = await createSession(
-                generateToken(),
-                token.user_id,
-                false,
-                'login-token'
-            );
+            const session = await createSession(generateToken(), token.user_id, false, 'token');
 
             return h
                 .response({
