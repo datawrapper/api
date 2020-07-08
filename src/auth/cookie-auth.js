@@ -22,7 +22,6 @@ async function cookieValidation(request, session, h) {
         strategy: 'Session',
         logger: request.server.logger()
     });
-
     if (auth.isValid) {
         // add all scopes to cookie session
         auth.credentials.scope = request.server.methods.getScopes(auth.artifacts.isAdmin());
@@ -35,7 +34,7 @@ function cookieAuth(server, options) {
     const api = server.methods.config('api');
     const opts = { cookie: api.sessionID, ...options };
 
-    server.state(opts.cookie, getStateOpts(api.domain, 90, 'Strict'));
+    server.state(opts.cookie, getStateOpts(api.domain, 90));
 
     const scheme = {
         authenticate: async (request, h) => {
