@@ -27,7 +27,7 @@ function register(server, options) {
     server.app.adminScopes.add('plugin:read');
     server.app.adminScopes.add('plugin:write');
 
-    const styleCache = server.cache({ segment: 'style_cache', shared: true });
+    const styleCache = server.cache({ segment: 'vis-styles', shared: true });
 
     // GET /v3/admin/plugins
     server.route({

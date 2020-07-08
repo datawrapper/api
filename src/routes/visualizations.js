@@ -15,7 +15,7 @@ async function register(server, options) {
     server.app.scopes.add('visualization:read');
 
     const styleCache = server.cache({
-        segment: 'style_cache',
+        segment: 'vis-styles',
         expiresIn: 86_400_000 /* 1 day */,
         shared: true
     });
