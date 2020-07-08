@@ -33,7 +33,7 @@ validateFrontend(config.frontend);
 
 let useRedis = false;
 try {
-    validateRedis(config.redis);
+    validateRedis(config.redis || {});
     useRedis = true;
 } catch (error) {
     console.warn('[Cache] Invalid Redis configuration, falling back to in memory cache.');

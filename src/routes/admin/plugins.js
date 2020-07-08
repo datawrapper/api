@@ -165,14 +165,25 @@ function register(server, options) {
         }
 
         /* bust visualization css cache */
-        if (server.app.visualizations.has(name)) {
-            const styleCache = server.app.caches.get('style-cache');
-            const themes = await Theme.findAll({ attributes: ['id'] });
+        const visualizations = [];
+        for (const [key, value] of server.app.visualizations) {
+            if (value.__plugin === name) visualizations.push(key);
+        }
 
+        const styleCache = server.app.caches.get('style-cache');
+        const themes = await Theme.findAll({ attributes: ['id'] });
+
+        const dropOperationPromises = [];
+        for (const vis of visualizations) {
             for (const { id } of themes) {
-                await styleCache.drop(`${id}__${name}`);
+                const promise = styleCache.drop(`${id}__${vis}`).catch(() => {
+                    server.logger().info(`Unable to drop cache key [${id}__${vis}]`);
+                });
+                dropOperationPromises.push(promise);
             }
         }
+
+        await Promise.all(dropOperationPromises);
 
         log.info('[Done] Update plugin', payload.name);
         return h.response().code(204);
