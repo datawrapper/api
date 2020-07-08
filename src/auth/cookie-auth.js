@@ -22,9 +22,11 @@ async function cookieValidation(request, session, h) {
         strategy: 'Session',
         logger: request.server.logger()
     });
+
     if (auth.isValid) {
         // add all scopes to cookie session
         auth.credentials.scope = request.server.methods.getScopes(auth.artifacts.isAdmin());
+        auth.sessionType = row.data.type;
     }
     return auth;
 }
@@ -33,7 +35,7 @@ function cookieAuth(server, options) {
     const api = server.methods.config('api');
     const opts = { cookie: api.sessionID, ...options };
 
-    server.state(opts.cookie, getStateOpts(api.domain, 90));
+    server.state(opts.cookie, getStateOpts(api.domain, 90, 'Strict'));
 
     const scheme = {
         authenticate: async (request, h) => {
@@ -59,11 +61,16 @@ function cookieAuth(server, options) {
                 isValid,
                 credentials,
                 artifacts,
+                sessionType,
                 message = Boom.unauthorized(null, 'Session')
             } = await cookieValidation(request, session, h);
 
             if (isValid) {
-                h.state(opts.cookie, session);
+                h.state(
+                    opts.cookie,
+                    session,
+                    getStateOpts(api.domain, 90, sessionType === 'login-token' ? 'None' : 'Strict')
+                );
                 return h.authenticated({ credentials, artifacts });
             }
 
