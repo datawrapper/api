@@ -88,6 +88,7 @@ test("Login set's correct cookie", async t => {
 
     t.true(cookie.HttpOnly);
     t.is(maxAge, 90);
+    t.is(cookie.SameSite, 'Strict');
 
     res = await t.context.server.inject({
         method: 'POST',

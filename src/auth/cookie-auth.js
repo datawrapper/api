@@ -25,6 +25,7 @@ async function cookieValidation(request, session, h) {
     if (auth.isValid) {
         // add all scopes to cookie session
         auth.credentials.scope = request.server.methods.getScopes(auth.artifacts.isAdmin());
+        auth.sessionType = row.data.type;
     }
     return auth;
 }
@@ -59,11 +60,16 @@ function cookieAuth(server, options) {
                 isValid,
                 credentials,
                 artifacts,
+                sessionType,
                 message = Boom.unauthorized(null, 'Session')
             } = await cookieValidation(request, session, h);
 
             if (isValid) {
-                h.state(opts.cookie, session);
+                h.state(
+                    opts.cookie,
+                    session,
+                    getStateOpts(api.domain, 90, sessionType === 'token' ? 'None' : 'Strict')
+                );
                 return h.authenticated({ credentials, artifacts });
             }
 
