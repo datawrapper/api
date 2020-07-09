@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const os = require('os');
 const pug = require('pug');
+const { Theme } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
@@ -100,15 +101,19 @@ module.exports = async function createChartWebsite(
     /**
      * Load theme information
      */
-    const { result: theme, statusCode, statusMessage } = await server.inject({
-        url: `/v3/themes/${chart.theme}?extend=true`,
-        auth
-    });
+    let theme = await Theme.findByPk('foo');
 
-    if (statusCode > 299) {
-        const error = new Error(statusMessage);
-        throw new Boom.Boom(error, theme);
+    if (!theme) {
+        throw Boom.badRequest('Chart theme does not exist.');
     }
+
+    const [themeFonts, themeData] = await Promise.all([
+        theme.getMergedAssets(),
+        theme.getMergedData()
+    ]);
+    theme = theme.toJSON();
+    theme.data = themeData;
+    theme.fonts = themeFonts;
 
     /**
      * Load assets like CSS, Javascript and translations
