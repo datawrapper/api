@@ -100,10 +100,15 @@ module.exports = async function createChartWebsite(
     /**
      * Load theme information
      */
-    const { result: theme } = await server.inject({
+    const { result: theme, statusCode, statusMessage } = await server.inject({
         url: `/v3/themes/${chart.theme}?extend=true`,
         auth
     });
+
+    if (statusCode > 299) {
+        const error = new Error(statusMessage);
+        throw new Boom.Boom(error, theme);
+    }
 
     /**
      * Load assets like CSS, Javascript and translations

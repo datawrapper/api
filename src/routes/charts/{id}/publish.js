@@ -17,7 +17,7 @@ module.exports = (server, options) => {
             tags: ['api'],
             description: 'Publish a chart',
             auth: {
-                access: { scope: ['chart:write'] }
+                access: { scope: ['+chart:write', '+theme:read'] }
             },
             validate: {
                 params: Joi.object({
