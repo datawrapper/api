@@ -2,6 +2,17 @@ const test = require('ava');
 
 const { setup } = require('../../../test/helpers/setup');
 
+function parseSetCookie(string) {
+    const cookie = {};
+    string
+        .split(';')
+        .map(str => str.trim().split('='))
+        .forEach(value => {
+            cookie[value[0]] = value[1] || true;
+        });
+    return cookie;
+}
+
 test.before(async t => {
     const { server, models, getUser, addToCleanup } = await setup({ usePlugins: false });
     const data = await getUser();
@@ -33,8 +44,11 @@ test('Login token can be created and used once', async t => {
         url: `/v3/auth/login/${res.result.token}`
     });
 
+    const cookie = parseSetCookie(res2.headers['set-cookie'][0]);
+
     t.truthy(res2.result['DW-SESSION']);
     t.is(res2.statusCode, 302);
+    t.is(cookie.SameSite, 'None');
 
     const res3 = await t.context.server.inject({
         method: 'GET',
