@@ -123,7 +123,7 @@ function createComparePassword(server) {
     };
 }
 
-function getStateOpts(domain, ttl, sameSite = 'Strict') {
+function getStateOpts(domain, ttl, sameSite = 'Lax') {
     return {
         isSecure: process.env.NODE_ENV === 'production',
         strictHeader: false,

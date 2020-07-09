@@ -93,7 +93,7 @@ const server = Hapi.server({
             : {
                   constructor: require('@hapi/catbox-memory'),
                   options: {
-                      maxByteSize: 52_480_000
+                      maxByteSize: 52480000
                   }
               }
     },
