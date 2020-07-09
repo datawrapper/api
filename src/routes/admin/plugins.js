@@ -8,6 +8,7 @@ const get = require('lodash/get');
 const intersection = require('lodash/intersection');
 const got = require('got');
 const tar = require('tar');
+const { Theme } = require('@datawrapper/orm/models');
 
 const pipeline = promisify(stream.pipeline);
 
@@ -25,6 +26,9 @@ module.exports = {
 function register(server, options) {
     server.app.adminScopes.add('plugin:read');
     server.app.adminScopes.add('plugin:write');
+
+    const styleCache = server.cache({ segment: 'vis-styles', shared: true });
+
     // GET /v3/admin/plugins
     server.route({
         method: 'GET',
@@ -161,6 +165,26 @@ function register(server, options) {
 
             return Boom.badGateway();
         }
+
+        /* bust visualization css cache */
+        const visualizations = [];
+        for (const [key, value] of server.app.visualizations) {
+            if (value.__plugin === name) visualizations.push(key);
+        }
+
+        const themes = await Theme.findAll({ attributes: ['id'] });
+
+        const dropOperationPromises = [];
+        for (const vis of visualizations) {
+            for (const { id } of themes) {
+                const promise = styleCache.drop(`${id}__${vis}`).catch(() => {
+                    server.logger().info(`Unable to drop cache key [${id}__${vis}]`);
+                });
+                dropOperationPromises.push(promise);
+            }
+        }
+
+        await Promise.all(dropOperationPromises);
 
         log.info('[Done] Update plugin', payload.name);
         return h.response().code(204);
