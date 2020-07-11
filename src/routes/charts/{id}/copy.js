@@ -58,19 +58,19 @@ module.exports = (server, options) => {
                 metadata: srcChart.metadata,
                 theme: srcChart.theme,
                 locale: srcChart.locale,
-                in_folder: srcChart.in_folder,
+                organizationId: srcChart.organizationId,
+                inFolder: srcChart.inFolder,
                 externalData: srcChart.externalData,
 
                 forked_from: srcChart.id,
                 author_id: user.id,
-                organization_id: await user.getActiveTeam(),
 
                 last_edit_step: 3
             });
 
             if (isAdmin) {
-                this.organization_id = null;
-                this.in_folder = null;
+                this.organizationId = null;
+                this.inFolder = null;
             }
 
             const assets = ['.csv', '.map.json', '.minimap.json', '.highlight.json'];

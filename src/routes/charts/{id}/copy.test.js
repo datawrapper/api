@@ -158,6 +158,6 @@ test('Copies made by admins are stored in their personal root folder ', async t 
 
     t.is(copiedChart.statusCode, 201);
     t.is(copiedChart.result.authorId, adminUser.id);
-    t.is(copiedChart.result.organizationId, null);
-    t.is(copiedChart.result.folderId, null);
+    t.is(copiedChart.result.organizationId, undefined);
+    t.is(copiedChart.result.folderId, undefined);
 });
