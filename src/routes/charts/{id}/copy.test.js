@@ -126,6 +126,37 @@ test('User can copy chart, assets match', async t => {
     t.is(copiedBasemap.result, JSON.stringify(basemap));
 });
 
+test('Chart belonging to team duplicates to that team', async t => {
+    const { team, user, session } = await t.context.getTeamWithUser();
+    const headers = {
+        cookie: `DW-SESSION=${session.id}`
+    };
+
+    // user creates chart
+    const srcChart = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        headers,
+        payload: {
+            organizationId: team.id
+        }
+    });
+
+    t.is(srcChart.result.organizationId, team.id);
+    t.is(srcChart.result.authorId, user.id);
+
+    // user copies chart
+    const copiedChart = await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/charts/${srcChart.result.id}/copy`,
+        headers
+    });
+
+    t.is(copiedChart.statusCode, 201);
+    t.is(copiedChart.result.authorId, user.id);
+    t.is(copiedChart.result.organizationId, team.id);
+});
+
 test('Copies made by admins are stored in their personal root folder ', async t => {
     const { team, user, session: ownerSession } = await t.context.getTeamWithUser();
     const { user: adminUser, session: adminSession } = await t.context.getUser('admin');
@@ -158,6 +189,5 @@ test('Copies made by admins are stored in their personal root folder ', async t 
 
     t.is(copiedChart.statusCode, 201);
     t.is(copiedChart.result.authorId, adminUser.id);
-    t.is(copiedChart.result.organizationId, undefined);
-    t.is(copiedChart.result.folderId, undefined);
+    t.is(copiedChart.result.organizationId, null);
 });
