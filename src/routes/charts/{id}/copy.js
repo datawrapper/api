@@ -146,7 +146,7 @@ module.exports = (server, options) => {
                 id: await findChartId(),
                 type: publicChart.type,
                 title: publicChart.title,
-                metadata: publicChart.metadata,
+                metadata: newMeta,
                 externalData: publicChart.externalData,
                 forked_from: publicChart.id,
                 is_fork: true,
