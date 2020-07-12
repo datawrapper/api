@@ -13,33 +13,37 @@ module.exports = (server, options) => {
         return (await Chart.findByPk(id)) ? findChartId() : id;
     }
 
-    async function copyChartAssets(auth, srcChart, chart, copyPublic = false) {
+    async function copyChartAssets(srcChart, chart, copyPublic = false) {
         const assets = ['.csv', '.map.json', '.minimap.json', '.highlight.json'];
 
         for (const filename of assets) {
-            const response = await server.inject({
-                url: `/v3/charts/${srcChart.id}/assets/${srcChart.id +
-                    (filename === '.csv' && copyPublic ? '.public.csv' : filename)}`,
-                auth
-            });
+            try {
+                const stream = await events.emit(
+                    event.GET_CHART_ASSET,
+                    {
+                        chart: srcChart,
+                        filename:
+                            srcChart.id +
+                            (filename === '.csv' && copyPublic ? '.public.csv' : filename)
+                    },
+                    { filter: 'first' }
+                );
 
-            if (!response || response.result.statusCode === 404) continue;
+                let data = '';
 
-            await events.emit(event.PUT_CHART_ASSET, {
-                chart,
-                filename: chart.id + filename,
-                data: response.result
-            });
+                for await (const chunk of stream) {
+                    data += chunk;
+                }
+
+                await events.emit(event.PUT_CHART_ASSET, {
+                    chart,
+                    filename: chart.id + filename,
+                    data
+                });
+            } catch (ex) {
+                continue;
+            }
         }
-
-        try {
-            // refresh external data
-            await server.inject({
-                url: `/v3/charts/${chart.id}/data/refresh`,
-                method: 'POST',
-                auth
-            });
-        } catch (ex) {}
     }
 
     // POST /v3/charts/{id}/copy
@@ -99,7 +103,17 @@ module.exports = (server, options) => {
 
             const chart = await Chart.create(newChart);
 
-            await copyChartAssets(auth, srcChart, chart);
+            await copyChartAssets(srcChart, chart);
+
+            try {
+                // refresh external data
+                await server.inject({
+                    url: `/v3/charts/${chart.id}/data/refresh`,
+                    method: 'POST',
+                    auth
+                });
+            } catch (ex) {}
+
             await events.emit(event.CHART_COPY, { sourceChart: srcChart, destChart: chart });
             await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
             return h.response({ ...prepareChart(chart) }).code(201);
@@ -163,6 +177,16 @@ module.exports = (server, options) => {
 
             const chart = await Chart.create(newChart);
             await copyChartAssets(auth, srcChart, chart, true);
+
+            try {
+                // refresh external data
+                await server.inject({
+                    url: `/v3/charts/${chart.id}/data/refresh`,
+                    method: 'POST',
+                    auth
+                });
+            } catch (ex) {}
+
             return h.response({ ...prepareChart(chart) }).code(201);
         }
     });
