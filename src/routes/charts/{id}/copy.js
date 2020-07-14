@@ -1,6 +1,7 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { prepareChart } = require('../../../utils/index.js');
+const { translate } = require('../../../utils/l10n.js');
 const { Chart, User, ChartPublic } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const clone = require('lodash/clone');
@@ -82,7 +83,10 @@ module.exports = (server, options) => {
             const newChart = {
                 id: await findChartId(),
                 type: srcChart.type,
-                title: `${srcChart.title} (Copy)`,
+                title: `${srcChart.title} (${translate('copy', {
+                    scope: 'core',
+                    language: auth.artifacts.language
+                })})`,
                 metadata: clone(srcChart.metadata),
                 theme: srcChart.theme,
                 locale: srcChart.locale,
