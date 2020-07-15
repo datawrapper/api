@@ -180,7 +180,7 @@ module.exports = (server, options) => {
             }
 
             const chart = await Chart.create(newChart);
-            await copyChartAssets(auth, srcChart, chart, true);
+            await copyChartAssets(srcChart, chart, true);
 
             try {
                 // refresh external data
