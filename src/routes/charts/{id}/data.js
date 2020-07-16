@@ -1,8 +1,12 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { noContentResponse } = require('../../../schemas/response');
+const checkUrl = require('@datawrapper/shared/node/checkUrl');
+const got = require('got');
 
 module.exports = (server, options) => {
+    const { events, event } = server.app;
+
     // GET /v3/charts/{id}/data
     server.route({
         method: 'GET',
@@ -67,6 +71,64 @@ module.exports = (server, options) => {
             }
         },
         handler: writeChartData
+    });
+
+    // POST /v3/charts/{id}/data/refresh
+    server.route({
+        method: 'POST',
+        path: '/data/refresh',
+        options: {
+            tags: ['api'],
+            description: "Updates a chart's external data source.",
+            notes: `If a chart has an external data source configured, this endpoint fetches the data and saves it to the chart.`,
+            auth: {
+                access: { scope: ['chart:write'] }
+            },
+            validate: {
+                params: Joi.object({
+                    id: Joi.string()
+                        .length(5)
+                        .required()
+                })
+            }
+        },
+        handler: async (request, h) => {
+            const { params, auth } = request;
+
+            const chart = await server.methods.loadChart(params.id);
+
+            if (!chart) {
+                return Boom.notFound();
+            }
+
+            const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
+
+            if (!isEditable) {
+                return Boom.notFound();
+            }
+
+            if (chart.external_data && checkUrl(chart.external_data)) {
+                if (!checkUrl(chart.external_data))
+                    throw new Error('Unsupported external data URL');
+
+                try {
+                    const data = (await got(chart.external_data)).body;
+
+                    await events.emit(event.PUT_CHART_ASSET, {
+                        chart,
+                        data,
+                        filename: `${chart.id}.csv`
+                    });
+
+                    chart.changed('last_modified_at', true);
+                    await chart.save();
+                } catch (ex) {}
+            }
+
+            await events.emit(event.CUSTOM_EXTERNAL_DATA, { chart });
+
+            return h.response().code(204);
+        }
     });
 };
 

@@ -79,13 +79,13 @@ module.exports = async (server, options) => {
             // create a new user session
             const { generateToken, config } = request.server.methods;
             const { api, frontend } = config();
-            const session = await createSession(generateToken(), token.user_id, false);
+            const session = await createSession(generateToken(), token.user_id, false, 'token');
 
             return h
                 .response({
                     [api.sessionID]: session.id
                 })
-                .state(api.sessionID, session.id, getStateOpts(api.domain, 30))
+                .state(api.sessionID, session.id, getStateOpts(api.domain, 30, 'None'))
                 .redirect(
                     `${frontend.https ? 'https' : 'http'}://${frontend.domain}${
                         token.data.redirect_url
