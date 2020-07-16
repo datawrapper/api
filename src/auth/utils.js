@@ -123,12 +123,12 @@ function createComparePassword(server) {
     };
 }
 
-function getStateOpts(domain, ttl) {
+function getStateOpts(domain, ttl, sameSite = 'Lax') {
     return {
         isSecure: process.env.NODE_ENV === 'production',
         strictHeader: false,
         domain: `.${domain}`,
-        isSameSite: false,
+        isSameSite: sameSite,
         path: '/',
         ttl: cookieTTL(ttl)
     };
@@ -152,7 +152,7 @@ async function associateChartsWithUser(sessionId, userId) {
     );
 }
 
-async function createSession(id, userId, keepSession = true) {
+async function createSession(id, userId, keepSession = true, type = 'password') {
     return Session.create({
         id,
         user_id: userId,
@@ -160,7 +160,8 @@ async function createSession(id, userId, keepSession = true) {
         data: {
             'dw-user-id': userId,
             persistent: keepSession,
-            last_action_time: Math.floor(Date.now() / 1000)
+            last_action_time: Math.floor(Date.now() / 1000),
+            type
         }
     });
 }
