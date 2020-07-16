@@ -101,7 +101,7 @@ module.exports = async function createChartWebsite(
     /**
      * Load theme information
      */
-    let theme = await Theme.findByPk('foo');
+    let theme = await Theme.findByPk(chart.theme);
 
     if (!theme) {
         throw Boom.badRequest('Chart theme does not exist.');
