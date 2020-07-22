@@ -346,7 +346,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 }
 
 process.on('unhandledRejection', err => {
-    console.error(err);
+    server.logger().error(err);
     process.exit(1);
 });
 
