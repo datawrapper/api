@@ -65,10 +65,11 @@ function cookieAuth(server, options) {
             } = await cookieValidation(request, session, h);
 
             if (isValid) {
+                const sameSite = process.env.NODE_ENV === 'development' ? 'None' : 'Lax';
                 h.state(
                     opts.cookie,
                     session,
-                    getStateOpts(api.domain, 90, sessionType === 'token' ? 'None' : 'Lax')
+                    getStateOpts(api.domain, 90, sessionType === 'token' ? 'None' : sameSite)
                 );
                 return h.authenticated({ credentials, artifacts });
             }
