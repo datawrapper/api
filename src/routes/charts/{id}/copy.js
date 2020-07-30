@@ -89,7 +89,7 @@ module.exports = (server, options) => {
                 })})`,
                 metadata: clone(srcChart.metadata),
                 theme: srcChart.theme,
-                locale: srcChart.locale,
+                language: srcChart.language,
                 organization_id: srcChart.organization_id,
                 inFolder: srcChart.inFolder,
                 externalData: srcChart.externalData,
