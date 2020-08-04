@@ -107,13 +107,15 @@ module.exports = async function createChartWebsite(
         throw Boom.badRequest('Chart theme does not exist.');
     }
 
-    const [themeFonts, themeData] = await Promise.all([
+    const [themeFonts, themeData, themeLess] = await Promise.all([
         theme.getMergedAssets(),
-        theme.getMergedData()
+        theme.getMergedData(),
+        theme.getMergedLess()
     ]);
     theme = theme.toJSON();
     theme.data = themeData;
     theme.fonts = themeFonts;
+    theme.less = themeLess;
 
     /**
      * Load assets like CSS, Javascript and translations
