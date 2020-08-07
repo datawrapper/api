@@ -161,10 +161,14 @@ async function getAllCharts(request, h) {
 
     const { count, rows } = await model.findAndCountAll(options);
 
-    const charts = rows.map(async chart => ({
-        ...(await prepareChart(chart)),
-        url: `${url.pathname}/${chart.id}`
-    }));
+    const charts = [];
+
+    for (const chart of rows) {
+        charts.push({
+            ...(await prepareChart(chart)),
+            url: `${url.pathname}/${chart.id}`
+        });
+    }
 
     const chartList = {
         list: charts,
