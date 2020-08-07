@@ -9,12 +9,12 @@ const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 
 const utils = {};
 
-utils.prepareChart = (chart, additionalData = {}) => {
+utils.prepareChart = async (chart, additionalData = {}) => {
     const { user, in_folder, ...dataValues } = chart.dataValues;
 
     return {
         ...camelizeKeys(additionalData),
-        publicId: chart.publicId,
+        publicId: await chart.getPublicId(),
         language: 'en_US',
         theme: 'datawrapper',
         ...camelizeKeys(dataValues),

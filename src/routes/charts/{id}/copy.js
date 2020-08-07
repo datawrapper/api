@@ -120,7 +120,7 @@ module.exports = (server, options) => {
 
             await events.emit(event.CHART_COPY, { sourceChart: srcChart, destChart: chart });
             await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
-            return h.response({ ...prepareChart(chart) }).code(201);
+            return h.response({ ...(await prepareChart(chart)) }).code(201);
         }
     });
 
@@ -191,7 +191,7 @@ module.exports = (server, options) => {
                 });
             } catch (ex) {}
 
-            return h.response({ ...prepareChart(chart) }).code(201);
+            return h.response({ ...(await prepareChart(chart)) }).code(201);
         }
     });
 };

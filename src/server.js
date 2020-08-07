@@ -308,7 +308,8 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     if (!hasRegisteredPublishPlugin) {
         const protocol = frontend.https ? 'https' : 'http';
         events.on(event.PUBLISH_CHART, async ({ chart, outDir, fileMap }) => {
-            const dest = path.resolve(general.localChartPublishRoot, chart.publicId);
+            const publicId = await chart.getPublicId();
+            const dest = path.resolve(general.localChartPublishRoot, publicId);
 
             for (const file of fileMap) {
                 const basename = path.basename(file);
@@ -324,7 +325,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
             await fs.remove(outDir);
 
-            return `${protocol}://${general.chart_domain}/${chart.publicId}`;
+            return `${protocol}://${general.chart_domain}/${publicId}`;
         });
     }
 

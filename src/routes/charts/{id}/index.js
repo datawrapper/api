@@ -192,7 +192,7 @@ async function getChart(request, h) {
     const additionalData = await getAdditionalMetadata(chart, { server });
 
     return {
-        ...prepareChart(chart, additionalData),
+        ...(await prepareChart(chart, additionalData)),
         url: `${url.pathname}`
     };
 }
@@ -253,7 +253,7 @@ async function editChart(request, h) {
         delete payload.authorId;
     }
 
-    const newData = assignWithEmptyObjects(prepareChart(chart), payload);
+    const newData = assignWithEmptyObjects(await prepareChart(chart), payload);
 
     if (request.method === 'put' && payload.metadata) {
         // in PUT request we replace the entire metadata object
@@ -269,7 +269,7 @@ async function editChart(request, h) {
     await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
 
     return {
-        ...prepareChart(chart),
+        ...(await prepareChart(chart)),
         url: `${url.pathname}`
     };
 }

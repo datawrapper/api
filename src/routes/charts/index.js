@@ -161,8 +161,8 @@ async function getAllCharts(request, h) {
 
     const { count, rows } = await model.findAndCountAll(options);
 
-    const charts = rows.map(chart => ({
-        ...prepareChart(chart),
+    const charts = rows.map(async chart => ({
+        ...(await prepareChart(chart)),
         url: `${url.pathname}/${chart.id}`
     }));
 
@@ -245,5 +245,7 @@ async function createChart(request, h) {
     // log chart/edit
     await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
 
-    return h.response({ ...prepareChart(chart), url: `${url.pathname}/${chart.id}` }).code(201);
+    return h
+        .response({ ...(await prepareChart(chart)), url: `${url.pathname}/${chart.id}` })
+        .code(201);
 }
