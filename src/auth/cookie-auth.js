@@ -30,10 +30,10 @@ function cookieAuth(server, options) {
 
     server.state(opts.cookie, {
         ttl: cookieTTL(90),
-        isSecure: process.env.NODE_ENV === 'production',
         strictHeader: false,
         domain: `.${api.domain}`,
-        isSameSite: false,
+        isSecure: true,
+        isSameSite: 'None',
         path: '/'
     });
 

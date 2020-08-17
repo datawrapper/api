@@ -286,7 +286,9 @@ async function handleSession(request, h) {
             [api.sessionID]: session.id
         })
         .state(api.sessionID, session.id, {
-            ttl: cookieTTL(30)
+            ttl: cookieTTL(30),
+            isSecure: true,
+            isSameSite: 'None'
         });
 }
 
@@ -344,7 +346,9 @@ async function login(request, h) {
             [api.sessionID]: session.id
         })
         .state(api.sessionID, session.id, {
-            ttl: cookieTTL(keepSession ? 90 : 30)
+            ttl: cookieTTL(keepSession ? 90 : 30),
+            isSecure: true,
+            isSameSite: 'None'
         });
 }
 
@@ -486,7 +490,9 @@ async function signup(request, h) {
     const api = config('api');
 
     return h.response(res.result).state(api.sessionID, session.id, {
-        ttl: cookieTTL(90)
+        ttl: cookieTTL(90),
+        isSecure: true,
+        isSameSite: 'None'
     });
 }
 
@@ -532,7 +538,9 @@ async function activateAccount(request, h) {
     }
 
     response.state(api.sessionID, session.id, {
-        ttl: cookieTTL(90)
+        ttl: cookieTTL(90),
+        isSecure: true,
+        isSameSite: 'None'
     });
 
     return response;
