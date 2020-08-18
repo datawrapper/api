@@ -32,9 +32,7 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 })
             },
             response: createResponseConfig({

@@ -31,15 +31,10 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: {
-                    id: Joi.string()
-                        .required()
-                        .description('Team ID (eg. guardians-of-the-galaxy)')
+                    id: Joi.string().required().description('Team ID (eg. guardians-of-the-galaxy)')
                 },
                 payload: Joi.object({
-                    email: Joi.string()
-                        .email()
-                        .required()
-                        .example('thor@gmail.com'),
+                    email: Joi.string().email().required().example('thor@gmail.com'),
                     role: Joi.string()
                         .valid(...ROLES)
                         .required()
@@ -70,9 +65,7 @@ module.exports = async (server, options) => {
                     id: Joi.string()
                         .required()
                         .description('Team ID (eg. guardians-of-the-galaxy)'),
-                    token: Joi.string()
-                        .required()
-                        .description('A valid team invitation token')
+                    token: Joi.string().required().description('A valid team invitation token')
                 }
             },
             response: createResponseConfig({
@@ -95,9 +88,7 @@ module.exports = async (server, options) => {
                     id: Joi.string()
                         .required()
                         .description('Team ID (eg. guardians-of-the-galaxy)'),
-                    token: Joi.string()
-                        .required()
-                        .description('A valid team invitation token')
+                    token: Joi.string().required().description('A valid team invitation token')
                 }
             },
             response: createResponseConfig({

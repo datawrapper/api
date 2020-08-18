@@ -147,8 +147,5 @@ async function deleteMe(request, h) {
 
     const { sessionID } = request.server.methods.config('api');
 
-    return h
-        .response(res.result)
-        .code(res.statusCode)
-        .unstate(sessionID);
+    return h.response(res.result).code(res.statusCode).unstate(sessionID);
 }

@@ -63,18 +63,12 @@ module.exports = {
                 },
                 validate: {
                     payload: Joi.object({
-                        id: Joi.string()
-                            .optional()
-                            .example('revengers'),
-                        name: Joi.string()
-                            .required()
-                            .example('Revengers'),
+                        id: Joi.string().optional().example('revengers'),
+                        name: Joi.string().required().example('Revengers'),
                         settings: Joi.object({
                             type: Joi.string()
                         }).optional(),
-                        defaultTheme: Joi.string()
-                            .example('space')
-                            .optional()
+                        defaultTheme: Joi.string().example('space').optional()
                     })
                 },
                 response: teamResponse

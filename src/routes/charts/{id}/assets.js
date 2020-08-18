@@ -24,12 +24,8 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required(),
-                    asset: Joi.string()
-                        .required()
-                        .description('Full filename including extension.')
+                    id: Joi.string().length(5).required(),
+                    asset: Joi.string().required().description('Full filename including extension.')
                 })
             }
         },
@@ -55,12 +51,8 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required(),
-                    asset: Joi.string()
-                        .required()
-                        .description('Full filename including extension.')
+                    id: Joi.string().length(5).required(),
+                    asset: Joi.string().required().description('Full filename including extension.')
                 }),
                 payload: [
                     Joi.string().description(

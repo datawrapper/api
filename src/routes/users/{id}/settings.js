@@ -18,9 +18,7 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: {
-                    id: Joi.number()
-                        .required()
-                        .description('User ID')
+                    id: Joi.number().required().description('User ID')
                 },
                 payload: {
                     activeTeam: Joi.string()

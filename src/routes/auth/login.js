@@ -17,13 +17,8 @@ module.exports = async (server, options) => {
             },
             validate: {
                 payload: Joi.object({
-                    email: Joi.string()
-                        .email()
-                        .required()
-                        .example('tony@stark-industries.com'),
-                    password: Joi.string()
-                        .required()
-                        .example('morgan-3000'),
+                    email: Joi.string().email().required().example('tony@stark-industries.com'),
+                    password: Joi.string().required().example('morgan-3000'),
                     keepSession: Joi.boolean().default(true)
                 })
             }
@@ -43,9 +38,7 @@ module.exports = async (server, options) => {
                 'Login using a one-time login token and redirect to the URL associated with the token. For use in CMS integrations.',
             validate: {
                 params: Joi.object({
-                    token: Joi.string()
-                        .required()
-                        .description('A valid login token.')
+                    token: Joi.string().required().description('A valid login token.')
                 })
             }
         },
