@@ -1,5 +1,6 @@
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
+const Crumb = require('@hapi/crumb');
 const Joi = require('@hapi/joi');
 const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
@@ -156,17 +157,40 @@ async function getVersionInfo() {
 
 async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     const { commit, version } = await getVersionInfo();
-    await server.register({
-        plugin: require('hapi-pino'),
-        options: {
-            prettyPrint: true,
-            timestamp: () => `,"time":"${new Date().toISOString()}"`,
-            logEvents: ['request', 'log', 'onPostStart', 'onPostStop', 'request-error'],
-            level: getLogLevel(),
-            base: { name: commit || version },
-            redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]']
+    await server.register([
+        {
+            plugin: require('hapi-pino'),
+            options: {
+                prettyPrint: true,
+                timestamp: () => `,"time":"${new Date().toISOString()}"`,
+                logEvents: ['request', 'log', 'onPostStart', 'onPostStop', 'request-error'],
+                level: getLogLevel(),
+                base: { name: commit || version },
+                redact: [
+                    'req.headers.authorization',
+                    'req.headers.cookie',
+                    'res.headers["set-cookie"]'
+                ]
+            }
+        },
+        {
+            plugin: Crumb,
+            options: {
+                cookieOptions: {
+                    domain: '.datawrapper.local', // FIXME: Get domain from config
+                    isHttpOnly: false,
+                    isSecure: false // FIXME: Enable on production
+                },
+                restful: true,
+                skip: function (request) {
+                    // Allow cross-site requests that use the Authorization header instead of a
+                    // cookie to authenticate, because where there are no cookies, there is no CSRF
+                    // risk.
+                    return !!request.headers.authorization; // FIXME: The server must not fall back to cookie auth when the Authorization header is invalid, otherwise an attacked could just set Authorization to any value to disable CSRF protection.
+                }
+            }
         }
-    });
+    ]);
 
     server.logger().info(
         {
