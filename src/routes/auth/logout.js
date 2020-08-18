@@ -23,10 +23,7 @@ module.exports = async (server, options) => {
 
             const api = request.server.methods.config('api');
 
-            return h
-                .response()
-                .code(205)
-                .unstate(api.sessionID);
+            return h.response().code(205).unstate(api.sessionID);
         }
     });
 };

@@ -21,9 +21,7 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 })
             },
             response: createResponseConfig({
@@ -47,9 +45,7 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 })
             }
         },
@@ -68,12 +64,8 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required(),
-                    version: Joi.number()
-                        .integer()
-                        .min(0)
+                    id: Joi.string().length(5).required(),
+                    version: Joi.number().integer().min(0)
                 })
             },
             response: createResponseConfig({
