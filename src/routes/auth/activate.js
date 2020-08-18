@@ -71,7 +71,7 @@ async function activateAccount(request, h) {
         });
     }
 
-    response.state(api.sessionID, session.id, getStateOpts(api.domain, 90));
+    response.state(api.sessionID, session.id, getStateOpts(request.server, 90));
 
     return response;
 }
