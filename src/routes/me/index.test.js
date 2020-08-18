@@ -160,3 +160,48 @@ test('User can delete their account if only admin of a team', async t => {
 
     t.is(res.statusCode, 204);
 });
+
+test('Request is accepted when Origin header matches frontend host', async t => {
+    const { session } = await t.context.getTeamWithUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/me`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`,
+            Origin: 'http://localhost'
+        }
+    });
+
+    t.is(res.statusCode, 200);
+});
+
+test("Request is rejected when Origin header doesn't match frontend host", async t => {
+    const { session } = await t.context.getTeamWithUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/me`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`,
+            Origin: 'spam'
+        }
+    });
+
+    t.is(res.statusCode, 400);
+});
+
+test('Request is accepted when Origin header is empty', async t => {
+    const { session } = await t.context.getTeamWithUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/me`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}`,
+            Origin: ''
+        }
+    });
+
+    t.is(res.statusCode, 200);
+});

@@ -103,11 +103,18 @@ const server = Hapi.server({
             credentials: true
         },
         validate: {
-            headers: Joi.object({
-                origin: Joi.any().custom(validateOriginHeader, 'validate origin header')
-            }),
-            options: {
-                allowUnknown: true
+            /**
+             * Check the request Origin header to prevent CSRF.
+             *
+             * Skip the check when the Origin header is missing, which happens when not making the request from
+             * a browser.
+             *
+             * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
+             */
+            headers: async function (headers) {
+                if (headers.origin && headers.origin !== frontendHost) {
+                    throw Error('Invalid Origin header');
+                }
             },
             async failAction(request, h, err) {
                 throw Boom.badRequest('Invalid request payload input: ' + err.message);
@@ -413,21 +420,6 @@ function getDataPath(date) {
     const year = date.getUTCFullYear();
     const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
     return `${year}${month}`;
-}
-
-/**
- * Check the request Origin header to prevent CSRF.
- *
- * Skip the check when the Origin header is missing, which happens when not making the request from
- * a browser.
- *
- * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
- */
-function validateOriginHeader(value) {
-    if (value && value !== frontendHost) {
-        throw Error('Invalid Origin header');
-    }
-    return value;
 }
 
 module.exports = { init, start };
