@@ -26,7 +26,8 @@ test('Can create guest sessions', async t => {
         url: '/v3/auth/session',
         headers: {
             cookie: `DW-SESSION=${sessionToken}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -37,7 +38,8 @@ test('Can create guest sessions', async t => {
         url: '/v3/auth/logout',
         headers: {
             cookie: `DW-SESSION=${sessionToken}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 });

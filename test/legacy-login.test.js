@@ -31,7 +31,8 @@ test('Client hashed password', async t => {
         url: '/v3/auth/login',
         headers: {
             cookie: 'crumb=abc',
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: t.context.userEmail,
@@ -49,7 +50,8 @@ test('Non hashed password', async t => {
         url: '/v3/auth/login',
         headers: {
             cookie: 'crumb=abc',
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: t.context.userEmail,
@@ -67,7 +69,8 @@ test('Migrate client hashed password to new hash', async t => {
         url: '/v3/auth/login',
         headers: {
             cookie: 'crumb=abc',
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: t.context.userEmail,
@@ -83,7 +86,8 @@ test('Migrate client hashed password to new hash', async t => {
         url: '/v3/auth/login',
         headers: {
             cookie: 'crumb=abc',
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: t.context.userEmail,
@@ -101,7 +105,8 @@ test('Migrate password to new hash', async t => {
         url: '/v3/auth/login',
         headers: {
             cookie: 'crumb=abc',
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: t.context.userEmail,
@@ -117,7 +122,8 @@ test('Migrate password to new hash', async t => {
         url: '/v3/auth/login',
         headers: {
             cookie: 'crumb=abc',
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: t.context.userEmail,

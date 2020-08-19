@@ -31,7 +31,8 @@ test('user activation after team invite', async t => {
         url: `/v3/teams/${team.id}/invites`,
         headers: {
             cookie: `DW-SESSION=${ownerSession.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: credentials.email,
@@ -59,7 +60,8 @@ test('user activation after team invite', async t => {
         url: `/v3/auth/activate/${invitee.activate_token}`,
         headers: {
             cookie: `DW-SESSION=${guestSession}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
     t.is(res.statusCode, 204);

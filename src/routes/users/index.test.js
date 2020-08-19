@@ -18,7 +18,8 @@ test.before(async t => {
     t.context.addToCleanup = addToCleanup;
     t.context.headers = {
         cookie: 'crumb=abc',
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
 });
 
@@ -62,7 +63,8 @@ test('It should be possible to create a user, login and logout', async t => {
         url: '/v3/auth/logout',
         headers: {
             cookie: `${cookieString}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -292,7 +294,8 @@ test('It should be possible to resend the activation link up to two times', asyn
         url: '/v3/auth/resend-activation',
         headers: {
             cookie: `${cookieString}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -304,7 +307,8 @@ test('It should be possible to resend the activation link up to two times', asyn
         url: '/v3/auth/resend-activation',
         headers: {
             cookie: `${cookieString}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -316,7 +320,8 @@ test('It should be possible to resend the activation link up to two times', asyn
         url: '/v3/auth/resend-activation',
         headers: {
             cookie: `${cookieString}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 

@@ -14,7 +14,8 @@ test('User can write chart asset with almost 2MB', async t => {
     const { session } = await t.context.getUser();
     const headers = {
         cookie: `DW-SESSION=${session.id}; crumb=abc`,
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
     // create a new chart
     const chart = await t.context.server.inject({

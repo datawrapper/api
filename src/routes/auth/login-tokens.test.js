@@ -27,7 +27,8 @@ test.before(async t => {
     };
     t.context.headers = {
         cookie: 'crumb=abc',
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
 });
 
@@ -133,7 +134,8 @@ test('Login token with chart ID can be created and forwards correctly', async t 
         url: '/v3/charts',
         headers: {
             cookie: `DW-SESSION=${auth.credentials.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {}
     });

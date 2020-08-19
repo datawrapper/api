@@ -20,7 +20,8 @@ test.before(async t => {
     };
     t.context.headers = {
         cookie: 'crumb=abc',
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
 });
 
@@ -317,7 +318,8 @@ test('Datawrapper admins can not change their own role if they are the team owne
         url: `/v3/teams/${team.id}/members/${admin.id}/status`,
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             status: 'member'
@@ -345,7 +347,8 @@ test('users not part of a team can not change a team members role', async t => {
         url: `/v3/teams/${team.id}/members/${teamMember.id}/status`,
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             status: 'member'
@@ -374,7 +377,8 @@ test('Datawrapper admins can change member roles', async t => {
         url: `/v3/teams/${team.id}/members/${teamMember.user.id}/status`,
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             status: 'admin'

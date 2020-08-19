@@ -50,7 +50,8 @@ test('Login and logout work with correct credentials', async t => {
         url: '/v3/auth/logout',
         headers: {
             cookie: `DW-SESSION=${session}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -115,7 +116,8 @@ test('Logout errors with invalid session', async t => {
         url: '/v3/auth/logout',
         headers: {
             cookie: 'DW-SESSION=Loki; crumb=abc',
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -152,7 +154,8 @@ test('Guest charts are associated after login', async t => {
         url: '/v3/charts',
         headers: {
             cookie: `DW-SESSION=${session}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             title: 'Test guest chart'
@@ -171,7 +174,8 @@ test('Guest charts are associated after login', async t => {
         url: '/v3/auth/login',
         headers: {
             cookie: `DW-SESSION=${session}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: user.email,
@@ -214,7 +218,8 @@ test('Login and logout updates session fields', async t => {
         url: '/v3/auth/logout',
         headers: {
             cookie: `DW-SESSION=${sessionId}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 

@@ -13,7 +13,8 @@ test('User can copy chart, attributes match', async t => {
     const { user, session } = await t.context.getUser();
     const headers = {
         cookie: `DW-SESSION=${session.id}; crumb=abc`,
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
 
     const attributes = {
@@ -79,7 +80,8 @@ test('User can copy chart, assets match', async t => {
         url: '/v3/charts',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {}
     });
@@ -90,6 +92,7 @@ test('User can copy chart, assets match', async t => {
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
             'X-CSRF-Token': 'abc',
+            referer: 'http://localhost',
             'Content-Type': 'text/csv'
         },
         url: `/v3/charts/${srcChart.result.id}/data`,
@@ -104,6 +107,7 @@ test('User can copy chart, assets match', async t => {
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
             'X-CSRF-Token': 'abc',
+            referer: 'http://localhost',
             'Content-Type': 'application/json'
         },
         url: `/v3/charts/${srcChart.result.id}/assets/${srcChart.result.id}.map.json`,
@@ -118,7 +122,8 @@ test('User can copy chart, assets match', async t => {
         url: `/v3/charts/${srcChart.result.id}/copy`,
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -149,7 +154,8 @@ test('Chart belonging to team duplicates to that team', async t => {
     const { team, user, session } = await t.context.getTeamWithUser();
     const headers = {
         cookie: `DW-SESSION=${session.id}; crumb=abc`,
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
 
     // user creates chart
@@ -182,11 +188,13 @@ test('Copies made by admins are stored in their personal root folder ', async t 
     const { user: adminUser, session: adminSession } = await t.context.getUser('admin');
     const userHeaders = {
         cookie: `DW-SESSION=${ownerSession.id}; crumb=abc`,
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
     const adminHeaders = {
         cookie: `DW-SESSION=${adminSession.id}; crumb=abc`,
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
 
     // user creates chart

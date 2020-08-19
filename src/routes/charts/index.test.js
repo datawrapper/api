@@ -16,7 +16,8 @@ test.before(async t => {
     };
     t.context.headers = {
         cookie: 'crumb=abc',
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
 });
 
@@ -66,7 +67,8 @@ test('Users can create charts in a team they have access to', async t => {
         url: '/v3/charts',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             organizationId: team.id
@@ -85,7 +87,8 @@ test('Users cannot create chart in a team they dont have access to', async t => 
         url: '/v3/charts',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             organizationId: team.id

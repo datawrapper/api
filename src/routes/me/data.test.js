@@ -19,7 +19,8 @@ test('User can set and unset data herself', async t => {
         url: '/v3/me/data',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             foo: 'bar'
@@ -33,7 +34,8 @@ test('User can set and unset data herself', async t => {
         url: '/v3/me/data',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             foo: null

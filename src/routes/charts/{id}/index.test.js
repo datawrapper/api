@@ -16,7 +16,8 @@ test.before(async t => {
     };
     t.context.headers = {
         cookie: 'crumb=abc',
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
 });
 
@@ -88,7 +89,8 @@ test('Users can not change the author ID of a chart', async t => {
         url: '/v3/charts',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -99,7 +101,8 @@ test('Users can not change the author ID of a chart', async t => {
         url: `/v3/charts/${chart.result.id}`,
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             authorId: null
@@ -116,7 +119,8 @@ test('Users can edit chart medatata', async t => {
         url: '/v3/charts',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             metadata: {
@@ -135,7 +139,8 @@ test('Users can edit chart medatata', async t => {
         url: `/v3/charts/${chart.result.id}`,
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             metadata: {
@@ -163,7 +168,8 @@ test('Users can edit chart medatata', async t => {
         url: `/v3/charts/${chart.result.id}`,
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             metadata: {
@@ -205,7 +211,8 @@ test('PUT request replace metadata', async t => {
         url: '/v3/charts',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             metadata: {
@@ -227,7 +234,8 @@ test('PUT request replace metadata', async t => {
         url: `/v3/charts/${chart.result.id}`,
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             metadata: {

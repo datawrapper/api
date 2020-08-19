@@ -28,7 +28,8 @@ test('User cannot change password without old password', async t => {
             url: '/v3/me',
             headers: {
                 cookie: `DW-SESSION=${session.id}; crumb=abc`,
-                'X-CSRF-Token': 'abc'
+                'X-CSRF-Token': 'abc',
+                referer: 'http://localhost'
             },
             payload
         });
@@ -82,7 +83,8 @@ test('User can delete their account and are logged out', async t => {
         url: '/v3/me',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: user.email,
@@ -111,7 +113,8 @@ test('User cannot delete their account while owning team', async t => {
         url: '/v3/me',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: user.email,
@@ -126,7 +129,8 @@ test('User cannot delete their account while owning team', async t => {
         url: `/v3/teams/${team.id}`,
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -137,7 +141,8 @@ test('User cannot delete their account while owning team', async t => {
         url: '/v3/me',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: user.email,
@@ -156,7 +161,8 @@ test('User can delete their account if only admin of a team', async t => {
         url: '/v3/me',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: user.email,
@@ -167,37 +173,107 @@ test('User can delete their account if only admin of a team', async t => {
     t.is(res.statusCode, 204);
 });
 
-test('Request is accepted when Origin header matches frontend host', async t => {
-    const { session } = await t.context.getTeamWithUser('admin');
+test('Request is accepted when Referer header matches frontend origin', async t => {
+    const { user, session } = await t.context.getTeamWithUser('admin');
 
     const res = await t.context.server.inject({
-        method: 'GET',
+        method: 'DELETE',
         url: `/v3/me`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`,
-            Origin: 'http://localhost'
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
         }
     });
 
-    t.is(res.statusCode, 200);
+    t.is(res.statusCode, 204);
 });
 
-test("Request is rejected when Origin header doesn't match frontend host", async t => {
-    const { session } = await t.context.getTeamWithUser('admin');
+test("Request is rejected when Referer doesn't match frontend origin", async t => {
+    const { user, session } = await t.context.getTeamWithUser('admin');
 
     const res = await t.context.server.inject({
-        method: 'GET',
+        method: 'DELETE',
         url: `/v3/me`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`,
-            Origin: 'spam'
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://spam'
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
         }
     });
 
-    t.is(res.statusCode, 400);
+    t.is(res.statusCode, 401);
 });
 
-test('Request is accepted when Origin header is empty', async t => {
+test("Request is rejected when Referer header HTTP scheme doesn't match frontend origin", async t => {
+    const { user, session } = await t.context.getTeamWithUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/me`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'https://localhost'
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    t.is(res.statusCode, 401);
+});
+
+test('Request is rejected when Referer header is malformed', async t => {
+    const { user, session } = await t.context.getTeamWithUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/me`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'spam'
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    t.is(res.statusCode, 401);
+});
+
+test('Request is rejected when Referer header is empty', async t => {
+    const { user, session } = await t.context.getTeamWithUser('admin');
+
+    const res = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/me`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: ''
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    t.is(res.statusCode, 401);
+});
+
+test('Referer is not checked for safe HTTP methods', async t => {
     const { session } = await t.context.getTeamWithUser('admin');
 
     const res = await t.context.server.inject({
@@ -205,7 +281,7 @@ test('Request is accepted when Origin header is empty', async t => {
         url: `/v3/me`,
         headers: {
             cookie: `DW-SESSION=${session.id}`,
-            Origin: ''
+            referer: 'spam'
         }
     });
 

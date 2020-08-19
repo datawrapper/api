@@ -29,7 +29,8 @@ test('Tokens can be created, fetched and deleted', async t => {
     };
     const headers = {
         cookie: 'crumb=abc',
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
 
     let res = await t.context.server.inject({
@@ -78,7 +79,8 @@ test('The scope of newly created tokens cannot exceed the session scopes', async
     };
     const headers = {
         cookie: 'crumb=abc',
-        'X-CSRF-Token': 'abc'
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
     };
 
     let res = await t.context.server.inject({

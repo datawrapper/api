@@ -24,7 +24,8 @@ test('User can read and write chart data', async t => {
         url: '/v3/charts',
         headers: {
             cookie: `DW-SESSION=${session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc'
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {}
     });
@@ -78,6 +79,7 @@ test('User can read and write chart data', async t => {
             headers: {
                 cookie: `DW-SESSION=${session.id}; crumb=abc`,
                 'X-CSRF-Token': 'abc',
+                referer: 'http://localhost',
                 'Content-Type': contentType
             },
             url: `/v3/charts/${chart.result.id}/data`,
@@ -91,6 +93,7 @@ test('User can read and write chart data', async t => {
             headers: {
                 cookie: `DW-SESSION=${session.id}; crumb=abc`,
                 'X-CSRF-Token': 'abc',
+                referer: 'http://localhost',
                 'Content-Type': contentType
             },
             url: `/v3/charts/${chart.result.id}/assets/${asset}`,
