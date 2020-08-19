@@ -123,3 +123,21 @@ test('Referer is not checked for safe HTTP methods', async t => {
 
     t.is(res.statusCode, 200);
 });
+
+test('CSRF check is skipped for requests authenticated with a token', async t => {
+    const { user, token } = t.context.user;
+
+    const res = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/me`,
+        headers: {
+            authorization: `Bearer ${token}`
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    t.is(res.statusCode, 204);
+});
