@@ -120,7 +120,7 @@ const server = Hapi.server({
  */
 function checkReferer(request, h) {
     const safeMethods = new Set(['get', 'head', 'options', 'trace']); // according to RFC7231
-    if (!safeMethods.has(request.method) && request.headers.cookie) {
+    if (!safeMethods.has(request.method.toLowerCase()) && request.headers.cookie) {
         if (!request.headers.referer) {
             throw Boom.unauthorized('Missing Referer header');
         }
