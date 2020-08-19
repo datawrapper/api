@@ -191,9 +191,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             plugin: Crumb,
             options: {
                 cookieOptions: {
-                    domain: '.datawrapper.local', // FIXME: Get domain from config
+                    domain: '.' + config.api.domain,
                     isHttpOnly: false,
-                    isSecure: false // FIXME: Enable on production
+                    isSecure: !DW_DEV_MODE
                 },
                 restful: true,
                 skip: function (request) {
