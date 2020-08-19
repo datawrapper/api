@@ -98,6 +98,7 @@ const server = Hapi.server({
     routes: {
         cors: {
             origin: config.api.cors,
+            headers: ['Accept', 'Authorization', 'Content-Type', 'X-CSRF-Token'],
             credentials: true
         },
         validate: {
