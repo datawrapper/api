@@ -21,6 +21,9 @@ module.exports = async (server, options) => {
                     password: Joi.string().required().example('morgan-3000'),
                     keepSession: Joi.boolean().default(true)
                 })
+            },
+            plugins: {
+                crumb: false
             }
         },
         handler: login
