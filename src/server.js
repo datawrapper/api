@@ -1,3 +1,5 @@
+/* global URL */
+
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
 const Crumb = require('@hapi/crumb');
@@ -44,7 +46,7 @@ if (useRedis) {
 const host = config.api.subdomain
     ? `${config.api.subdomain}.${config.api.domain}`
     : config.api.domain;
-const frontendHost = `${config.frontend.https ? 'https' : 'http'}://${config.frontend.domain}`;
+const frontendOrigin = `${config.frontend.https ? 'https' : 'http'}://${config.frontend.domain}`;
 
 const port = config.api.port || 3000;
 
@@ -104,25 +106,37 @@ const server = Hapi.server({
             credentials: true
         },
         validate: {
-            /**
-             * Check the request Origin header to prevent CSRF.
-             *
-             * Skip the check when the Origin header is missing, which happens when not making the request from
-             * a browser.
-             *
-             * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
-             */
-            headers: async function (headers) {
-                if (headers.origin && headers.origin !== frontendHost) {
-                    throw Error('Invalid Origin header');
-                }
-            },
             async failAction(request, h, err) {
                 throw Boom.badRequest('Invalid request payload input: ' + err.message);
             }
         }
     }
 });
+
+/**
+ * Check the request Referer header to prevent CSRF.
+ *
+ * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
+ */
+function checkReferer(request, h) {
+    const safeMethods = new Set(['get', 'head', 'options', 'trace']); // according to RFC7231
+    if (!safeMethods.has(request.method) && request.headers.cookie) {
+        if (!request.headers.referer) {
+            throw Boom.unauthorized('Missing Referer header');
+        }
+        try {
+            const url = new URL(request.headers.referer);
+            if (url.origin !== frontendOrigin) {
+                throw Boom.unauthorized("Referer header doesn't match any trusted origins");
+            }
+        } catch (e) {
+            throw Boom.unauthorized('Malformed Referer header');
+        }
+    }
+    return h.continue;
+}
+
+server.ext('onPreResponse', checkReferer);
 
 function getLogLevel() {
     if (DW_DEV_MODE) {
