@@ -61,9 +61,6 @@ test('Guest charts are associated after signup', async t => {
         payload: t.context.getCredentials()
     });
 
-    t.log(res.statusCode);
-    t.log(res.result);
-
     const authorId = res.result.id;
     t.log('Author ID:', authorId);
     await t.context.addToCleanup('user', authorId);

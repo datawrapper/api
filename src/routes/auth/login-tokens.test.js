@@ -50,7 +50,7 @@ test('Login token can be created and used once', async t => {
         url: `/v3/auth/login/${res.result.token}`
     });
 
-    const cookie = parseSetCookie(res2.headers['set-cookie'][1]);
+    const cookie = parseSetCookie(res2.headers['set-cookie'].find(s => s.includes(`DW-SESSION`)));
 
     t.truthy(res2.result['DW-SESSION']);
     t.is(res2.statusCode, 302);
