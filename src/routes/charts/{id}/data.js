@@ -164,6 +164,7 @@ async function writeChartData(request, h) {
         method: 'PUT',
         url: `/v3/charts/${params.id}/assets/${params.id}.csv`,
         auth: request.auth,
+        headers: request.headers,
         payload: request.payload
     });
 

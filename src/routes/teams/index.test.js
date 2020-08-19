@@ -19,6 +19,10 @@ test.before(async t => {
         credentials: data.session,
         artifacts: data.user
     };
+    t.context.headers = {
+        cookie: 'crumb=abc',
+        'X-CSRF-Token': 'abc'
+    };
 });
 
 test('user can fetch their teams', async t => {
@@ -172,6 +176,7 @@ test('admins can create teams', async t => {
         method: 'POST',
         url: `/v3/teams`,
         auth,
+        headers: t.context.headers,
         payload: {
             id: teamId,
             name: 'Test'
@@ -189,6 +194,7 @@ test('users can create teams', async t => {
         method: 'POST',
         url: `/v3/teams`,
         auth: t.context.auth,
+        headers: t.context.headers,
         payload: {
             id: 'test-user',
             name: 'Test'

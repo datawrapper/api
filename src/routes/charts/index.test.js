@@ -14,6 +14,10 @@ test.before(async t => {
         credentials: data.session,
         artifacts: data.user
     };
+    t.context.headers = {
+        cookie: 'crumb=abc',
+        'X-CSRF-Token': 'abc'
+    };
 });
 
 test('Should be possible to search in multiple fields', async t => {
@@ -21,6 +25,7 @@ test('Should be possible to search in multiple fields', async t => {
         method: 'POST',
         url: '/v3/charts',
         auth: t.context.auth,
+        headers: t.context.headers,
         payload: {
             title: 'title-search',
             metadata: {
@@ -60,7 +65,8 @@ test('Users can create charts in a team they have access to', async t => {
         method: 'POST',
         url: '/v3/charts',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         },
         payload: {
             organizationId: team.id
@@ -78,7 +84,8 @@ test('Users cannot create chart in a team they dont have access to', async t => 
         method: 'POST',
         url: '/v3/charts',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         },
         payload: {
             organizationId: team.id

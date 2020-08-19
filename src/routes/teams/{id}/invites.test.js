@@ -18,6 +18,10 @@ test.before(async t => {
         credentials: data.session,
         artifacts: data.user
     };
+    t.context.headers = {
+        cookie: 'crumb=abc',
+        'X-CSRF-Token': 'abc'
+    };
 });
 
 test('owners can invite new members to a team', async t => {
@@ -26,6 +30,7 @@ test('owners can invite new members to a team', async t => {
         method: 'POST',
         url: `/v3/teams/${t.context.data.team.id}/invites`,
         auth: t.context.auth,
+        headers: t.context.headers,
         payload: {
             email: data.user.email,
             role: 'member'
@@ -40,6 +45,7 @@ test('owners can invite new users to a team', async t => {
         method: 'POST',
         url: `/v3/teams/${t.context.data.team.id}/invites`,
         auth: t.context.auth,
+        headers: t.context.headers,
         payload: {
             email: 'test-member@ava.de',
             role: 'member'

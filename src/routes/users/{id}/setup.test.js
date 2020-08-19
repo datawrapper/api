@@ -25,7 +25,8 @@ test('/v3/users/:id/setup creates token, token can later be emptied', async t =>
         method: 'POST',
         url: `/v3/users/${user.id}/setup`,
         headers: {
-            cookie: `DW-SESSION=${admin.session.id}`
+            cookie: `DW-SESSION=${admin.session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         }
     });
 
@@ -37,7 +38,8 @@ test('/v3/users/:id/setup creates token, token can later be emptied', async t =>
         method: 'PATCH',
         url: `/v3/users/${user.id}`,
         headers: {
-            cookie: `DW-SESSION=${admin.session.id}`
+            cookie: `DW-SESSION=${admin.session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         },
         payload: {
             activateToken: null

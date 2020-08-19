@@ -30,7 +30,8 @@ test('user activation after team invite', async t => {
         method: 'POST',
         url: `/v3/teams/${team.id}/invites`,
         headers: {
-            cookie: `DW-SESSION=${ownerSession.id}`
+            cookie: `DW-SESSION=${ownerSession.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         },
         payload: {
             email: credentials.email,
@@ -57,7 +58,8 @@ test('user activation after team invite', async t => {
         method: 'POST',
         url: `/v3/auth/activate/${invitee.activate_token}`,
         headers: {
-            cookie: `DW-SESSION=${guestSession}`
+            cookie: `DW-SESSION=${guestSession}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         }
     });
     t.is(res.statusCode, 204);

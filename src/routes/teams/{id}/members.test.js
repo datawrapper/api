@@ -18,6 +18,10 @@ test.before(async t => {
         credentials: data.session,
         artifacts: data.user
     };
+    t.context.headers = {
+        cookie: 'crumb=abc',
+        'X-CSRF-Token': 'abc'
+    };
 });
 
 test('guest user can not fetch teams', async t => {
@@ -77,7 +81,8 @@ test('owner can remove team members', async t => {
     let teams = await t.context.server.inject({
         method: 'DELETE',
         url: `/v3/teams/${t.context.data.team.id}/members/12345`,
-        auth: t.context.auth
+        auth: t.context.auth,
+        headers: t.context.headers
     });
 
     t.is(teams.statusCode, 404);
@@ -97,7 +102,8 @@ test('owner can remove team members', async t => {
     teams = await t.context.server.inject({
         method: 'DELETE',
         url: `/v3/teams/${t.context.data.team.id}/members/${user.id}`,
-        auth: t.context.auth
+        auth: t.context.auth,
+        headers: t.context.headers
     });
 
     t.is(teams.statusCode, 204);
@@ -118,7 +124,8 @@ test('owners can not get removed', async t => {
     const teams = await t.context.server.inject({
         method: 'DELETE',
         url: `/v3/teams/${t.context.data.team.id}/members/${user.id}`,
-        auth: t.context.auth
+        auth: t.context.auth,
+        headers: t.context.headers
     });
 
     t.is(teams.statusCode, 401);
@@ -131,6 +138,7 @@ test('owners can change a members status', async t => {
         method: 'PUT',
         url: `/v3/teams/${t.context.data.team.id}/members/${user.id}/status`,
         auth: t.context.auth,
+        headers: t.context.headers,
         payload: {
             status: 'admin'
         }
@@ -151,6 +159,7 @@ test('owners cant change their own role', async t => {
         method: 'PUT',
         url: `/v3/teams/${t.context.data.team.id}/members/${t.context.data.user.id}/status`,
         auth: t.context.auth,
+        headers: t.context.headers,
         payload: {
             status: 'admin'
         }
@@ -170,6 +179,7 @@ test('admins can add new members to a team', async t => {
             credentials: session,
             artifacts: admin
         },
+        headers: t.context.headers,
         payload: {
             userId: data.user.id,
             role: 'member'
@@ -192,7 +202,8 @@ test('members can leave teams but can not remove other members', async t => {
             strategy: 'session',
             credentials: session,
             artifacts: user
-        }
+        },
+        headers: t.context.headers
     });
 
     t.is(res.statusCode, 401);
@@ -210,7 +221,8 @@ test('members can leave teams but can not remove other members', async t => {
             strategy: 'session',
             credentials: session,
             artifacts: user
-        }
+        },
+        headers: t.context.headers
     });
 
     /* check if api call was successful */
@@ -235,7 +247,8 @@ test('admins can remove members, themselves but not owners', async t => {
             strategy: 'session',
             credentials: session,
             artifacts: admin
-        }
+        },
+        headers: t.context.headers
     });
     /* check if api call was successful */
     t.is(res.statusCode, 204);
@@ -252,7 +265,8 @@ test('admins can remove members, themselves but not owners', async t => {
             strategy: 'session',
             credentials: session,
             artifacts: admin
-        }
+        },
+        headers: t.context.headers
     });
 
     /* check if api call was successful */
@@ -271,7 +285,8 @@ test('admins can remove members, themselves but not owners', async t => {
             strategy: 'session',
             credentials: session,
             artifacts: admin
-        }
+        },
+        headers: t.context.headers
     });
 
     /* check if api call was successful */
@@ -301,7 +316,8 @@ test('Datawrapper admins can not change their own role if they are the team owne
         method: 'PUT',
         url: `/v3/teams/${team.id}/members/${admin.id}/status`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         },
         payload: {
             status: 'member'
@@ -328,7 +344,8 @@ test('users not part of a team can not change a team members role', async t => {
         method: 'PUT',
         url: `/v3/teams/${team.id}/members/${teamMember.id}/status`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         },
         payload: {
             status: 'member'
@@ -356,7 +373,8 @@ test('Datawrapper admins can change member roles', async t => {
         method: 'PUT',
         url: `/v3/teams/${team.id}/members/${teamMember.user.id}/status`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         },
         payload: {
             status: 'admin'

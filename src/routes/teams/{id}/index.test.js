@@ -18,6 +18,10 @@ test.before(async t => {
         credentials: data.session,
         artifacts: data.user
     };
+    t.context.headers = {
+        cookie: 'crumb=abc',
+        'X-CSRF-Token': 'abc'
+    };
 });
 
 test('[/v3/teams/:id] check that owners and admins can see owner, but members cannot', async t => {
@@ -140,6 +144,7 @@ test('owners can edit team', async t => {
         method: 'PATCH',
         url: `/v3/teams/${t.context.data.team.id}`,
         auth: t.context.auth,
+        headers: t.context.headers,
         payload: {
             name: 'Testy'
         }
@@ -161,6 +166,7 @@ test('admin can edit team', async t => {
             credentials: { session: '', scope: ['team:write'] },
             artifacts: user
         },
+        headers: t.context.headers,
         payload: {
             name: 'Testy'
         }
@@ -182,6 +188,7 @@ test('member can not edit team', async t => {
             credentials: { session: '', scope: ['team:write'] },
             artifacts: user
         },
+        headers: t.context.headers,
         payload: {
             name: 'Testy'
         }

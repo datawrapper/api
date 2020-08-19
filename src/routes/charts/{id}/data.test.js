@@ -18,14 +18,14 @@ test.before(async t => {
 
 test('User can read and write chart data', async t => {
     const { session } = await t.context.getUser();
-    const headers = {
-        cookie: `DW-SESSION=${session.id}`
-    };
     // create a new chart
     const chart = await t.context.server.inject({
         method: 'POST',
         url: '/v3/charts',
-        headers,
+        headers: {
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
+        },
         payload: {}
     });
 
@@ -55,7 +55,9 @@ test('User can read and write chart data', async t => {
     async function getData() {
         return t.context.server.inject({
             method: 'GET',
-            headers,
+            headers: {
+                cookie: `DW-SESSION=${session.id}`
+            },
             url: `/v3/charts/${chart.result.id}/data`
         });
     }
@@ -63,7 +65,9 @@ test('User can read and write chart data', async t => {
     async function getAsset(asset) {
         return t.context.server.inject({
             method: 'GET',
-            headers,
+            headers: {
+                cookie: `DW-SESSION=${session.id}`
+            },
             url: `/v3/charts/${chart.result.id}/assets/${asset}`
         });
     }
@@ -72,7 +76,8 @@ test('User can read and write chart data', async t => {
         return t.context.server.inject({
             method: 'PUT',
             headers: {
-                ...headers,
+                cookie: `DW-SESSION=${session.id}; crumb=abc`,
+                'X-CSRF-Token': 'abc',
                 'Content-Type': contentType
             },
             url: `/v3/charts/${chart.result.id}/data`,
@@ -84,7 +89,8 @@ test('User can read and write chart data', async t => {
         return t.context.server.inject({
             method: 'PUT',
             headers: {
-                ...headers,
+                cookie: `DW-SESSION=${session.id}; crumb=abc`,
+                'X-CSRF-Token': 'abc',
                 'Content-Type': contentType
             },
             url: `/v3/charts/${chart.result.id}/assets/${asset}`,

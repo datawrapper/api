@@ -16,6 +16,10 @@ test.before(async t => {
     t.context.getUser = getUser;
     t.context.getCredentials = getCredentials;
     t.context.addToCleanup = addToCleanup;
+    t.context.headers = {
+        cookie: 'crumb=abc',
+        'X-CSRF-Token': 'abc'
+    };
 });
 
 test('It should be possible to create a user, login and logout', async t => {
@@ -25,6 +29,7 @@ test('It should be possible to create a user, login and logout', async t => {
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/users',
+        headers: t.context.headers,
         payload: { ...credentials, language: 'de-DE' }
     });
 
@@ -39,6 +44,7 @@ test('It should be possible to create a user, login and logout', async t => {
     res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
+        headers: t.context.headers,
         payload: credentials
     });
 
@@ -55,7 +61,8 @@ test('It should be possible to create a user, login and logout', async t => {
         method: 'POST',
         url: '/v3/auth/logout',
         headers: {
-            cookie: cookieString
+            cookie: `${cookieString}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         }
     });
 
@@ -72,6 +79,7 @@ test('New user passwords should be saved as bcrypt hash', async t => {
     const { result } = await t.context.server.inject({
         method: 'POST',
         url: '/v3/users',
+        headers: t.context.headers,
         payload: { ...credentials, language: 'de-DE' }
     });
 
@@ -91,6 +99,7 @@ test("New users can't set their role to admin", async t => {
     const { result } = await t.context.server.inject({
         method: 'POST',
         url: '/v3/users',
+        headers: t.context.headers,
         payload: { ...credentials, role: 'admin' }
     });
 
@@ -118,6 +127,7 @@ test("New users can't set protected fields", async t => {
     const { result, statusCode } = await t.context.server.inject({
         method: 'POST',
         url: '/v3/users',
+        headers: t.context.headers,
         payload: { ...credentials, ...fields }
     });
 
@@ -251,6 +261,7 @@ test('It should be possible to resend the activation link up to two times', asyn
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/users',
+        headers: t.context.headers,
         payload: credentials
     });
 
@@ -280,7 +291,8 @@ test('It should be possible to resend the activation link up to two times', asyn
         method: 'POST',
         url: '/v3/auth/resend-activation',
         headers: {
-            cookie: cookieString
+            cookie: `${cookieString}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         }
     });
 
@@ -291,7 +303,8 @@ test('It should be possible to resend the activation link up to two times', asyn
         method: 'POST',
         url: '/v3/auth/resend-activation',
         headers: {
-            cookie: cookieString
+            cookie: `${cookieString}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         }
     });
 
@@ -302,7 +315,8 @@ test('It should be possible to resend the activation link up to two times', asyn
         method: 'POST',
         url: '/v3/auth/resend-activation',
         headers: {
-            cookie: cookieString
+            cookie: `${cookieString}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         }
     });
 

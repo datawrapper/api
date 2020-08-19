@@ -19,13 +19,14 @@ test('Can create guest sessions', async t => {
     const sessionToken = res.result['DW-SESSION'];
 
     t.truthy(res.result['DW-SESSION']);
-    t.true(res.headers['set-cookie'][0].includes(`DW-SESSION=${sessionToken}`));
+    t.truthy(res.headers['set-cookie'].find(s => s.includes(`DW-SESSION=${sessionToken}`)));
 
     res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/session',
         headers: {
-            cookie: `DW-SESSION=${sessionToken}`
+            cookie: `DW-SESSION=${sessionToken}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         }
     });
 
@@ -35,7 +36,8 @@ test('Can create guest sessions', async t => {
         method: 'POST',
         url: '/v3/auth/logout',
         headers: {
-            cookie: `DW-SESSION=${sessionToken}`
+            cookie: `DW-SESSION=${sessionToken}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         }
     });
 });

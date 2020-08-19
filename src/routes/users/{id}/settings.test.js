@@ -20,7 +20,8 @@ test('Admin can set activeTeam for users', async t => {
         method: 'PATCH',
         url: `/v3/users/${user.id}/settings`,
         headers: {
-            cookie: `DW-SESSION=${admin.session.id}`
+            cookie: `DW-SESSION=${admin.session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         },
         payload: {
             activeTeam: team.id
@@ -34,7 +35,8 @@ test('Admin can set activeTeam for users', async t => {
         method: 'PATCH',
         url: `/v3/users/${user.id}/settings`,
         headers: {
-            cookie: `DW-SESSION=${admin.session.id}`
+            cookie: `DW-SESSION=${admin.session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         },
         payload: {
             activeTeam: null
@@ -48,7 +50,8 @@ test('Admin can set activeTeam for users', async t => {
         method: 'PATCH',
         url: `/v3/users/${user.id}/settings`,
         headers: {
-            cookie: `DW-SESSION=${admin.session.id}`
+            cookie: `DW-SESSION=${admin.session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc'
         },
         payload: {
             activeTeam: 'missing-team'
