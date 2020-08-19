@@ -200,7 +200,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
                     // Allow cross-site requests that use the Authorization header instead of a
                     // cookie to authenticate, because where there are no cookies, there is no CSRF
                     // risk.
-                    return !!request.headers.authorization; // FIXME: The server must not fall back to cookie auth when the Authorization header is invalid, otherwise an attacked could just set Authorization to any value to disable CSRF protection.
+                    return !request.headers.cookie;
                 }
             }
         }
