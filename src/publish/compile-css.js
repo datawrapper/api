@@ -78,7 +78,7 @@ function createFontEntries(fonts, themeData) {
     const usedFonts = [];
     let fontString = '';
 
-    if (themeData.typography.fontFamilies) {
+    if (themeData && themeData.typography && themeData.typography.fontFamilies) {
         Object.entries(themeData.typography.fontFamilies).forEach(([fontFamily, famlyFonts]) => {
             famlyFonts.forEach(props => {
                 if (fonts[props.name]) {
