@@ -63,5 +63,7 @@ async function signup(request, h) {
 
     const api = config('api');
 
-    return h.response(res.result).state(api.sessionID, session.id, getStateOpts(api.domain, 90));
+    return h
+        .response(res.result)
+        .state(api.sessionID, session.id, getStateOpts(request.server, 90));
 }

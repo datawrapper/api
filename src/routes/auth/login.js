@@ -85,7 +85,7 @@ module.exports = async (server, options) => {
                 .response({
                     [api.sessionID]: session.id
                 })
-                .state(api.sessionID, session.id, getStateOpts(api.domain, 30, 'None'))
+                .state(api.sessionID, session.id, getStateOpts(request.server, 30, 'None'))
                 .redirect(
                     `${frontend.https ? 'https' : 'http'}://${frontend.domain}${
                         token.data.redirect_url
@@ -150,5 +150,5 @@ async function login(request, h) {
         .response({
             [api.sessionID]: session.id
         })
-        .state(api.sessionID, session.id, getStateOpts(api.domain, keepSession ? 90 : 30));
+        .state(api.sessionID, session.id, getStateOpts(request.server, keepSession ? 90 : 30));
 }
