@@ -89,9 +89,9 @@ module.exports = (server, options) => {
                 })})`,
                 metadata: clone(srcChart.metadata),
                 theme: srcChart.theme,
-                locale: srcChart.locale,
+                language: srcChart.language,
                 organization_id: srcChart.organization_id,
-                inFolder: srcChart.inFolder,
+                in_folder: srcChart.in_folder,
                 externalData: srcChart.externalData,
 
                 forked_from: srcChart.id,
@@ -102,7 +102,7 @@ module.exports = (server, options) => {
 
             if (isAdmin) {
                 newChart.organization_id = null;
-                newChart.inFolder = null;
+                newChart.in_folder = null;
             }
 
             const chart = await Chart.create(newChart);

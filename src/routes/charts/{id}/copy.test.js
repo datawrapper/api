@@ -18,6 +18,7 @@ test('User can copy chart, attributes match', async t => {
     const attributes = {
         title: 'This is my chart',
         theme: 'datawrapper-data',
+        language: 'en-IE',
         metadata: {
             visualize: {
                 basemap: 'us-counties'
