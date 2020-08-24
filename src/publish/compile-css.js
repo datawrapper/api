@@ -79,8 +79,8 @@ function createFontEntries(fonts, themeData) {
     let fontString = '';
 
     if (themeData && themeData.typography && themeData.typography.fontFamilies) {
-        Object.entries(themeData.typography.fontFamilies).forEach(([fontFamily, famlyFonts]) => {
-            famlyFonts.forEach(props => {
+        Object.entries(themeData.typography.fontFamilies).forEach(([fontFamily, familyFonts]) => {
+            familyFonts.forEach(props => {
                 if (fonts[props.name]) {
                     usedFonts.push(props.name);
                     fontString += `${createFontCSS(fontFamily, fonts[props.name].files, props)}\n`;
@@ -122,9 +122,9 @@ function createFontEntries(fonts, themeData) {
         if (props) {
             const { weight, style, display } = props;
             fontCSS += `
-    font-weight:${isNaN(weight) ? "'" + weight + "'" : weight};
-    font-style: '${style}';
-    font-display: '${display || 'auto'}';`;
+    font-weight:${weight};
+    font-style: ${style};
+    font-display: ${display || 'auto'};`;
         }
 
         fontCSS += `
