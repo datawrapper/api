@@ -13,9 +13,7 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.number()
-                        .required()
-                        .description('User ID')
+                    id: Joi.number().required().description('User ID')
                 })
             }
         },

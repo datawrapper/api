@@ -14,7 +14,7 @@ function SQL(strings, ...values) {
     return str;
 }
 
-queries.queryUsers = async function({
+queries.queryUsers = async function ({
     attributes,
     limit,
     offset,

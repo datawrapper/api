@@ -14,9 +14,7 @@ schemas.createUserPayload = [
             .required()
             .example('cpt-marvel@shield.com')
             .description('User email address'),
-        role: Joi.string()
-            .valid('editor', 'admin')
-            .description('User role. This can be omitted.'),
+        role: Joi.string().valid('editor', 'admin').description('User role. This can be omitted.'),
         language: Joi.string()
             .example('en_US')
             .description('User language preference. This can be omitted.'),
@@ -25,9 +23,7 @@ schemas.createUserPayload = [
             .min(8)
             .required()
             .description('Strong user password.'),
-        invitation: Joi.boolean()
-            .valid(false)
-            .allow(null)
+        invitation: Joi.boolean().valid(false).allow(null)
     }),
     // for invitation sign-ups
     Joi.object({
@@ -36,13 +32,9 @@ schemas.createUserPayload = [
             .required()
             .example('cpt-marvel@shield.com')
             .description('User email address'),
-        invitation: Joi.boolean()
-            .valid(true)
-            .required(),
+        invitation: Joi.boolean().valid(true).required(),
         chartId: Joi.string().optional(),
-        role: Joi.string()
-            .valid('editor', 'admin')
-            .description('User role. This can be omitted.')
+        role: Joi.string().valid('editor', 'admin').description('User role. This can be omitted.')
     })
 ];
 
