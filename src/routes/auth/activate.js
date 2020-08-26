@@ -13,14 +13,10 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    token: Joi.string()
-                        .required()
-                        .description('User activation token')
+                    token: Joi.string().required().description('User activation token')
                 }),
                 payload: Joi.object({
-                    password: Joi.string()
-                        .min(8)
-                        .description('New password of the user.')
+                    password: Joi.string().min(8).description('New password of the user.')
                 }).allow(null)
             }
         },

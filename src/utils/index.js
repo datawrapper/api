@@ -92,7 +92,7 @@ utils.generateToken = (length = 25) => {
 
 utils.noop = () => {};
 
-utils.loadChart = async function(id) {
+utils.loadChart = async function (id) {
     const { Op } = require('@datawrapper/orm').db;
     const { Chart } = require('@datawrapper/orm/models');
 

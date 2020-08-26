@@ -25,9 +25,7 @@ module.exports = {
                 },
                 validate: {
                     params: Joi.object({
-                        id: Joi.number()
-                            .required()
-                            .description('User ID')
+                        id: Joi.number().required().description('User ID')
                     })
                 },
                 response: userResponse
@@ -47,9 +45,7 @@ module.exports = {
                 },
                 validate: {
                     params: Joi.object({
-                        id: Joi.number()
-                            .required()
-                            .description('User ID')
+                        id: Joi.number().required().description('User ID')
                     }),
                     payload: Joi.object({
                         name: Joi.string()
@@ -95,9 +91,7 @@ module.exports = {
                 description: 'Delete user',
                 validate: {
                     params: Joi.object({
-                        id: Joi.number()
-                            .required()
-                            .description('User ID')
+                        id: Joi.number().required().description('User ID')
                     }),
                     payload: Joi.object({
                         email: Joi.string()

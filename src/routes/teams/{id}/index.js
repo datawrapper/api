@@ -31,9 +31,7 @@ module.exports = {
                 },
                 validate: {
                     params: Joi.object({
-                        id: Joi.string()
-                            .required()
-                            .description('ID of the team to fetch.')
+                        id: Joi.string().required().description('ID of the team to fetch.')
                     })
                 },
                 response: teamResponse
@@ -54,9 +52,7 @@ module.exports = {
                 },
                 validate: {
                     params: Joi.object({
-                        id: Joi.string()
-                            .required()
-                            .description('ID of the team to delete.')
+                        id: Joi.string().required().description('ID of the team to delete.')
                     })
                 },
                 response: noContentResponse
@@ -76,9 +72,7 @@ module.exports = {
                 },
                 validate: {
                     params: Joi.object({
-                        id: Joi.string()
-                            .required()
-                            .description('Team ID')
+                        id: Joi.string().required().description('Team ID')
                     }),
                     payload: Joi.object({
                         name: Joi.string().example('New Revengers'),

@@ -31,22 +31,17 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: {
-                    id: Joi.string()
-                        .required()
-                        .description('Team ID (eg. guardians-of-the-galaxy)')
+                    id: Joi.string().required().description('Team ID (eg. guardians-of-the-galaxy)')
                 },
                 payload: Joi.object({
-                    email: Joi.string()
-                        .email()
-                        .required()
-                        .example('thor@gmail.com'),
+                    email: Joi.string().email().required().example('thor@gmail.com'),
                     role: Joi.string()
                         .valid(...ROLES)
                         .required()
                 })
             },
             response: createResponseConfig({
-                status: { '201': Joi.any().empty() }
+                status: { 201: Joi.any().empty() }
             })
         },
         /**
@@ -70,13 +65,11 @@ module.exports = async (server, options) => {
                     id: Joi.string()
                         .required()
                         .description('Team ID (eg. guardians-of-the-galaxy)'),
-                    token: Joi.string()
-                        .required()
-                        .description('A valid team invitation token')
+                    token: Joi.string().required().description('A valid team invitation token')
                 }
             },
             response: createResponseConfig({
-                status: { '201': Joi.any().empty() }
+                status: { 201: Joi.any().empty() }
             })
         },
         handler: acceptTeamInvitation
@@ -95,13 +88,11 @@ module.exports = async (server, options) => {
                     id: Joi.string()
                         .required()
                         .description('Team ID (eg. guardians-of-the-galaxy)'),
-                    token: Joi.string()
-                        .required()
-                        .description('A valid team invitation token')
+                    token: Joi.string().required().description('A valid team invitation token')
                 }
             },
             response: createResponseConfig({
-                status: { '204': Joi.any().empty() }
+                status: { 204: Joi.any().empty() }
             })
         },
         handler: rejectTeamInvitation
