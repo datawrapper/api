@@ -2,7 +2,7 @@ const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { prepareChart } = require('../../../utils/index.js');
 const { translate } = require('../../../utils/l10n.js');
-const { Chart, User, ChartPublic } = require('@datawrapper/orm/models');
+const { Chart, User, ChartPublic, Session } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const clone = require('lodash/clone');
 
@@ -171,7 +171,9 @@ module.exports = (server, options) => {
             if (user.role === 'guest') {
                 newChart.guest_session = auth.credentials.session;
             } else {
-                newChart.organization_id = (await user.getActiveTeam()).id;
+                const session = await Session.findByPk(auth.credentials.session);
+                const activeTeam = await user.getActiveTeam(session);
+                newChart.organization_id = activeTeam ? activeTeam.id : null;
                 newChart.author_id = user.id;
             }
 
