@@ -189,6 +189,7 @@ module.exports = (server, options) => {
                 });
             } catch (ex) {}
 
+            await events.emit(event.CHART_COPY, { sourceChart: srcChart, destChart: chart });
             return h.response({ ...prepareChart(chart) }).code(201);
         }
     });
