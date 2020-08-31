@@ -19,6 +19,7 @@ test('User can copy chart, attributes match', async t => {
         title: 'This is my chart',
         theme: 'datawrapper-data',
         language: 'en-IE',
+        externalData: 'https://static.dwcdn.net/data/12345.csv',
         metadata: {
             visualize: {
                 basemap: 'us-counties'
@@ -41,9 +42,16 @@ test('User can copy chart, attributes match', async t => {
         headers
     });
 
+    const allMetadata = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/charts/${copiedChart.result.id}`,
+        headers
+    });
+
     t.is(copiedChart.statusCode, 201);
     t.is(copiedChart.result.authorId, user.id);
     t.is(copiedChart.result.forkedFrom, srcChart.result.id);
+    t.is(allMetadata.result.externalData, attributes.externalData);
 
     // compare attributes
     for (var attr in attributes) {
