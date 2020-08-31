@@ -90,7 +90,7 @@ module.exports = (server, options) => {
                 language: srcChart.language,
                 organization_id: srcChart.organization_id,
                 in_folder: srcChart.in_folder,
-                externalData: srcChart.externalData,
+                externalData: srcChart.external_data,
 
                 forked_from: srcChart.id,
                 author_id: user.id,
@@ -161,7 +161,7 @@ module.exports = (server, options) => {
                 type: publicChart.type,
                 title: publicChart.title,
                 metadata: newMeta,
-                externalData: publicChart.externalData,
+                externalData: publicChart.external_data,
                 forked_from: publicChart.id,
                 is_fork: true,
                 theme: 'default',
