@@ -193,7 +193,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
                 cookieOptions: {
                     domain: '.' + config.api.domain,
                     isHttpOnly: false,
-                    isSecure: !DW_DEV_MODE
+                    isSecure: config.frontend.https
                 },
                 restful: true,
                 skip: function (request) {
