@@ -34,7 +34,7 @@ const dwLocales = {
 
 async function downloadCore() {
     const res = await got(
-        `https://api.lokalise.com/api2/projects/${cfg.projects.core}:${cfg.branch}/keys?include_translations=1&limit=5000`,
+        `https://api.lokalise.com/api2/projects/${cfg.projects.core.id}:${cfg.projects.core.branch}/keys?include_translations=1&limit=5000`,
         {
             headers: {
                 'x-api-token': cfg.token
@@ -58,15 +58,18 @@ async function downloadCore() {
     for (const locale in locales) {
         const file = `${path.resolve(__dirname, '../../datawrapper/locale')}/${locale}.json`;
         fs.writeFileSync(file, JSON.stringify(locales[locale]));
+
+        const apiFile = `${path.resolve(__dirname, '../locale')}/${locale}.json`;
+        fs.writeFileSync(apiFile, JSON.stringify(locales[locale]));
     }
 
     process.stdout.write(chalk`
-{green Updated translations for core.}`);
+{green Updated translations for core & API.}`);
 }
 
 async function downloadPlugins() {
     const res = await got(
-        `https://api.lokalise.com/api2/projects/${cfg.projects.plugins}:${cfg.branch}/keys?include_translations=1&limit=5000`,
+        `https://api.lokalise.com/api2/projects/${cfg.projects.plugins.id}:${cfg.projects.plugins.branch}/keys?include_translations=1&limit=5000`,
         {
             headers: {
                 'x-api-token': cfg.token
@@ -110,9 +113,71 @@ async function downloadPlugins() {
     }
 }
 
+async function downloadVisualizations() {
+    const res = await got(
+        `https://api.lokalise.com/api2/projects/${cfg.projects.visualizations.id}:${cfg.projects.plugins.branch}/keys?include_translations=1&limit=5000`,
+        {
+            headers: {
+                'x-api-token': cfg.token
+            }
+        }
+    );
+
+    const body = JSON.parse(res.body);
+    const plugins = {};
+
+    process.stdout.write(chalk`
+{blue Found ${body.keys.length} keys for visualizations.}`);
+
+    for (const key of body.keys) {
+        const pluginName = key.key_name.web.split(' / ')[0].replace('plugin-', '');
+        const rawKey = key.key_name.web.replace(`plugin-${pluginName} / `, '');
+
+        for (const translation of key.translations) {
+            const locale =
+                translation.language_iso === 'ca'
+                    ? 'ca-ES'
+                    : translation.language_iso.replace('_', '-');
+
+            if (!plugins[pluginName]) plugins[pluginName] = {};
+            if (!plugins[pluginName][locale]) plugins[pluginName][locale] = {};
+
+            plugins[pluginName][locale][rawKey] = translation.translation;
+        }
+    }
+
+    for (const plugin in plugins) {
+        for (var locale in plugins[plugin]) {
+            for (var key in plugins[plugin]['en-US']) {
+                if (
+                    typeof plugins[plugin][locale][key] === 'undefined' ||
+                    plugins[plugin][locale][key].trim() === ''
+                ) {
+                    plugins[plugin][locale][key] = plugins[plugin]['en-US'][key];
+                }
+            }
+        }
+
+        const pluginLocaleDir = `${path.resolve(__dirname, `../../../plugins/${plugin}/locale`)}`;
+
+        if (!fs.existsSync(pluginLocaleDir)) {
+            process.stdout.write(chalk`
+{red Could not update visualization translations for plugin ${plugin}.}`);
+            continue;
+        }
+
+        const file = `${pluginLocaleDir}/chart-translations.json`;
+        fs.writeFileSync(file, JSON.stringify(plugins[plugin]));
+
+        process.stdout.write(chalk`
+{green Updated visualization translations for plugin ${plugin}.}`);
+    }
+}
+
 async function go() {
     await downloadCore();
     await downloadPlugins();
+    await downloadVisualizations();
 }
 
 go();
