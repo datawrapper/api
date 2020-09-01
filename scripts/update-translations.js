@@ -79,8 +79,8 @@ async function downloadPluginTranslations() {
 {blue Found ${body.keys.length} keys for all plugins.}`);
 
     for (const key of body.keys) {
-        const pluginName = key.key_name.web.split(' / ')[0].replace('plugin-', '');
-        const rawKey = key.key_name.web.replace(`plugin-${pluginName} / `, '');
+        const pluginName = key.key_name.web.split(' / ')[1];
+        const rawKey = key.key_name.web.replace(`plugins / ${pluginName} / `, '');
 
         for (const translation of key.translations) {
             if (!plugins[pluginName]) plugins[pluginName] = JSON.parse(JSON.stringify(dwLocales));
@@ -116,8 +116,8 @@ async function downloadVisualizationTranslations() {
 {blue Found ${body.keys.length} keys for visualizations.}`);
 
     for (const key of body.keys) {
-        const pluginName = key.key_name.web.split(' / ')[0].replace('plugin-', '');
-        const rawKey = key.key_name.web.replace(`plugin-${pluginName} / `, '');
+        const pluginName = key.key_name.web.split(' / ')[1];
+        const rawKey = key.key_name.web.replace(`plugins / ${pluginName} / `, '');
 
         for (const translation of key.translations) {
             const locale =
