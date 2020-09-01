@@ -32,9 +32,9 @@ const dwLocales = {
     es_ES: {}
 };
 
-async function downloadCore() {
+async function download(project, branch) {
     const res = await got(
-        `https://api.lokalise.com/api2/projects/${cfg.projects.core.id}:${cfg.projects.core.branch}/keys?include_translations=1&limit=5000`,
+        `https://api.lokalise.com/api2/projects/${project}:${branch}/keys?include_translations=1&limit=5000`,
         {
             headers: {
                 'x-api-token': cfg.token
@@ -42,7 +42,11 @@ async function downloadCore() {
         }
     );
 
-    const body = JSON.parse(res.body);
+    return JSON.parse(res.body);
+}
+
+async function downloadCoreTranslations() {
+    const body = await download(cfg.projects.core.id, cfg.projects.core.branch);
     const locales = JSON.parse(JSON.stringify(dwLocales));
 
     process.stdout.write(chalk`
@@ -67,17 +71,8 @@ async function downloadCore() {
 {green Updated translations for core & API.}`);
 }
 
-async function downloadPlugins() {
-    const res = await got(
-        `https://api.lokalise.com/api2/projects/${cfg.projects.plugins.id}:${cfg.projects.plugins.branch}/keys?include_translations=1&limit=5000`,
-        {
-            headers: {
-                'x-api-token': cfg.token
-            }
-        }
-    );
-
-    const body = JSON.parse(res.body);
+async function downloadPluginTranslations() {
+    const body = await download(cfg.projects.plugins.id, cfg.projects.plugins.branch);
     const plugins = {};
 
     process.stdout.write(chalk`
@@ -113,17 +108,8 @@ async function downloadPlugins() {
     }
 }
 
-async function downloadVisualizations() {
-    const res = await got(
-        `https://api.lokalise.com/api2/projects/${cfg.projects.visualizations.id}:${cfg.projects.plugins.branch}/keys?include_translations=1&limit=5000`,
-        {
-            headers: {
-                'x-api-token': cfg.token
-            }
-        }
-    );
-
-    const body = JSON.parse(res.body);
+async function downloadVisualizationTranslations() {
+    const body = await download(cfg.projects.visualizations.id, cfg.projects.visualizations.branch);
     const plugins = {};
 
     process.stdout.write(chalk`
@@ -175,9 +161,9 @@ async function downloadVisualizations() {
 }
 
 async function go() {
-    await downloadCore();
-    await downloadPlugins();
-    await downloadVisualizations();
+    await downloadCoreTranslations();
+    await downloadPluginTranslations();
+    await downloadVisualizationTranslations();
 }
 
 go();
