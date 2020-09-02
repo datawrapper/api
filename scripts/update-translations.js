@@ -65,10 +65,10 @@ async function downloadCoreTranslations() {
 
     for (const locale in locales) {
         const file = `${path.resolve(__dirname, '../../datawrapper/locale')}/${locale}.json`;
-        fs.writeFileSync(file, JSON.stringify(locales[locale]));
+        fs.writeFileSync(file, JSON.stringify(locales[locale], null, 2));
 
         const apiFile = `${path.resolve(__dirname, '../locale')}/${locale}.json`;
-        fs.writeFileSync(apiFile, JSON.stringify(locales[locale]));
+        fs.writeFileSync(apiFile, JSON.stringify(locales[locale], null, 2));
     }
 
     process.stdout.write(chalk`
@@ -104,7 +104,7 @@ async function downloadPluginTranslations() {
 
         for (const locale in plugins[plugin]) {
             const file = `${pluginLocaleDir}/${locale}.json`;
-            fs.writeFileSync(file, JSON.stringify(plugins[plugin][locale]));
+            fs.writeFileSync(file, JSON.stringify(plugins[plugin][locale], null, 2));
         }
 
         process.stdout.write(chalk`
@@ -157,7 +157,7 @@ async function downloadVisualizationTranslations() {
         }
 
         const file = `${pluginLocaleDir}/chart-translations.json`;
-        fs.writeFileSync(file, JSON.stringify(plugins[plugin]));
+        fs.writeFileSync(file, JSON.stringify(plugins[plugin], null, 2));
 
         process.stdout.write(chalk`
 {green Updated visualization translations for plugin ${plugin}.}`);
