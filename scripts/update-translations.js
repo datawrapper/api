@@ -5,10 +5,13 @@ const fs = require('fs');
 const path = require('path');
 const { requireConfig } = require('@datawrapper/shared/node/findConfig');
 const chalk = require('chalk');
+require('dotenv').config({
+    path: path.resolve(__dirname, '../../../utils/docker/.datawrapper_env')
+});
 const config = requireConfig();
 const get = require('lodash/get');
 
-if (!!get(config, 'general.lokalise') || !get(config, 'general.lokalise.token')) {
+if (!get(config, 'general.lokalise') || !get(config, 'general.lokalise.token')) {
     return console.error('Please configure lokalise in your config.js!');
 }
 
