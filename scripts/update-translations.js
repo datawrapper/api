@@ -6,12 +6,13 @@ const path = require('path');
 const { requireConfig } = require('@datawrapper/shared/node/findConfig');
 const chalk = require('chalk');
 const config = requireConfig();
+const get = require('lodash/get');
 
-if (!config.lokalise || !config.lokalise.token) {
+if (!!get(config, 'general.lokalise') || !get(config, 'general.lokalise.token')) {
     return console.error('Please configure lokalise in your config.js!');
 }
 
-const cfg = config.lokalise;
+const cfg = get(config, 'general.lokalise');
 
 // lokalise locales to datawrapper locales
 const localeMap = {
