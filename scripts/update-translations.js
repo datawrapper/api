@@ -9,7 +9,7 @@ const config = requireConfig();
 const get = require('lodash/get');
 
 
-if (!config.lokalise || !config.lokalise.token) {
+if (!!get(config, 'general.lokalise') || !get(config, 'general.lokalise.token')) {
     return console.error('Please configure lokalise in your config.js!');
 }
 
