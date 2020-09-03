@@ -124,14 +124,14 @@ function createComparePassword(server) {
 }
 
 function getStateOpts(
-    domain,
+    server,
     ttl,
     sameSite = process.env.NODE_ENV === 'development' ? 'None' : 'Lax'
 ) {
     return {
-        isSecure: process.env.NODE_ENV === 'production',
+        isSecure: server.methods.config('frontend').https,
         strictHeader: false,
-        domain: `.${domain}`,
+        domain: `.${server.methods.config('api').domain}`,
         isSameSite: sameSite,
         path: '/',
         ttl: cookieTTL(ttl)

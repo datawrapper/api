@@ -14,10 +14,7 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
-                        .description('5 character long chart ID.'),
+                    id: Joi.string().length(5).required().description('5 character long chart ID.'),
                     format: Joi.string()
                         .required()
                         .valid(...server.app.exportFormats.values())
@@ -26,12 +23,8 @@ module.exports = (server, options) => {
                 payload: Joi.object({
                     unit: Joi.string().default('px'),
                     mode: Joi.string().default('rgb'),
-                    width: Joi.number()
-                        .min(1)
-                        .optional(),
-                    height: Joi.number()
-                        .min(1)
-                        .allow('auto'),
+                    width: Joi.number().min(1).optional(),
+                    height: Joi.number().min(1).allow('auto'),
                     plain: Joi.boolean().default(false),
                     scale: Joi.number().default(1),
                     zoom: Joi.number().default(2),
@@ -67,10 +60,7 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
-                        .description('5 character long chart ID.'),
+                    id: Joi.string().length(5).required().description('5 character long chart ID.'),
                     format: Joi.string()
                         .required()
                         .valid(...server.app.exportFormats.values())
@@ -78,15 +68,9 @@ module.exports = (server, options) => {
                 }),
                 query: Joi.object({
                     unit: Joi.string().default('px'),
-                    mode: Joi.string()
-                        .valid('rgb', 'cmyk')
-                        .default('rgb'),
-                    width: Joi.number()
-                        .min(1)
-                        .optional(),
-                    height: Joi.number()
-                        .min(1)
-                        .allow('auto'),
+                    mode: Joi.string().valid('rgb', 'cmyk').default('rgb'),
+                    width: Joi.number().min(1).optional(),
+                    height: Joi.number().min(1).allow('auto'),
                     plain: Joi.boolean().default(false),
                     scale: Joi.number().default(1),
                     zoom: Joi.number().default(2),

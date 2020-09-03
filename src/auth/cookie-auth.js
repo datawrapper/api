@@ -34,7 +34,7 @@ function cookieAuth(server, options) {
     const api = server.methods.config('api');
     const opts = { cookie: api.sessionID, ...options };
 
-    server.state(opts.cookie, getStateOpts(api.domain, 90));
+    server.state(opts.cookie, getStateOpts(server, 90));
 
     const scheme = {
         authenticate: async (request, h) => {
@@ -69,7 +69,7 @@ function cookieAuth(server, options) {
                 h.state(
                     opts.cookie,
                     session,
-                    getStateOpts(api.domain, 90, sessionType === 'token' ? 'None' : sameSite)
+                    getStateOpts(server, 90, sessionType === 'token' ? 'None' : sameSite)
                 );
                 return h.authenticated({ credentials, artifacts });
             }

@@ -21,9 +21,7 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 })
             },
             response: createResponseConfig({
@@ -47,9 +45,7 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 })
             }
         },
@@ -68,12 +64,8 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required(),
-                    version: Joi.number()
-                        .integer()
-                        .min(0)
+                    id: Joi.string().length(5).required(),
+                    version: Joi.number().integer().min(0)
                 })
             },
             response: createResponseConfig({
@@ -208,6 +200,8 @@ async function publishChart(request, h) {
     // log action that chart has been published
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
 
+    // for image publishing and things that we want to (optionally)
+    // make the user wait for and/or inform about in publish UI
     await server.app.events.emit(server.app.event.CHART_PUBLISHED, {
         chart,
         user,
@@ -215,6 +209,12 @@ async function publishChart(request, h) {
     });
 
     logPublishStatus('done');
+
+    // for webhooks and notifications
+    server.app.events.emit(server.app.event.AFTER_CHART_PUBLISHED, {
+        chart,
+        user
+    });
 
     return {
         data: prepareChart(chart),

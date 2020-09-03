@@ -26,7 +26,7 @@ module.exports = async (server, options) => {
                 .response({
                     [api.sessionID]: session.id
                 })
-                .state(api.sessionID, session.id, getStateOpts(api.domain, 30));
+                .state(api.sessionID, session.id, getStateOpts(request.server, 30));
         }
     });
 };

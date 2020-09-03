@@ -17,13 +17,8 @@ module.exports = async (server, options) => {
             },
             validate: {
                 payload: Joi.object({
-                    email: Joi.string()
-                        .email()
-                        .required()
-                        .example('tony@stark-industries.com'),
-                    password: Joi.string()
-                        .required()
-                        .example('morgan-3000'),
+                    email: Joi.string().email().required().example('tony@stark-industries.com'),
+                    password: Joi.string().required().example('morgan-3000'),
                     keepSession: Joi.boolean().default(true)
                 })
             }
@@ -43,9 +38,7 @@ module.exports = async (server, options) => {
                 'Login using a one-time login token and redirect to the URL associated with the token. For use in CMS integrations.',
             validate: {
                 params: Joi.object({
-                    token: Joi.string()
-                        .required()
-                        .description('A valid login token.')
+                    token: Joi.string().required().description('A valid login token.')
                 })
             }
         },
@@ -85,7 +78,7 @@ module.exports = async (server, options) => {
                 .response({
                     [api.sessionID]: session.id
                 })
-                .state(api.sessionID, session.id, getStateOpts(api.domain, 30, 'None'))
+                .state(api.sessionID, session.id, getStateOpts(request.server, 30, 'None'))
                 .redirect(
                     `${frontend.https ? 'https' : 'http'}://${frontend.domain}${
                         token.data.redirect_url
@@ -150,5 +143,5 @@ async function login(request, h) {
         .response({
             [api.sessionID]: session.id
         })
-        .state(api.sessionID, session.id, getStateOpts(api.domain, keepSession ? 90 : 30));
+        .state(api.sessionID, session.id, getStateOpts(request.server, keepSession ? 90 : 30));
 }

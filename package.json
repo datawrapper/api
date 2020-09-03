@@ -23,6 +23,7 @@
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
         "test": "DW_CONFIG_PATH=test/_config.test.js ava --verbose || true",
+        "update-translations": "node scripts/update-translations.js",
         "clean:db": "DW_CONFIG_PATH=test/_config.test.js node test/helpers/teardown.js",
         "posttest": "npm run clean:db",
         "dev": "NODE_ENV=development nodemon src/index.js",
@@ -48,7 +49,7 @@
     "dependencies": {
         "@datawrapper/chart-core": "^8.15.2",
         "@datawrapper/locales": "1.0.2",
-        "@datawrapper/orm": "^3.17.0",
+        "@datawrapper/orm": "^3.17.2",
         "@datawrapper/schemas": "^1.5.2",
         "@datawrapper/shared": "0.26.1",
         "@hapi/boom": "9.1.0",
@@ -93,7 +94,7 @@
         "lint-staged": "~9.4.3",
         "nodemon": "~2.0.3",
         "openapi-schema-validator": "~3.0.3",
-        "prettier": "~1.19.1",
+        "prettier": "^2.0.5",
         "tap-xunit": "~2.4.1"
     },
     "lint-staged": {

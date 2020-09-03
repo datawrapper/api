@@ -13,9 +13,7 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: {
-                    id: Joi.string()
-                        .required()
-                        .description('ID of the team to fetch products for.')
+                    id: Joi.string().required().description('ID of the team to fetch products for.')
                 }
             }
         },
@@ -65,9 +63,7 @@ module.exports = async (server, options) => {
                         .description('ID of the team to create the product for.')
                 },
                 payload: Joi.object({
-                    expires: Joi.date()
-                        .allow(null)
-                        .optional(),
+                    expires: Joi.date().allow(null).optional(),
                     productId: Joi.number()
                 })
             }
@@ -111,17 +107,11 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: {
-                    id: Joi.string()
-                        .required()
-                        .description('ID of the team.'),
-                    productId: Joi.number()
-                        .required()
-                        .description('ID of the product.')
+                    id: Joi.string().required().description('ID of the team.'),
+                    productId: Joi.number().required().description('ID of the product.')
                 },
                 payload: {
-                    expires: Joi.date()
-                        .allow(null)
-                        .optional()
+                    expires: Joi.date().allow(null).optional()
                 }
             }
         },
@@ -161,12 +151,8 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: {
-                    id: Joi.string()
-                        .required()
-                        .description('ID of the team.'),
-                    productId: Joi.number()
-                        .required()
-                        .description('ID of the product.')
+                    id: Joi.string().required().description('ID of the team.'),
+                    productId: Joi.number().required().description('ID of the product.')
                 }
             }
         },

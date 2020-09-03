@@ -205,7 +205,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
     server.method('createChartWebsite', require('./publish/create-chart-website.js'));
-    server.method('registerVisualization', function(plugin, visualizations = []) {
+    server.method('registerVisualization', function (plugin, visualizations = []) {
         visualizations.forEach(vis => {
             const visualization = server.app.visualizations.get(vis.id);
 
@@ -275,7 +275,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     }
 
     if (!hasRegisteredDataPlugins) {
-        events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
+        events.on(event.GET_CHART_ASSET, async function ({ chart, filename }) {
             const filePath = path.join(localChartAssetRoot, getDataPath(chart.createdAt), filename);
             try {
                 await fs.access(filePath, fs.constants.R_OK);
@@ -285,7 +285,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             return fs.createReadStream(filePath);
         });
 
-        events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
+        events.on(event.PUT_CHART_ASSET, async function ({ chart, data, filename }) {
             const outPath = path.join(localChartAssetRoot, getDataPath(chart.createdAt));
 
             await fs.mkdir(outPath, { recursive: true });
@@ -374,7 +374,7 @@ async function start() {
         }
     }, 100);
 
-    process.on('SIGINT', async function() {
+    process.on('SIGINT', async function () {
         server.logger().info('received SIGINT signal, closing all connections...');
         await server.stop();
         server.logger().info('server has stopped');

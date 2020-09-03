@@ -13,14 +13,10 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    token: Joi.string()
-                        .required()
-                        .description('User activation token')
+                    token: Joi.string().required().description('User activation token')
                 }),
                 payload: Joi.object({
-                    password: Joi.string()
-                        .min(8)
-                        .description('New password of the user.')
+                    password: Joi.string().min(8).description('New password of the user.')
                 }).allow(null)
             }
         },
@@ -71,7 +67,7 @@ async function activateAccount(request, h) {
         });
     }
 
-    response.state(api.sessionID, session.id, getStateOpts(api.domain, 90));
+    response.state(api.sessionID, session.id, getStateOpts(request.server, 90));
 
     return response;
 }
