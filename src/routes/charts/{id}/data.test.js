@@ -31,7 +31,8 @@ test('User can read and write chart data', async t => {
 
     // chart data is missing by default
     let res = await getData();
-    t.is(res.statusCode, 404);
+    t.is(res.statusCode, 200);
+    t.is(res.result, ' ');
     // set chart data
     res = await putData('hello world');
     t.is(res.statusCode, 204);
