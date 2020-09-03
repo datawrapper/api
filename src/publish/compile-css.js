@@ -76,36 +76,38 @@ async function compileCSS({ theme, filePaths }) {
 
 function createFontEntries(fonts, themeData) {
     const usedFonts = [];
-    let fontString = '';
+    const fontStrings = [];
 
     if (themeData && themeData.typography && themeData.typography.fontFamilies) {
         Object.entries(themeData.typography.fontFamilies).forEach(([fontFamily, familyFonts]) => {
             familyFonts.forEach(props => {
                 if (fonts[props.name]) {
                     usedFonts.push(props.name);
-                    fontString += `${createFontCSS(fontFamily, fonts[props.name].files, props)}\n`;
+                    fontStrings.push(
+                        `${createFontCSS(fontFamily, fonts[props.name].files, props)}`
+                    );
                 }
             });
         });
     }
 
-    Object.entries(fonts).forEach(([font, attr]) => {
+    Object.entries(fonts).forEach(([font, attr], i) => {
         switch (attr.method) {
             case 'file':
             case 'url':
                 if (!usedFonts.includes(font)) {
-                    fontString += `${createFontCSS(font, attr.files)}\n`;
+                    fontStrings.push(`${createFontCSS(font, attr.files)}`);
                 }
                 break;
             case 'import':
-                fontString += `@import '${processUrl(attr.import)}';\n`;
+                fontStrings.push(`@import '${processUrl(attr.import)}';`);
                 break;
             default:
                 break;
         }
     });
 
-    return fontString;
+    return fontStrings.join('\n\n');
 
     function processUrl(url) {
         if (url.substring(0, 2) === '//') {
@@ -129,9 +131,9 @@ function createFontEntries(fonts, themeData) {
 
         fontCSS += `
     src: url('${processUrl(woff)}')  format('woff'),      /* Pretty Modern Browsers */
-    url('${processUrl(ttf)}')   format('truetype'),  /* Safari, Android, iOS */
-    url('${processUrl(svg)}#${font}')   format('svg');
-}\n`;
+         url('${processUrl(ttf)}')   format('truetype'),  /* Safari, Android, iOS */
+         url('${processUrl(svg)}#${font}')   format('svg');
+}`;
         return fontCSS;
     }
 }
