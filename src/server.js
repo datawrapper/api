@@ -1,4 +1,5 @@
 const Hapi = require('@hapi/hapi');
+const H2o2 = require('@hapi/h2o2');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 const HapiSwagger = require('hapi-swagger');
@@ -143,6 +144,7 @@ async function getVersionInfo() {
 
 async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     const { commit, version } = await getVersionInfo();
+    await server.register(H2o2);
     await server.register({
         plugin: require('hapi-pino'),
         options: {
