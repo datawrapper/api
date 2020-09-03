@@ -15,8 +15,6 @@ const {
 const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
 
-const CodedError = require('@datawrapper/shared/CodedError');
-
 const { generateToken, loadChart } = require('./utils');
 const { addScope } = require('./utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
@@ -280,7 +278,8 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             try {
                 await fs.access(filePath, fs.constants.R_OK);
             } catch (e) {
-                throw new CodedError('notFound', 'chart asset not found');
+                // file does not exist, return "empty" data
+                return filename.endsWith('.json') ? '{}' : ' ';
             }
             return fs.createReadStream(filePath);
         });
