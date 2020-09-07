@@ -199,7 +199,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.app.adminScopes = new Set();
 
     server.method('getModel', name => ORM.db.models[name]);
-    server.method('config', key => (key ? config[key] : config));
+    server.method('config', key => (key ? get(config, key) : config));
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
     server.method('createChartWebsite', require('./publish/create-chart-website.js'));
