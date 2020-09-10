@@ -1,4 +1,4 @@
-const { createSession, getStateOpts } = require('../../auth/utils');
+const { createSession, getStateOpts } = require('@datawrapper/shared/node/auth');
 
 module.exports = async (server, options) => {
     // POST /v3/auth/session

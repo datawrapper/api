@@ -1,36 +1,46 @@
 const Boom = require('@hapi/boom');
 const get = require('lodash/get');
 const AuthBearer = require('hapi-auth-bearer-token');
-const AuthCookie = require('./cookie-auth');
-const getUser = require('./get-user');
-const authUtils = require('./utils.js');
-const { AccessToken } = require('@datawrapper/orm/models');
+const {
+    createComparePassword,
+    createHashPassword,
+    createCookieAuthScheme,
+    bearerValidation,
+    adminValidation
+} = require('@datawrapper/shared/node/auth');
+const cookieAuthScheme = createCookieAuthScheme(false);
 
-async function bearerValidation(request, token, h) {
-    const row = await AccessToken.findOne({ where: { token, type: 'api-token' } });
+const DWAuth = {
+    name: 'dw-auth',
+    version: '1.0.0',
+    register: async (server, options) => {
+        function isAdmin(request, { throwError = false } = {}) {
+            const check = get(request, ['auth', 'artifacts', 'role'], '') === 'admin';
 
-    if (!row) {
-        return { isValid: false, message: Boom.unauthorized('Token not found', 'Token') };
+            if (throwError && !check) {
+                throw Boom.unauthorized();
+            }
+
+            return check;
+        }
+
+        const { hashRounds = 15 } = server.methods.config('api');
+        server.method('isAdmin', isAdmin);
+        server.method('comparePassword', createComparePassword(server));
+        server.method('hashPassword', createHashPassword(hashRounds));
+
+        await server.register(AuthBearer);
+        server.auth.scheme('cookie-auth', cookieAuthScheme);
+        server.auth.scheme('dw-auth', dwAuth);
+
+        server.auth.strategy('bearer', 'bearer-access-token', { validate: bearerValidation });
+        server.auth.strategy('session', 'cookie-auth');
+        server.auth.strategy('simple', 'dw-auth');
+        server.auth.strategy('admin', 'dw-auth', { validate: adminValidation });
+
+        server.auth.default('simple');
     }
-
-    await row.update({ last_used_at: new Date() });
-
-    const auth = await getUser(row.user_id, {
-        credentials: { token },
-        strategy: 'Token'
-    });
-    if (!auth.artifacts.isActivated()) {
-        // only activated users may authenticate through bearer tokens
-        return { isValid: false, message: Boom.unauthorized('User not activated', 'Token') };
-    }
-    if (auth.isValid) {
-        auth.credentials.scope =
-            !row.data.scopes || row.data.scopes.includes('all')
-                ? request.server.methods.getScopes(auth.artifacts.isAdmin())
-                : row.data.scopes;
-    }
-    return auth;
-}
+};
 
 function dwAuth(server, options = {}) {
     const scheme = {
@@ -65,44 +75,5 @@ function dwAuth(server, options = {}) {
 
     return scheme;
 }
-
-function adminValidation({ artifacts } = {}) {
-    if (artifacts.role !== 'admin') {
-        throw Boom.unauthorized('ADMIN_ROLE_REQUIRED');
-    }
-}
-
-const DWAuth = {
-    name: 'dw-auth',
-    version: '1.0.0',
-    register: async (server, options) => {
-        await server.register([AuthCookie, AuthBearer]);
-
-        function isAdmin(request, { throwError = false } = {}) {
-            const check = get(request, ['auth', 'artifacts', 'role'], '') === 'admin';
-
-            if (throwError && !check) {
-                throw Boom.unauthorized();
-            }
-
-            return check;
-        }
-
-        server.method('isAdmin', isAdmin);
-        server.method('comparePassword', authUtils.createComparePassword(server));
-
-        const { hashRounds = 15 } = server.methods.config('api');
-        server.method('hashPassword', authUtils.createHashPassword(hashRounds));
-
-        server.auth.scheme('dw-auth', dwAuth);
-
-        server.auth.strategy('bearer', 'bearer-access-token', { validate: bearerValidation });
-        server.auth.strategy('session', 'cookie-auth');
-        server.auth.strategy('simple', 'dw-auth');
-        server.auth.strategy('admin', 'dw-auth', { validate: adminValidation });
-
-        server.auth.default('simple');
-    }
-};
 
 module.exports = DWAuth;
