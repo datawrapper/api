@@ -1,7 +1,9 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { User } = require('@datawrapper/orm/models');
-const { createSession, getStateOpts } = require('@datawrapper/shared/node/auth');
+const { createSession, getStateOpts } = require('@datawrapper/shared/node/auth')(
+    require('@datawrapper/orm/models')
+);
 
 module.exports = async (server, options) => {
     server.route({

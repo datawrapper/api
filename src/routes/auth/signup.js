@@ -4,7 +4,7 @@ const {
     associateChartsWithUser,
     createSession,
     getStateOpts
-} = require('@datawrapper/shared/node/auth');
+} = require('@datawrapper/shared/node/auth')(require('@datawrapper/orm/models'));
 const { createUserPayload } = require('../../schemas/payload');
 
 module.exports = async (server, options) => {

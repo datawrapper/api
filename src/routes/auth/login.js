@@ -7,7 +7,7 @@ const {
     associateChartsWithUser,
     createSession,
     getStateOpts
-} = require('@datawrapper/shared/node/auth');
+} = require('@datawrapper/shared/node/auth')(require('@datawrapper/orm/models'));
 
 module.exports = async (server, options) => {
     // POST /v3/auth/login
