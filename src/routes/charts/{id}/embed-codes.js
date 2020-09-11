@@ -149,6 +149,7 @@ module.exports = async (server, options) => {
                             /%chart_height%/g,
                             clean(get(chart, 'metadata.publish.embed-height'))
                         )
+                        .replace(/%(.*?)%/g, (match, path) => clean(get(chart, path)))
                 };
             }
         }
