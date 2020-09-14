@@ -7,7 +7,7 @@ const {
     createCookieAuthScheme,
     bearerValidation,
     adminValidation
-} = require('@datawrapper/shared/node/auth')(require('@datawrapper/orm/models'));
+} = require('@datawrapper/service-utils/auth')(require('@datawrapper/orm/models'));
 const cookieAuthScheme = createCookieAuthScheme(false);
 
 const DWAuth = {

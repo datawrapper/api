@@ -3,7 +3,7 @@
 const got = require('got');
 const fs = require('fs');
 const path = require('path');
-const { requireConfig } = require('@datawrapper/shared/node/findConfig');
+const { requireConfig } = require('@datawrapper/service-utils/findConfig');
 const chalk = require('chalk');
 require('dotenv').config({
     path: path.resolve(__dirname, '../../../utils/docker/.datawrapper_env')

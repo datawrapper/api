@@ -1,4 +1,4 @@
-const { createSession, getStateOpts } = require('@datawrapper/shared/node/auth')(
+const { createSession, getStateOpts } = require('@datawrapper/service-utils/auth')(
     require('@datawrapper/orm/models')
 );
 

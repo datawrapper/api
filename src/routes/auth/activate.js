@@ -1,7 +1,7 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { User } = require('@datawrapper/orm/models');
-const { createSession, getStateOpts } = require('@datawrapper/shared/node/auth')(
+const { createSession, getStateOpts } = require('@datawrapper/service-utils/auth')(
     require('@datawrapper/orm/models')
 );
 

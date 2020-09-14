@@ -8,7 +8,7 @@ test.before(async t => {
     });
     t.context.server = server;
 
-    t.context.legacyHash = require('@datawrapper/shared/node/auth')(
+    t.context.legacyHash = require('@datawrapper/service-utils/auth')(
         require('@datawrapper/orm')
     ).legacyHash;
 

@@ -4,7 +4,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 const { exec } = require('child_process');
 const arg = require('arg');
-const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
+const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 const server = require('../src/server.js');
 
 const configPath = findConfigPath();
