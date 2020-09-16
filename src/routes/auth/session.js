@@ -1,4 +1,6 @@
-const { createSession, getStateOpts } = require('../../auth/utils');
+const { createSession, getStateOpts } = require('@datawrapper/service-utils/auth')(
+    require('@datawrapper/orm/models')
+);
 
 module.exports = async (server, options) => {
     // POST /v3/auth/session

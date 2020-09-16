@@ -13,7 +13,7 @@ const {
     validateRedis
 } = require('@datawrapper/schemas/config');
 const schemas = require('@datawrapper/schemas');
-const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
+const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 
 const { generateToken, loadChart } = require('./utils');
 const { addScope } = require('./utils/l10n');
