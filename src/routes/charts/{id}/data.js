@@ -1,7 +1,7 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { noContentResponse } = require('../../../schemas/response');
-const checkUrl = require('@datawrapper/shared/node/checkUrl');
+const checkUrl = require('@datawrapper/service-utils/checkUrl');
 const got = require('got');
 
 module.exports = (server, options) => {

@@ -8,6 +8,10 @@ function getScope(scope, locale = defaultLanguage) {
     }
 
     if (!scopes[scope][locale]) {
+        if (scopes[scope][locale.replace('-', '_')]) {
+            return scopes[scope][locale.replace('-', '_')];
+        }
+
         // try to find locale of same language
         const lang = locale.substr(0, 2);
         locale = Object.keys(scopes[scope]).find(loc => loc.startsWith(lang)) || defaultLanguage;

@@ -13,9 +13,7 @@ const {
     validateRedis
 } = require('@datawrapper/schemas/config');
 const schemas = require('@datawrapper/schemas');
-const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
-
-const CodedError = require('@datawrapper/shared/CodedError');
+const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 
 const { generateToken, loadChart } = require('./utils');
 const { addScope } = require('./utils/l10n');
@@ -100,6 +98,7 @@ const server = Hapi.server({
     routes: {
         cors: {
             origin: config.api.cors,
+            additionalHeaders: ['X-CSRF-Token'],
             credentials: true
         },
         validate: {
@@ -201,7 +200,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.app.adminScopes = new Set();
 
     server.method('getModel', name => ORM.db.models[name]);
-    server.method('config', key => (key ? config[key] : config));
+    server.method('config', key => (key ? get(config, key) : config));
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
     server.method('createChartWebsite', require('./publish/create-chart-website.js'));
@@ -280,7 +279,8 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             try {
                 await fs.access(filePath, fs.constants.R_OK);
             } catch (e) {
-                throw new CodedError('notFound', 'chart asset not found');
+                // file does not exist, return "empty" data
+                return filename.endsWith('.json') ? '{}' : ' ';
             }
             return fs.createReadStream(filePath);
         });

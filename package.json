@@ -48,11 +48,11 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/chart-core": "^8.15.2",
-        "@datawrapper/locales": "1.0.2",
-        "@datawrapper/orm": "^3.17.2",
+        "@datawrapper/chart-core": "^8.19.1",
+        "@datawrapper/locales": "^1.0.3",
+        "@datawrapper/orm": "^3.18.5",
         "@datawrapper/schemas": "^1.5.2",
-        "@datawrapper/shared": "0.26.1",
+        "@datawrapper/service-utils": "0.1.2",
         "@hapi/boom": "9.1.0",
         "@hapi/catbox-memory": "5.0.0",
         "@hapi/catbox-redis": "5.0.5",

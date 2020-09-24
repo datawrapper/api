@@ -3,7 +3,7 @@ const os = require('os');
 const fs = require('fs');
 const chalk = require('chalk');
 const ORM = require('@datawrapper/orm');
-const { requireConfig } = require('@datawrapper/shared/node/findConfig');
+const { requireConfig } = require('@datawrapper/service-utils/findConfig');
 
 const log = str => process.stdout.write(str + '\n');
 const cleanupFile = path.join(os.tmpdir(), 'cleanup.csv');

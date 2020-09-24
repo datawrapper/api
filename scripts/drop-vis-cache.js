@@ -1,7 +1,7 @@
 const chalk = require('chalk');
 const arg = require('arg');
 const Redis = require('ioredis');
-const { requireConfig } = require('@datawrapper/shared/node/findConfig');
+const { requireConfig } = require('@datawrapper/service-utils/findConfig');
 
 const config = requireConfig();
 

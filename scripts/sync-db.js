@@ -2,7 +2,7 @@
 /* eslint no-console: "off" */
 const chalk = require('chalk');
 const ORM = require('@datawrapper/orm');
-const { requireConfig } = require('@datawrapper/shared/node/findConfig');
+const { requireConfig } = require('@datawrapper/service-utils/findConfig');
 const config = requireConfig();
 
 ORM.init(config).then(() => {
