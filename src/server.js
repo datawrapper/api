@@ -43,6 +43,7 @@ if (useRedis) {
 const host = config.api.subdomain
     ? `${config.api.subdomain}.${config.api.domain}`
     : config.api.domain;
+const scheme = config.frontend.https ? 'https' : 'http';
 
 const port = config.api.port || 3000;
 
@@ -51,7 +52,7 @@ const OpenAPI = {
     options: {
         debug: DW_DEV_MODE,
         host: DW_DEV_MODE ? `${host}:${port}` : host,
-        schemes: DW_DEV_MODE ? ['http'] : ['https'],
+        schemes: [scheme],
         info: {
             title: 'Datawrapper API v3 Documentation',
             version: pkg.version,
@@ -257,7 +258,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     }
 
     const { events, event } = server.app;
-    const { general, frontend } = server.methods.config();
+    const { general } = server.methods.config();
     const { localChartAssetRoot } = general;
     const registeredEvents = events.eventNames();
     const hasRegisteredDataPlugins =
@@ -306,7 +307,6 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     }
 
     if (!hasRegisteredPublishPlugin) {
-        const protocol = frontend.https ? 'https' : 'http';
         events.on(event.PUBLISH_CHART, async ({ chart, outDir, fileMap }) => {
             const dest = path.resolve(general.localChartPublishRoot, chart.publicId);
 
@@ -324,7 +324,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
             await fs.remove(outDir);
 
-            return `${protocol}://${general.chart_domain}/${chart.publicId}`;
+            return `${scheme}://${general.chart_domain}/${chart.publicId}`;
         });
     }
 
