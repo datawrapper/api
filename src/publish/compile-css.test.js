@@ -3,17 +3,7 @@ const test = require('ava');
 const { findLessVariables, createFontEntries, flatten } = require('./compile-css.js');
 
 test('should create font rule declarations', t => {
-    let result = createFontEntries({
-        Roboto: {
-            type: 'font',
-            import: 'https://static.dwcdn.net/css/roboto.css',
-            method: 'import'
-        }
-    });
-
-    t.is(result, "@import 'https://static.dwcdn.net/css/roboto.css';");
-
-    result = createFontEntries({
+    const fontFiles = {
         Font: {
             type: 'font',
             files: {
@@ -23,8 +13,99 @@ test('should create font rule declarations', t => {
                 woff2: '/font.woff2'
             },
             method: 'url'
+        },
+        FontBold: {
+            type: 'font',
+            files: {
+                svg: '/fontBold.svg',
+                ttf: '/fontBold.ttf',
+                woff: '/fontBold.woff',
+                woff2: '/fontBold.woff2'
+            },
+            method: 'url'
+        },
+        FontItalic: {
+            type: 'font',
+            files: {
+                svg: '/fontItalic.svg',
+                ttf: '/fontItalic.ttf',
+                woff: '/fontItalic.woff',
+                woff2: '/fontItalic.woff2'
+            },
+            method: 'url'
         }
+    };
+
+    const additionalFont = {
+        type: 'font',
+        files: {
+            svg: '/anotherFontBold.svg',
+            ttf: '/anotherFontBold.ttf',
+            woff: '/anotherFontBold.woff',
+            woff2: '/anotherFontBold.woff2'
+        },
+        method: 'url'
+    };
+
+    const importedFont = {
+        type: 'font',
+        import: 'https://static.dwcdn.net/css/roboto.css',
+        method: 'import'
+    };
+
+    const themeData = {
+        typography: {
+            fontFamilies: {
+                Font: [
+                    {
+                        name: 'Font',
+                        style: 'normal',
+                        weight: 400
+                    },
+                    {
+                        name: 'FontBold',
+                        style: 'normal',
+                        weight: 'bold'
+                    },
+                    {
+                        name: 'FontItalic',
+                        style: 'italic',
+                        weight: 400
+                    }
+                ]
+            }
+        }
+    };
+
+    // css for imported font
+    let result = createFontEntries({
+        Roboto: importedFont
     });
+
+    t.is(result, "@import 'https://static.dwcdn.net/css/roboto.css';");
+
+    // css for font file, (no font families defined)
+    result = createFontEntries({
+        Font: fontFiles.Font
+    });
+
+    t.snapshot(result);
+
+    // css for mixed font files (no font families defined) and imported font
+    result = createFontEntries(Object.assign(fontFiles, { Roboto: importedFont }));
+
+    t.snapshot(result);
+
+    // css for font files with font families defined
+    result = createFontEntries(fontFiles, themeData);
+
+    t.snapshot(result);
+
+    // css for font files with mix of font famlies defined, and not
+    result = createFontEntries(
+        Object.assign(fontFiles, { AnotherFontBold: additionalFont }),
+        themeData
+    );
 
     t.snapshot(result);
 });

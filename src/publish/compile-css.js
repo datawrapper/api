@@ -44,7 +44,12 @@ async function compileCSS({ theme, filePaths }) {
         varString = varString.concat(`${variable}: ${CSS_ELIMINATION_KEYWORD};`);
     }
 
-    const inputLess = [varString, createFontEntries(theme.fonts), lessString, theme.less].join('');
+    const inputLess = [
+        varString,
+        createFontEntries(theme.fonts, theme.data),
+        lessString,
+        theme.less
+    ].join('');
 
     // todo: find a better solution or clean up map styles
     if (theme.data.vis && theme.data.vis['locator-maps']) {
@@ -69,7 +74,41 @@ async function compileCSS({ theme, filePaths }) {
     return css;
 }
 
-function createFontEntries(fonts) {
+function createFontEntries(fonts, themeData) {
+    const usedFonts = [];
+    const fontStrings = [];
+
+    if (themeData && themeData.typography && themeData.typography.fontFamilies) {
+        Object.entries(themeData.typography.fontFamilies).forEach(([fontFamily, familyFonts]) => {
+            familyFonts.forEach(props => {
+                if (fonts[props.name]) {
+                    usedFonts.push(props.name);
+                    fontStrings.push(
+                        `${createFontCSS(fontFamily, fonts[props.name].files, props)}`
+                    );
+                }
+            });
+        });
+    }
+
+    Object.entries(fonts).forEach(([font, attr], i) => {
+        switch (attr.method) {
+            case 'file':
+            case 'url':
+                if (!usedFonts.includes(font)) {
+                    fontStrings.push(`${createFontCSS(font, attr.files)}`);
+                }
+                break;
+            case 'import':
+                fontStrings.push(`@import '${processUrl(attr.import)}';`);
+                break;
+            default:
+                break;
+        }
+    });
+
+    return fontStrings.join('\n\n');
+
     function processUrl(url) {
         if (url.substring(0, 2) === '//') {
             return `https:${url}`;
@@ -78,25 +117,25 @@ function createFontEntries(fonts) {
         }
     }
 
-    return Object.entries(fonts)
-        .map(([font, attr]) => {
-            switch (attr.method) {
-                case 'file':
-                case 'url':
-                    return `
-@font-face {
-    font-family: '${font}';
-    src: url('${processUrl(attr.files.woff)}')  format('woff'),      /* Pretty Modern Browsers */
-         url('${processUrl(attr.files.ttf)}')   format('truetype'),  /* Safari, Android, iOS */
-         url('${processUrl(attr.files.svg)}#${font}')   format('svg');
+    function createFontCSS(font, { woff, ttf, svg }, props) {
+        let fontCSS = `@font-face {
+    font-family: '${font}';`;
+
+        if (props) {
+            const { weight, style, display } = props;
+            fontCSS += `
+    font-weight:${weight};
+    font-style: ${style};
+    font-display: ${display || 'auto'};`;
+        }
+
+        fontCSS += `
+    src: url('${processUrl(woff)}')  format('woff'),      /* Pretty Modern Browsers */
+         url('${processUrl(ttf)}')   format('truetype'),  /* Safari, Android, iOS */
+         url('${processUrl(svg)}#${font}')   format('svg');
 }`;
-                case 'import':
-                    return `@import '${processUrl(attr.import)}';`;
-                default:
-                    return '';
-            }
-        })
-        .join('\n');
+        return fontCSS;
+    }
 }
 
 function saveReadFile(filePath) {
