@@ -140,16 +140,30 @@ function checkReferer(request) {
         return;
     }
     if (!acceptedOrigins.has(url.origin)) {
-        server.logger().warn("Referer header doesn't match any trusted origins");
+        server
+            .logger()
+            .warn(
+                `Referer header doesn't match any trusted origins for request ${request.method.toUpperCase()} ${
+                    request.url
+                } from ${request.headers.referer}`
+            );
     }
 }
 
 function checkCSRFHeader(request) {
-    if (
-        !request.state[CSRF_COOKIE_NAME] ||
-        request.state[CSRF_COOKIE_NAME] !== request.headers[CSRF_TOKEN_HEADER.toLowerCase()]
-    ) {
-        server.logger().warn('CSRF token header is not set');
+    const csrfCrumb =
+        typeof request.state[CSRF_COOKIE_NAME] === 'object'
+            ? request.state[CSRF_COOKIE_NAME][0]
+            : request.state[CSRF_COOKIE_NAME];
+
+    if (!csrfCrumb || csrfCrumb !== request.headers[CSRF_TOKEN_HEADER.toLowerCase()]) {
+        server
+            .logger()
+            .warn(
+                `CSRF token header is not set for request ${request.method.toUpperCase()} ${
+                    request.url
+                } from ${request.headers.referer}`
+            );
     }
 }
 
