@@ -140,7 +140,13 @@ function checkReferer(request) {
         return;
     }
     if (!acceptedOrigins.has(url.origin)) {
-        server.logger().warn("Referer header doesn't match any trusted origins");
+        server
+            .logger()
+            .warn(
+                `Referer header doesn't match any trusted origins for request ${request.method.toUpperCase()} ${
+                    request.url
+                } from ${request.headers.referer}`
+            );
     }
 }
 
