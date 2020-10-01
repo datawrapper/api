@@ -129,7 +129,6 @@ const CSRF_SAFE_METHODS = new Set(['get', 'head', 'options', 'trace']); // accor
  */
 function checkReferer(request) {
     if (!request.headers.referer) {
-        server.logger().warn('Missing Referer header');
         return;
     }
     let url;
