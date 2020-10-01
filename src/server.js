@@ -167,7 +167,11 @@ function checkCSRFHeader(request) {
 }
 
 server.ext('onPreResponse', function (request, h) {
-    if (!CSRF_SAFE_METHODS.has(request.method.toLowerCase()) && request.headers.cookie) {
+    if (
+        !CSRF_SAFE_METHODS.has(request.method.toLowerCase()) &&
+        get(request, 'auth.isAuthenticated') &&
+        get(request, 'auth.credentials.session')
+    ) {
         checkReferer(request);
         checkCSRFHeader(request);
     }
