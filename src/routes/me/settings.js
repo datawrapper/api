@@ -32,6 +32,7 @@ module.exports = async (server, options) => {
                 method: 'PATCH',
                 url: `/v3/users/${request.auth.artifacts.id}/settings`,
                 auth: request.auth,
+                headers: request.headers,
                 payload: request.payload
             });
 
