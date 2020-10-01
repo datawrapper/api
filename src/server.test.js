@@ -89,7 +89,7 @@ test('Request is rejected when Referer header is malformed', async t => {
     t.is(res.statusCode, 401);
 });
 
-test('Request is rejected when Referer header is empty', async t => {
+test('Request is accepted when Referer header is empty', async t => {
     const { user, session } = await t.context.user;
 
     const res = await t.context.server.inject({
@@ -106,7 +106,7 @@ test('Request is rejected when Referer header is empty', async t => {
         }
     });
 
-    t.is(res.statusCode, 401);
+    t.is(res.statusCode, 204);
 });
 
 test('Referer is not checked for safe HTTP methods', async t => {
