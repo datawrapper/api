@@ -126,7 +126,7 @@ const CSRF_SAFE_METHODS = new Set(['get', 'head', 'options', 'trace']); // accor
  *
  * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
  */
-function checkReferer(request) {
+function checkReferer(request, h) {
     if (
         !CSRF_SAFE_METHODS.has(request.method.toLowerCase()) &&
         request.headers.cookie &&
@@ -146,6 +146,7 @@ function checkReferer(request) {
             );
         }
     }
+    return h.continue;
 }
 
 server.ext('onPreResponse', checkReferer);
