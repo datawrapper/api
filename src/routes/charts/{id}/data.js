@@ -134,7 +134,8 @@ async function getChartData(request, h) {
     const res = await request.server.inject({
         method: 'GET',
         url: `/v3/charts/${params.id}/assets/${filename}${query.ott ? `?ott=${query.ott}` : ''}`,
-        auth: request.auth
+        auth: request.auth,
+        headers: request.headers
     });
 
     if (res.result.error) {
