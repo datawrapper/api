@@ -40,6 +40,7 @@ async function signup(request, h) {
     const res = await request.server.inject({
         method: 'POST',
         url: '/v3/users',
+        headers: request.headers,
         payload: request.payload
     });
 

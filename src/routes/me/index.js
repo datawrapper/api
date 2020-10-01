@@ -131,6 +131,7 @@ async function updateMe(request, h) {
         method: 'PATCH',
         url: `/v3/users/${request.auth.artifacts.id}`,
         auth: request.auth,
+        headers: request.headers,
         payload: request.payload
     });
 
@@ -142,6 +143,7 @@ async function deleteMe(request, h) {
         method: 'DELETE',
         url: `/v3/users/${request.auth.artifacts.id}`,
         auth: request.auth,
+        headers: request.headers,
         payload: request.payload
     });
 

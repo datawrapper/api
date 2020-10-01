@@ -64,7 +64,7 @@ module.exports = (server, options) => {
             }
         },
         handler: async (request, h) => {
-            const { server, params, auth } = request;
+            const { server, params, auth, headers } = request;
             const srcChart = await server.methods.loadChart(params.id);
             const isAdmin = server.methods.isAdmin(request);
             const user = await User.findByPk(auth.artifacts.id);
@@ -112,7 +112,8 @@ module.exports = (server, options) => {
                 await server.inject({
                     url: `/v3/charts/${chart.id}/data/refresh`,
                     method: 'POST',
-                    auth
+                    auth,
+                    headers
                 });
             } catch (ex) {}
 
@@ -139,7 +140,7 @@ module.exports = (server, options) => {
             }
         },
         handler: async (request, h) => {
-            const { server, params, auth } = request;
+            const { server, params, auth, headers } = request;
             const user = auth.artifacts;
             const srcChart = await server.methods.loadChart(params.id);
 
@@ -185,7 +186,8 @@ module.exports = (server, options) => {
                 await server.inject({
                     url: `/v3/charts/${chart.id}/data/refresh`,
                     method: 'POST',
-                    auth
+                    auth,
+                    headers
                 });
             } catch (ex) {}
 
