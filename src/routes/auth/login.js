@@ -3,7 +3,11 @@ const Boom = require('@hapi/boom');
 const { User, AccessToken } = require('@datawrapper/orm/models');
 const { db } = require('@datawrapper/orm');
 const { Op } = db;
-const { associateChartsWithUser, createSession, getStateOpts } = require('../../auth/utils');
+const {
+    associateChartsWithUser,
+    createSession,
+    getStateOpts
+} = require('@datawrapper/service-utils/auth')(require('@datawrapper/orm/models'));
 
 module.exports = async (server, options) => {
     // POST /v3/auth/login

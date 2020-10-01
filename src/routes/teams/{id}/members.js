@@ -90,7 +90,7 @@ module.exports = async (server, options) => {
                 })
             },
             response: createResponseConfig({
-                status: { '201': Joi.any().empty() }
+                status: { 201: Joi.any().empty() }
             })
         },
         handler: addTeamMember

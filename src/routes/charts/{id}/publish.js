@@ -79,7 +79,7 @@ module.exports = (server, options) => {
 };
 
 async function publishChart(request, h) {
-    const { params, auth, server } = request;
+    const { params, auth, headers, server } = request;
     const { events, event } = server.app;
     const { createChartWebsite } = server.methods;
     const user = auth.artifacts;
@@ -103,7 +103,7 @@ async function publishChart(request, h) {
         });
     }
 
-    const options = { auth, server, log: logPublishStatus, publish: true };
+    const options = { auth, headers, server, log: logPublishStatus, publish: true };
     const { data, outDir, fileMap, cleanup } = await createChartWebsite(chart, options);
 
     /**
@@ -167,7 +167,8 @@ async function publishChart(request, h) {
     const embedCodes = {};
     const res = await request.server.inject({
         url: `/v3/charts/${params.id}/embed-codes`,
-        auth
+        auth,
+        headers
     });
     res.result.forEach(embed => {
         embedCodes[`embed-method-${embed.id}`] = embed.code;
@@ -246,7 +247,7 @@ async function publishChartStatus(request, h) {
 }
 
 async function publishData(request, h) {
-    const { query, params, server, auth } = request;
+    const { query, params, server, auth, headers } = request;
 
     let chart;
 
@@ -302,7 +303,8 @@ async function publishData(request, h) {
         url: `/v3/charts/${params.id}/data${
             query.published ? '?published=1' : query.ott ? `?ott=${query.ott}` : ''
         }`,
-        auth
+        auth,
+        headers
     });
 
     const additionalData = await getAdditionalMetadata(chart, { server });

@@ -16,7 +16,7 @@ const {
     validateRedis
 } = require('@datawrapper/schemas/config');
 const schemas = require('@datawrapper/schemas');
-const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
+const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 
 const { generateToken, loadChart } = require('./utils');
 const { addScope } = require('./utils/l10n');
@@ -119,17 +119,19 @@ const server = Hapi.server({
     }
 });
 
+const CSRF_SAFE_METHODS = new Set(['get', 'head', 'options', 'trace']); // according to RFC7231
+
 /**
  * Check the request Referer header to prevent CSRF.
  *
  * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
  */
-function checkReferer(request, h) {
-    const safeMethods = new Set(['get', 'head', 'options', 'trace']); // according to RFC7231
-    if (!safeMethods.has(request.method.toLowerCase()) && request.headers.cookie) {
-        if (!request.headers.referer) {
-            throw Boom.unauthorized('Missing Referer header');
-        }
+function checkReferer(request) {
+    if (
+        !CSRF_SAFE_METHODS.has(request.method.toLowerCase()) &&
+        request.headers.cookie &&
+        request.headers.referer
+    ) {
         let url;
         try {
             url = new URL(request.headers.referer);
@@ -137,10 +139,13 @@ function checkReferer(request, h) {
             throw Boom.unauthorized('Malformed Referer header');
         }
         if (!acceptedOrigins.has(url.origin)) {
-            throw Boom.unauthorized("Referer header doesn't match any trusted origins");
+            throw Boom.unauthorized(
+                `Referer header doesn't match any trusted origins for request ${request.method.toUpperCase()} ${
+                    request.url
+                } from ${request.headers.referer}`
+            );
         }
     }
-    return h.continue;
 }
 
 server.ext('onPreResponse', checkReferer);
@@ -260,7 +265,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.app.adminScopes = new Set();
 
     server.method('getModel', name => ORM.db.models[name]);
-    server.method('config', key => (key ? config[key] : config));
+    server.method('config', key => (key ? get(config, key) : config));
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
     server.method('createChartWebsite', require('./publish/create-chart-website.js'));

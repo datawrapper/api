@@ -41,7 +41,7 @@ module.exports = async (server, options) => {
                 })
             },
             response: createResponseConfig({
-                status: { '201': Joi.any().empty() }
+                status: { 201: Joi.any().empty() }
             })
         },
         /**
@@ -69,7 +69,7 @@ module.exports = async (server, options) => {
                 }
             },
             response: createResponseConfig({
-                status: { '201': Joi.any().empty() }
+                status: { 201: Joi.any().empty() }
             })
         },
         handler: acceptTeamInvitation
@@ -92,7 +92,7 @@ module.exports = async (server, options) => {
                 }
             },
             response: createResponseConfig({
-                status: { '204': Joi.any().empty() }
+                status: { 204: Joi.any().empty() }
             })
         },
         handler: rejectTeamInvitation
