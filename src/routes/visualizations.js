@@ -72,7 +72,7 @@ async function register(server, options) {
 
         const cacheKey = `${query.theme}__${params.id}`;
         const cachedCSS = await styleCache.get(cacheKey);
-        const cacheStyles = server.methods.config('api.caches.styles', false);
+        const cacheStyles = server.methods.config('cache.styles', false);
 
         if (cacheStyles && cachedCSS) {
             return h.response(cachedCSS).header('Content-Type', 'text/css');
