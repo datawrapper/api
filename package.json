@@ -51,7 +51,7 @@
         "@datawrapper/chart-core": "^8.19.4",
         "@datawrapper/locales": "^1.0.3",
         "@datawrapper/orm": "^3.18.5",
-        "@datawrapper/schemas": "^1.5.2",
+        "@datawrapper/schemas": "^1.6.0",
         "@datawrapper/service-utils": "0.1.2",
         "@hapi/boom": "9.1.0",
         "@hapi/catbox-memory": "5.0.0",
