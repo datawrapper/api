@@ -23,12 +23,14 @@ queries.queryUsers = async function ({
     search = '',
     teamId
 }) {
+    search = search ? `%${search}%` : search;
+
     const WHERE = SQL`WHERE
 user.deleted IS NOT TRUE
-${search ? `AND (user.email LIKE '%${search}%' OR user.name LIKE '%${search}%')` : ''}
+${search ? 'AND (user.email LIKE :search OR user.name LIKE :search)' : ''}
 ${
     teamId
-        ? `AND user.id IN (SELECT user_id FROM user_organization WHERE organization_id = '${teamId}')`
+        ? 'AND user.id IN (SELECT user_id FROM user_organization WHERE organization_id = :teamId)'
         : ''
 }
 `;
@@ -38,8 +40,8 @@ FROM \`user\`
 LEFT JOIN \`chart\` ON user.id = chart.author_id
 ${WHERE}
 GROUP BY user.id
-ORDER BY ${orderBy} ${order}
-LIMIT ${offset}, ${limit}
+ORDER BY :orderBy :order
+LIMIT :offset, :limit
   `;
 
     const countQuery = SQL`SELECT COUNT(user.id) AS count
@@ -49,10 +51,22 @@ ${WHERE}
 
     const [rows, count] = await Promise.all([
         db.query(userQuery, {
-            type: db.QueryTypes.SELECT
+            type: db.QueryTypes.SELECT,
+            replacements: {
+                search,
+                teamId,
+                orderBy,
+                order,
+                offset,
+                limit
+            }
         }),
         db.query(countQuery, {
-            type: db.QueryTypes.SELECT
+            type: db.QueryTypes.SELECT,
+            replacements: {
+                search,
+                teamId
+            }
         })
     ]);
 
