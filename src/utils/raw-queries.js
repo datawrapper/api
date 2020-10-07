@@ -40,8 +40,8 @@ FROM \`user\`
 LEFT JOIN \`chart\` ON user.id = chart.author_id
 ${WHERE}
 GROUP BY user.id
-ORDER BY :orderBy :order
-LIMIT :offset, :limit
+ORDER BY ${orderBy} ${order}
+LIMIT ${offset}, ${limit}
   `;
 
     const countQuery = SQL`SELECT COUNT(user.id) AS count
@@ -54,11 +54,7 @@ ${WHERE}
             type: db.QueryTypes.SELECT,
             replacements: {
                 search,
-                teamId,
-                orderBy,
-                order,
-                offset,
-                limit
+                teamId
             }
         }),
         db.query(countQuery, {
