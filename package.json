@@ -49,7 +49,7 @@
     },
     "dependencies": {
         "@datawrapper/chart-core": "^8.19.4",
-        "@datawrapper/locales": "^1.0.3",
+        "@datawrapper/locales": "^1.0.4",
         "@datawrapper/orm": "^3.18.5",
         "@datawrapper/schemas": "^1.5.2",
         "@datawrapper/service-utils": "0.1.2",
