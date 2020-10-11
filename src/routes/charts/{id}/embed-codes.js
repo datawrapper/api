@@ -32,9 +32,7 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 })
             },
             response: createResponseConfig({
@@ -151,6 +149,9 @@ module.exports = async (server, options) => {
                             /%chart_height%/g,
                             clean(get(chart, 'metadata.publish.embed-height'))
                         )
+                        .replace(/%custom_(.*?)%/g, (match, key) => {
+                            return clean(get(chart, `metadata.custom.${key}`, ''));
+                        })
                 };
             }
         }

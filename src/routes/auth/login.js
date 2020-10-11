@@ -3,7 +3,9 @@ const Boom = require('@hapi/boom');
 const { User, AccessToken } = require('@datawrapper/orm/models');
 const { db } = require('@datawrapper/orm');
 const { Op } = db;
-const { associateChartsWithUser, createSession, getStateOpts } = require('../../auth/utils');
+const { login, createSession, getStateOpts } = require('@datawrapper/service-utils/auth')(
+    require('@datawrapper/orm/models')
+);
 
 module.exports = async (server, options) => {
     // POST /v3/auth/login
@@ -17,18 +19,13 @@ module.exports = async (server, options) => {
             },
             validate: {
                 payload: Joi.object({
-                    email: Joi.string()
-                        .email()
-                        .required()
-                        .example('tony@stark-industries.com'),
-                    password: Joi.string()
-                        .required()
-                        .example('morgan-3000'),
+                    email: Joi.string().email().required().example('tony@stark-industries.com'),
+                    password: Joi.string().required().example('morgan-3000'),
                     keepSession: Joi.boolean().default(true)
                 })
             }
         },
-        handler: login
+        handler: loginUser
     });
 
     // GET /v3/auth/login/{token}
@@ -43,9 +40,7 @@ module.exports = async (server, options) => {
                 'Login using a one-time login token and redirect to the URL associated with the token. For use in CMS integrations.',
             validate: {
                 params: Joi.object({
-                    token: Joi.string()
-                        .required()
-                        .description('A valid login token.')
+                    token: Joi.string().required().description('A valid login token.')
                 })
             }
         },
@@ -81,11 +76,13 @@ module.exports = async (server, options) => {
             const { api, frontend } = config();
             const session = await createSession(generateToken(), token.user_id, false, 'token');
 
+            await request.server.methods.logAction(token.user_id, 'login/token');
+
             return h
                 .response({
                     [api.sessionID]: session.id
                 })
-                .state(api.sessionID, session.id, getStateOpts(api.domain, 30, 'None'))
+                .state(api.sessionID, session.id, getStateOpts(request.server, 30, 'None'))
                 .redirect(
                     `${frontend.https ? 'https' : 'http'}://${frontend.domain}${
                         token.data.redirect_url
@@ -95,7 +92,7 @@ module.exports = async (server, options) => {
     });
 };
 
-async function login(request, h) {
+async function loginUser(request, h) {
     const { email, password, keepSession } = request.payload;
     const user = await User.findOne({
         where: { email },
@@ -106,7 +103,7 @@ async function login(request, h) {
         return Boom.unauthorized('Invalid credentials');
     }
 
-    const { generateToken, config, comparePassword } = request.server.methods;
+    const { config, comparePassword } = request.server.methods;
     const api = config('api');
 
     let isValid = await comparePassword(password, user.pwd, {
@@ -123,32 +120,18 @@ async function login(request, h) {
         return Boom.unauthorized('Invalid credentials');
     }
 
-    let session;
-
-    if (request.auth.artifacts && request.auth.artifacts.role === 'guest') {
-        session = request.auth.credentials.data;
-        /* associate guest session with newly created user */
-        await Promise.all([
-            session.update({
-                data: {
-                    ...session.data,
-                    'dw-user-id': user.id,
-                    last_action_time: Math.floor(Date.now() / 1000)
-                },
-                user_id: user.id,
-                persistent: keepSession
-            }),
-            associateChartsWithUser(session.id, user.id)
-        ]);
-    } else {
-        session = await createSession(generateToken(), user.id, keepSession);
-    }
-
+    const session = await login(
+        user.id,
+        request.auth.artifacts && request.auth.artifacts.role === 'guest'
+            ? request.auth.credentials
+            : null,
+        keepSession
+    );
     await request.server.methods.logAction(user.id, 'login');
 
     return h
         .response({
             [api.sessionID]: session.id
         })
-        .state(api.sessionID, session.id, getStateOpts(api.domain, keepSession ? 90 : 30));
+        .state(api.sessionID, session.id, getStateOpts(request.server, keepSession ? 90 : 30));
 }

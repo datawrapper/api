@@ -25,9 +25,7 @@ module.exports = {
                 },
                 validate: {
                     params: Joi.object({
-                        id: Joi.number()
-                            .required()
-                            .description('User ID')
+                        id: Joi.number().required().description('User ID')
                     })
                 },
                 response: userResponse
@@ -47,9 +45,7 @@ module.exports = {
                 },
                 validate: {
                     params: Joi.object({
-                        id: Joi.number()
-                            .required()
-                            .description('User ID')
+                        id: Joi.number().required().description('User ID')
                     }),
                     payload: Joi.object({
                         name: Joi.string()
@@ -95,9 +91,7 @@ module.exports = {
                 description: 'Delete user',
                 validate: {
                     params: Joi.object({
-                        id: Joi.number()
-                            .required()
-                            .description('User ID')
+                        id: Joi.number().required().description('User ID')
                     }),
                     payload: Joi.object({
                         email: Joi.string()
@@ -217,6 +211,7 @@ async function editUser(request, h) {
                 const token = generateToken();
                 // set activate token (will be set in User.update call below)
                 data.activate_token = token;
+                data.role = 'pending';
                 // log new email to actions
                 await logAction(userId, 'email-change-request', {
                     'old-email': oldUser.email,
@@ -234,7 +229,7 @@ async function editUser(request, h) {
                         new_email: payload.email,
                         confirmation_link: `${
                             https ? 'https' : 'http'
-                        }://${domain}/account/profile?token=${token}`
+                        }://${domain}/account/activate/${token}`
                     }
                 });
             }

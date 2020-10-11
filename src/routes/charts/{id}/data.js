@@ -1,7 +1,7 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { noContentResponse } = require('../../../schemas/response');
-const checkUrl = require('@datawrapper/shared/node/checkUrl');
+const checkUrl = require('@datawrapper/service-utils/checkUrl');
 const got = require('got');
 
 module.exports = (server, options) => {
@@ -25,9 +25,7 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 })
             }
         },
@@ -52,9 +50,7 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 }),
                 payload: [
                     Joi.string().description(
@@ -86,9 +82,7 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 })
             }
         },
@@ -170,6 +164,7 @@ async function writeChartData(request, h) {
         method: 'PUT',
         url: `/v3/charts/${params.id}/assets/${params.id}.csv`,
         auth: request.auth,
+        headers: request.headers,
         payload: request.payload
     });
 

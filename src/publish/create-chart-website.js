@@ -43,6 +43,7 @@ module.exports = async function createChartWebsite(
     chart,
     {
         auth,
+        headers,
         server,
         log = noop,
         includePolyfills = true,
@@ -58,7 +59,8 @@ module.exports = async function createChartWebsite(
      */
     const { result: publishData } = await server.inject({
         url: `/v3/charts/${chart.id}/publish/data${publish ? '?publish=true' : ''}`,
-        auth
+        auth,
+        headers
     });
 
     if (chart.error) {

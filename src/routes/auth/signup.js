@@ -1,6 +1,10 @@
 const Boom = require('@hapi/boom');
 const { Session } = require('@datawrapper/orm/models');
-const { associateChartsWithUser, createSession, getStateOpts } = require('../../auth/utils');
+const {
+    associateChartsWithUser,
+    createSession,
+    getStateOpts
+} = require('@datawrapper/service-utils/auth')(require('@datawrapper/orm/models'));
 const { createUserPayload } = require('../../schemas/payload');
 
 module.exports = async (server, options) => {
@@ -36,6 +40,7 @@ async function signup(request, h) {
     const res = await request.server.inject({
         method: 'POST',
         url: '/v3/users',
+        headers: request.headers,
         payload: request.payload
     });
 
@@ -63,5 +68,7 @@ async function signup(request, h) {
 
     const api = config('api');
 
-    return h.response(res.result).state(api.sessionID, session.id, getStateOpts(api.domain, 90));
+    return h
+        .response(res.result)
+        .state(api.sessionID, session.id, getStateOpts(request.server, 90));
 }

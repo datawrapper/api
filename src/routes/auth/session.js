@@ -1,4 +1,6 @@
-const { createSession, getStateOpts } = require('../../auth/utils');
+const { createSession, getStateOpts } = require('@datawrapper/service-utils/auth')(
+    require('@datawrapper/orm/models')
+);
 
 module.exports = async (server, options) => {
     // POST /v3/auth/session
@@ -26,7 +28,7 @@ module.exports = async (server, options) => {
                 .response({
                     [api.sessionID]: session.id
                 })
-                .state(api.sessionID, session.id, getStateOpts(api.domain, 30));
+                .state(api.sessionID, session.id, getStateOpts(request.server, 30));
         }
     });
 };

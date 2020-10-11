@@ -70,9 +70,7 @@ module.exports = {
                 .example('My cool chart')
                 .allow('')
                 .description('Title of your chart. This will be the chart headline.'),
-            theme: Joi.string()
-                .example('datawrapper')
-                .description('Chart theme to use.'),
+            theme: Joi.string().example('datawrapper').description('Chart theme to use.'),
             type: Joi.string()
                 .example('d3-lines')
                 .description(
@@ -82,12 +80,8 @@ module.exports = {
                 .integer()
                 .example(1)
                 .description('Used in the app to determine where the user last edited the chart.'),
-            folderId: Joi.number()
-                .allow(null)
-                .optional(),
-            organizationId: Joi.string()
-                .allow(null)
-                .optional(),
+            folderId: Joi.number().allow(null).optional(),
+            organizationId: Joi.string().allow(null).optional(),
             metadata: Joi.object({
                 data: Joi.object({
                     transpose: Joi.boolean()

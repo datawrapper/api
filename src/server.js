@@ -1,3 +1,5 @@
+/* global URL */
+
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
@@ -13,9 +15,7 @@ const {
     validateRedis
 } = require('@datawrapper/schemas/config');
 const schemas = require('@datawrapper/schemas');
-const { findConfigPath } = require('@datawrapper/shared/node/findConfig');
-
-const CodedError = require('@datawrapper/shared/CodedError');
+const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 
 const { generateToken, loadChart } = require('./utils');
 const { addScope } = require('./utils/l10n');
@@ -45,6 +45,13 @@ if (useRedis) {
 const host = config.api.subdomain
     ? `${config.api.subdomain}.${config.api.domain}`
     : config.api.domain;
+const scheme = config.frontend.https ? 'https' : 'http';
+const origin = `${scheme}://${host}`;
+const frontendOrigin = `${scheme}://${config.frontend.domain}`;
+const acceptedOrigins = new Set([origin, frontendOrigin]);
+if (config.plugins.river && config.plugins.river.subdomain) {
+    acceptedOrigins.add(`${scheme}://${config.plugins.river.subdomain}.${config.api.domain}`);
+}
 
 const port = config.api.port || 3000;
 
@@ -53,7 +60,7 @@ const OpenAPI = {
     options: {
         debug: DW_DEV_MODE,
         host: DW_DEV_MODE ? `${host}:${port}` : host,
-        schemes: DW_DEV_MODE ? ['http'] : ['https'],
+        schemes: [scheme],
         info: {
             title: 'Datawrapper API v3 Documentation',
             version: pkg.version,
@@ -100,6 +107,7 @@ const server = Hapi.server({
     routes: {
         cors: {
             origin: config.api.cors,
+            additionalHeaders: ['X-CSRF-Token'],
             credentials: true
         },
         validate: {
@@ -108,6 +116,66 @@ const server = Hapi.server({
             }
         }
     }
+});
+
+const CSRF_COOKIE_NAME = 'crumb';
+const CSRF_TOKEN_HEADER = 'X-CSRF-Token';
+const CSRF_SAFE_METHODS = new Set(['get', 'head', 'options', 'trace']); // according to RFC7231
+
+/**
+ * Check the request Referer header to prevent CSRF.
+ *
+ * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
+ */
+function checkReferer(request) {
+    if (!request.headers.referer) {
+        return;
+    }
+    let url;
+    try {
+        url = new URL(request.headers.referer);
+    } catch (e) {
+        server.logger().warn('Malformed Referer header');
+        return;
+    }
+    if (!acceptedOrigins.has(url.origin)) {
+        server
+            .logger()
+            .warn(
+                `Referer header doesn't match any trusted origins for request ${request.method.toUpperCase()} ${
+                    request.url
+                } from ${request.headers.referer}`
+            );
+    }
+}
+
+function checkCSRFHeader(request) {
+    const csrfCrumb =
+        typeof request.state[CSRF_COOKIE_NAME] === 'object'
+            ? request.state[CSRF_COOKIE_NAME][0]
+            : request.state[CSRF_COOKIE_NAME];
+
+    if (!csrfCrumb || csrfCrumb !== request.headers[CSRF_TOKEN_HEADER.toLowerCase()]) {
+        server
+            .logger()
+            .warn(
+                `CSRF token header is not set for request ${request.method.toUpperCase()} ${
+                    request.url
+                } from ${request.headers.referer}`
+            );
+    }
+}
+
+server.ext('onPreResponse', function (request, h) {
+    if (
+        !CSRF_SAFE_METHODS.has(request.method.toLowerCase()) &&
+        get(request, 'auth.isAuthenticated') &&
+        get(request, 'auth.credentials.session')
+    ) {
+        checkReferer(request);
+        checkCSRFHeader(request);
+    }
+    return h.continue;
 });
 
 function getLogLevel() {
@@ -201,11 +269,11 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.app.adminScopes = new Set();
 
     server.method('getModel', name => ORM.db.models[name]);
-    server.method('config', key => (key ? config[key] : config));
+    server.method('config', key => (key ? get(config, key) : config));
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
     server.method('createChartWebsite', require('./publish/create-chart-website.js'));
-    server.method('registerVisualization', function(plugin, visualizations = []) {
+    server.method('registerVisualization', function (plugin, visualizations = []) {
         visualizations.forEach(vis => {
             const visualization = server.app.visualizations.get(vis.id);
 
@@ -258,7 +326,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     }
 
     const { events, event } = server.app;
-    const { general, frontend } = server.methods.config();
+    const { general } = server.methods.config();
     const { localChartAssetRoot } = general;
     const registeredEvents = events.eventNames();
     const hasRegisteredDataPlugins =
@@ -275,17 +343,18 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     }
 
     if (!hasRegisteredDataPlugins) {
-        events.on(event.GET_CHART_ASSET, async function({ chart, filename }) {
+        events.on(event.GET_CHART_ASSET, async function ({ chart, filename }) {
             const filePath = path.join(localChartAssetRoot, getDataPath(chart.createdAt), filename);
             try {
                 await fs.access(filePath, fs.constants.R_OK);
             } catch (e) {
-                throw new CodedError('notFound', 'chart asset not found');
+                // file does not exist, return "empty" data
+                return filename.endsWith('.json') ? '{}' : ' ';
             }
             return fs.createReadStream(filePath);
         });
 
-        events.on(event.PUT_CHART_ASSET, async function({ chart, data, filename }) {
+        events.on(event.PUT_CHART_ASSET, async function ({ chart, data, filename }) {
             const outPath = path.join(localChartAssetRoot, getDataPath(chart.createdAt));
 
             await fs.mkdir(outPath, { recursive: true });
@@ -306,7 +375,6 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     }
 
     if (!hasRegisteredPublishPlugin) {
-        const protocol = frontend.https ? 'https' : 'http';
         events.on(event.PUBLISH_CHART, async ({ chart, outDir, fileMap }) => {
             const publicId = await chart.getPublicId();
             const dest = path.resolve(general.localChartPublishRoot, publicId);
@@ -325,7 +393,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
             await fs.remove(outDir);
 
-            return `${protocol}://${general.chart_domain}/${publicId}`;
+            return `${scheme}://${general.chart_domain}/${publicId}`;
         });
     }
 
@@ -375,7 +443,7 @@ async function start() {
         }
     }, 100);
 
-    process.on('SIGINT', async function() {
+    process.on('SIGINT', async function () {
         server.logger().info('received SIGINT signal, closing all connections...');
         await server.stop();
         server.logger().info('server has stopped');

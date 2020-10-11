@@ -20,10 +20,7 @@ module.exports = async (server, options) => {
             },
             validate: {
                 payload: Joi.object({
-                    chartId: Joi.string()
-                        .length(5)
-                        .required()
-                        .description('A chart ID.'),
+                    chartId: Joi.string().length(5).required().description('A chart ID.'),
                     step: Joi.string()
                         .optional()
                         .valid(
@@ -175,10 +172,7 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.number()
-                        .integer()
-                        .required()
-                        .description('A valid login token.')
+                    id: Joi.number().integer().required().description('A valid login token.')
                 })
             }
         },

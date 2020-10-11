@@ -2,7 +2,7 @@ const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { prepareChart } = require('../../../utils/index.js');
 const { translate } = require('../../../utils/l10n.js');
-const { Chart, User, ChartPublic } = require('@datawrapper/orm/models');
+const { Chart, User, ChartPublic, Session } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const clone = require('lodash/clone');
 
@@ -59,14 +59,12 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 })
             }
         },
         handler: async (request, h) => {
-            const { server, params, auth } = request;
+            const { server, params, auth, headers } = request;
             const srcChart = await server.methods.loadChart(params.id);
             const isAdmin = server.methods.isAdmin(request);
             const user = await User.findByPk(auth.artifacts.id);
@@ -92,7 +90,7 @@ module.exports = (server, options) => {
                 language: srcChart.language,
                 organization_id: srcChart.organization_id,
                 in_folder: srcChart.in_folder,
-                externalData: srcChart.externalData,
+                external_data: srcChart.external_data,
 
                 forked_from: srcChart.id,
                 author_id: user.id,
@@ -114,7 +112,8 @@ module.exports = (server, options) => {
                 await server.inject({
                     url: `/v3/charts/${chart.id}/data/refresh`,
                     method: 'POST',
-                    auth
+                    auth,
+                    headers
                 });
             } catch (ex) {}
 
@@ -136,14 +135,12 @@ module.exports = (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .length(5)
-                        .required()
+                    id: Joi.string().length(5).required()
                 })
             }
         },
         handler: async (request, h) => {
-            const { server, params, auth } = request;
+            const { server, params, auth, headers } = request;
             const user = auth.artifacts;
             const srcChart = await server.methods.loadChart(params.id);
 
@@ -165,7 +162,7 @@ module.exports = (server, options) => {
                 type: publicChart.type,
                 title: publicChart.title,
                 metadata: newMeta,
-                externalData: publicChart.externalData,
+                external_data: publicChart.external_data,
                 forked_from: publicChart.id,
                 is_fork: true,
                 theme: 'default',
@@ -175,7 +172,9 @@ module.exports = (server, options) => {
             if (user.role === 'guest') {
                 newChart.guest_session = auth.credentials.session;
             } else {
-                newChart.organization_id = (await user.getActiveTeam()).id;
+                const session = await Session.findByPk(auth.credentials.session);
+                const activeTeam = await user.getActiveTeam(session);
+                newChart.organization_id = activeTeam ? activeTeam.id : null;
                 newChart.author_id = user.id;
             }
 
@@ -187,10 +186,12 @@ module.exports = (server, options) => {
                 await server.inject({
                     url: `/v3/charts/${chart.id}/data/refresh`,
                     method: 'POST',
-                    auth
+                    auth,
+                    headers
                 });
             } catch (ex) {}
 
+            await events.emit(event.CHART_FORK, { sourceChart: srcChart, destChart: chart });
             return h.response({ ...(await prepareChart(chart)) }).code(201);
         }
     });

@@ -18,7 +18,7 @@ schemas.listResponse = createResponseConfig({
 });
 
 schemas.noContentResponse = createResponseConfig({
-    status: { '204': Joi.any().empty() }
+    status: { 204: Joi.any().empty() }
 });
 
 schemas.chartResponse = createResponseConfig({

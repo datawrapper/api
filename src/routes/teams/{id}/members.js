@@ -36,9 +36,7 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .required()
-                        .description('ID of the team to fetch members for.')
+                    id: Joi.string().required().description('ID of the team to fetch members for.')
                 }),
                 query: Joi.object({
                     search: Joi.string().description(
@@ -79,9 +77,7 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .required()
-                        .description('Team ID (eg. guardians-of-the-galaxy)')
+                    id: Joi.string().required().description('Team ID (eg. guardians-of-the-galaxy)')
                 }),
                 payload: Joi.object({
                     userId: Joi.number()
@@ -94,7 +90,7 @@ module.exports = async (server, options) => {
                 })
             },
             response: createResponseConfig({
-                status: { '201': Joi.any().empty() }
+                status: { 201: Joi.any().empty() }
             })
         },
         handler: addTeamMember
@@ -112,9 +108,7 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .required()
-                        .description('ID of the team'),
+                    id: Joi.string().required().description('ID of the team'),
                     userId: Joi.number()
                         .required()
                         .description('ID of the team member to remove from team.')
@@ -137,9 +131,7 @@ module.exports = async (server, options) => {
             },
             validate: {
                 params: Joi.object({
-                    id: Joi.string()
-                        .required()
-                        .description('Team ID'),
+                    id: Joi.string().required().description('Team ID'),
                     userId: Joi.number()
                         .integer()
                         .required()
