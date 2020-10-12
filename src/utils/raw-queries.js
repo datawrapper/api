@@ -14,21 +14,23 @@ function SQL(strings, ...values) {
     return str;
 }
 
-queries.queryUsers = async function({
+queries.queryUsers = async function ({
     attributes,
     limit,
     offset,
     orderBy,
     order,
     search = '',
-    teamId
+    teamId,
 }) {
+    search = search ? `%${search}%` : search;
+
     const WHERE = SQL`WHERE
 user.deleted IS NOT TRUE
-${search ? `AND (user.email LIKE '%${search}%' OR user.name LIKE '%${search}%')` : ''}
+${search ? 'AND (user.email LIKE :search OR user.name LIKE :search)' : ''}
 ${
     teamId
-        ? `AND user.id IN (SELECT user_id FROM user_organization WHERE organization_id = '${teamId}')`
+        ? 'AND user.id IN (SELECT user_id FROM user_organization WHERE organization_id = :teamId)'
         : ''
 }
 `;
@@ -49,11 +51,19 @@ ${WHERE}
 
     const [rows, count] = await Promise.all([
         db.query(userQuery, {
-            type: db.QueryTypes.SELECT
+            type: db.QueryTypes.SELECT,
+            replacements: {
+                search,
+                teamId,
+            },
         }),
         db.query(countQuery, {
-            type: db.QueryTypes.SELECT
-        })
+            type: db.QueryTypes.SELECT,
+            replacements: {
+                search,
+                teamId,
+            },
+        }),
     ]);
 
     return { rows, count: count[0].count };
