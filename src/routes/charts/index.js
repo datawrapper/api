@@ -161,10 +161,14 @@ async function getAllCharts(request, h) {
 
     const { count, rows } = await model.findAndCountAll(options);
 
-    const charts = rows.map(chart => ({
-        ...prepareChart(chart),
-        url: `${url.pathname}/${chart.id}`
-    }));
+    const charts = [];
+
+    for (const chart of rows) {
+        charts.push({
+            ...(await prepareChart(chart)),
+            url: `${url.pathname}/${chart.id}`
+        });
+    }
 
     const chartList = {
         list: charts,
@@ -245,5 +249,7 @@ async function createChart(request, h) {
     // log chart/edit
     await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
 
-    return h.response({ ...prepareChart(chart), url: `${url.pathname}/${chart.id}` }).code(201);
+    return h
+        .response({ ...(await prepareChart(chart)), url: `${url.pathname}/${chart.id}` })
+        .code(201);
 }
