@@ -211,7 +211,6 @@ async function editUser(request, h) {
                 const token = generateToken();
                 // set activate token (will be set in User.update call below)
                 data.activate_token = token;
-                data.role = 'pending';
                 // log new email to actions
                 await logAction(userId, 'email-change-request', {
                     'old-email': oldUser.email,
@@ -229,7 +228,7 @@ async function editUser(request, h) {
                         new_email: payload.email,
                         confirmation_link: `${
                             https ? 'https' : 'http'
-                        }://${domain}/account/activate/${token}`
+                        }://${domain}/account/profile?token=${token}`
                     }
                 });
             }
