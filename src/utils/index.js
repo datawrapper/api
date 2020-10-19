@@ -12,9 +12,12 @@ const utils = {};
 utils.prepareChart = async (chart, additionalData = {}) => {
     const { user, in_folder, ...dataValues } = chart.dataValues;
 
+    const publicId =
+        typeof chart.getPublicId === 'function' ? await chart.getPublicId() : undefined;
+
     return {
         ...camelizeKeys(additionalData),
-        publicId: await chart.getPublicId(),
+        publicId,
         language: 'en_US',
         theme: 'datawrapper',
         ...camelizeKeys(dataValues),
