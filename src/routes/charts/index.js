@@ -1,7 +1,8 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
-const { decamelizeKeys, decamelize } = require('humps');
+const { decamelize } = require('humps');
+const createChart = require('@datawrapper/service-utils/createChart');
 const set = require('lodash/set');
 const { Chart, User, Folder } = require('@datawrapper/orm/models');
 const { prepareChart } = require('../../utils/index.js');
@@ -95,7 +96,7 @@ module.exports = {
                 },
                 response: chartResponse
             },
-            handler: createChart
+            handler: createChartHandler
         });
 
         server.register(require('./{id}'), {
@@ -188,15 +189,10 @@ async function getAllCharts(request, h) {
     return chartList;
 }
 
-async function createChart(request, h) {
+async function createChartHandler(request, h) {
     const { url, auth, payload, server } = request;
     const user = auth.artifacts;
     const isAdmin = server.methods.isAdmin(request);
-
-    async function findChartId() {
-        const id = server.methods.generateToken(5);
-        return (await Chart.findByPk(id)) ? findChartId() : id;
-    }
 
     if (
         payload &&
@@ -233,18 +229,7 @@ async function createChart(request, h) {
         }
     }
 
-    const id = await findChartId();
-    const chart = await Chart.create({
-        title: '',
-        theme: 'default',
-        type: 'd3-bars',
-        language: user.language,
-        ...decamelizeKeys(payload),
-        metadata: payload && payload.metadata ? payload.metadata : { data: {} },
-        author_id: user.id,
-        guest_session: user.role === 'guest' ? auth.credentials.session : undefined,
-        id
-    });
+    const chart = await createChart({ server, user, payload, session: auth.credentials.session });
 
     // log chart/edit
     await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
