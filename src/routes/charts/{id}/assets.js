@@ -101,6 +101,10 @@ async function getChartAsset(request, h) {
         return Boom.forbidden();
     }
 
+    if (!getAssetWhitelist(params.id).includes(params.asset)) {
+        return Boom.badRequest();
+    }
+
     try {
         const contentStream = await events.emit(
             event.GET_CHART_ASSET,
