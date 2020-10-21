@@ -31,7 +31,7 @@ module.exports = async (server, options) => {
                             'publish',
                             'basemap',
                             'data',
-                            'makers',
+                            'markers',
                             'design',
                             'annotate',
                             'preview'
@@ -68,7 +68,11 @@ module.exports = async (server, options) => {
                     return Boom.forbidden();
                 }
 
-                redirectUrl = `/chart/${chart.id}/${payload.step}`;
+                const namespace = ['basemap', 'data', 'markers', 'design'].includes(payload.step)
+                    ? 'map'
+                    : 'chart';
+
+                redirectUrl = `/${namespace}/${chart.id}/${payload.step}`;
             }
 
             const token = await AccessToken.newToken({
