@@ -1,6 +1,5 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const crypto = require('crypto');
 const { Op } = require('@datawrapper/orm').db;
 const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
 const get = require('lodash/get');
@@ -187,14 +186,13 @@ async function getChart(request, h) {
     const additionalData = await getAdditionalMetadata(chart, { server });
 
     if (server.methods.config('general').imageDomain) {
-        const hash = crypto
-            .createHash('md5')
-            .update(`${chart.id}--${chart.createdAt.getTime() / 1000}`)
-            .digest('hex');
-
         additionalData.thumbnails = {
-            full: `//${server.methods.config('general').imageDomain}/${chart.id}/${hash}/full.png`,
-            plain: `//${server.methods.config('general').imageDomain}/${chart.id}/${hash}/plain.png`
+            full: `//${server.methods.config('general').imageDomain}/${
+                chart.id
+            }/${chart.getThumbnailHash()}/full.png`,
+            plain: `//${server.methods.config('general').imageDomain}/${
+                chart.id
+            }/${chart.getThumbnailHash()}/plain.png`
         };
     }
 

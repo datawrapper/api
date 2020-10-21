@@ -109,10 +109,11 @@ module.exports = {
 async function getAllCharts(request, h) {
     const { query, url, auth } = request;
     const isAdmin = request.server.methods.isAdmin(request);
+    const general = request.server.methods.config('general');
 
     const options = {
         order: [[decamelize(query.orderBy), query.order]],
-        attributes: ['id', 'title', 'type', 'created_at', 'last_modified_at', 'public_version'],
+        attributes: ['id', 'title', 'type', 'createdAt', 'last_modified_at', 'public_version'],
         where: {
             deleted: {
                 [Op.not]: true
@@ -166,6 +167,16 @@ async function getAllCharts(request, h) {
     for (const chart of rows) {
         charts.push({
             ...(await prepareChart(chart)),
+            thumbnails: general.imageDomain
+                ? {
+                      full: `//${general.imageDomain}/${
+                          chart.id
+                      }/${chart.getThumbnailHash()}/full.png`,
+                      plain: `//${general.imageDomain}/${
+                          chart.id
+                      }/${chart.getThumbnailHash()}/plain.png`
+                  }
+                : undefined,
             url: `${url.pathname}/${chart.id}`
         });
     }
