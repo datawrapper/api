@@ -218,7 +218,7 @@ async function publishChart(request, h) {
     });
 
     return {
-        data: prepareChart(chart),
+        data: await prepareChart(chart),
         version: newPublicVersion,
         url: destination
     };
@@ -309,7 +309,7 @@ async function publishData(request, h) {
 
     const additionalData = await getAdditionalMetadata(chart, { server });
 
-    const data = { data: res.result, chart: prepareChart(chart, additionalData) };
+    const data = { data: res.result, chart: await prepareChart(chart, additionalData) };
 
     const htmlBodyResults = await server.app.events.emit(
         server.app.event.CHART_AFTER_BODY_HTML,

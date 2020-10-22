@@ -2,6 +2,7 @@ const fs = require('fs-extra');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 const chartCore = require('@datawrapper/chart-core');
+const get = require('lodash/get');
 
 const { compileCSS } = require('../publish/compile-css.js');
 
@@ -72,9 +73,9 @@ async function register(server, options) {
 
         const cacheKey = `${query.theme}__${params.id}`;
         const cachedCSS = await styleCache.get(cacheKey);
-        const disableVisCache = server.methods.config('api.disableVisualizationStylesCache', false);
+        const cacheStyles = get(server.methods.config('general'), 'cache.styles', false);
 
-        if (cachedCSS && !disableVisCache) {
+        if (cacheStyles && cachedCSS) {
             return h.response(cachedCSS).header('Content-Type', 'text/css');
         }
 

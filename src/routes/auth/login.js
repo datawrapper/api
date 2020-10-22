@@ -3,11 +3,9 @@ const Boom = require('@hapi/boom');
 const { User, AccessToken } = require('@datawrapper/orm/models');
 const { db } = require('@datawrapper/orm');
 const { Op } = db;
-const {
-    associateChartsWithUser,
-    createSession,
-    getStateOpts
-} = require('@datawrapper/service-utils/auth')(require('@datawrapper/orm/models'));
+const { login, createSession, getStateOpts } = require('@datawrapper/service-utils/auth')(
+    require('@datawrapper/orm/models')
+);
 
 module.exports = async (server, options) => {
     // POST /v3/auth/login
@@ -30,7 +28,7 @@ module.exports = async (server, options) => {
                 crumb: false
             }
         },
-        handler: login
+        handler: loginUser
     });
 
     // GET /v3/auth/login/{token}
@@ -81,6 +79,8 @@ module.exports = async (server, options) => {
             const { api, frontend } = config();
             const session = await createSession(generateToken(), token.user_id, false, 'token');
 
+            await request.server.methods.logAction(token.user_id, 'login/token');
+
             return h
                 .response({
                     [api.sessionID]: session.id
@@ -95,7 +95,7 @@ module.exports = async (server, options) => {
     });
 };
 
-async function login(request, h) {
+async function loginUser(request, h) {
     const { email, password, keepSession } = request.payload;
     const user = await User.findOne({
         where: { email },
@@ -106,7 +106,7 @@ async function login(request, h) {
         return Boom.unauthorized('Invalid credentials');
     }
 
-    const { generateToken, config, comparePassword } = request.server.methods;
+    const { config, comparePassword } = request.server.methods;
     const api = config('api');
 
     let isValid = await comparePassword(password, user.pwd, {
@@ -123,27 +123,13 @@ async function login(request, h) {
         return Boom.unauthorized('Invalid credentials');
     }
 
-    let session;
-
-    if (request.auth.artifacts && request.auth.artifacts.role === 'guest') {
-        session = request.auth.credentials.data;
-        /* associate guest session with newly created user */
-        await Promise.all([
-            session.update({
-                data: {
-                    ...session.data,
-                    'dw-user-id': user.id,
-                    last_action_time: Math.floor(Date.now() / 1000)
-                },
-                user_id: user.id,
-                persistent: keepSession
-            }),
-            associateChartsWithUser(session.id, user.id)
-        ]);
-    } else {
-        session = await createSession(generateToken(), user.id, keepSession);
-    }
-
+    const session = await login(
+        user.id,
+        request.auth.artifacts && request.auth.artifacts.role === 'guest'
+            ? request.auth.credentials
+            : null,
+        keepSession
+    );
     await request.server.methods.logAction(user.id, 'login');
 
     return h

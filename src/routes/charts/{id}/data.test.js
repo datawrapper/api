@@ -45,6 +45,9 @@ test('User can read and write chart data', async t => {
     res = await getAsset(`${chart.result.id}.csv`);
     t.is(res.statusCode, 200);
     t.is(res.result, 'hello world');
+    // make sure we can't access data for a different chart id
+    res = await getAsset(`00000.csv`);
+    t.is(res.statusCode, 400);
     // write some JSON to another asset
     res = await putAsset(`${chart.result.id}.map.json`, { answer: 42 }, 'application/json');
     t.is(res.statusCode, 204);

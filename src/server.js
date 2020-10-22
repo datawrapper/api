@@ -126,30 +126,35 @@ const CSRF_SAFE_METHODS = new Set(['get', 'head', 'options', 'trace']); // accor
  *
  * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
  */
-function checkReferer(request, h) {
-    if (
-        !CSRF_SAFE_METHODS.has(request.method.toLowerCase()) &&
-        request.headers.cookie &&
-        request.headers.referer
-    ) {
-        let url;
-        try {
-            url = new URL(request.headers.referer);
-        } catch (e) {
-            throw Boom.unauthorized('Malformed Referer header');
-        }
-        if (!acceptedOrigins.has(url.origin)) {
-            throw Boom.unauthorized(
-                `Referer header doesn't match any trusted origins for request ${request.method.toUpperCase()} ${
-                    request.url
-                } from ${request.headers.referer}`
-            );
-        }
+function checkReferer(request) {
+    if (!request.headers.referer) {
+        return;
     }
-    return h.continue;
+    let url;
+    try {
+        url = new URL(request.headers.referer);
+    } catch (e) {
+        throw Boom.unauthorized('Malformed Referer header');
+    }
+    if (!acceptedOrigins.has(url.origin)) {
+        throw Boom.unauthorized(
+            `Referer header doesn't match any trusted origins for request ${request.method.toUpperCase()} ${
+                request.url
+            } from ${request.headers.referer}`
+        );
+    }
 }
 
-server.ext('onPreResponse', checkReferer);
+server.ext('onPreResponse', function (request, h) {
+    if (
+        !CSRF_SAFE_METHODS.has(request.method.toLowerCase()) &&
+        get(request, 'auth.isAuthenticated') &&
+        get(request, 'auth.credentials.session')
+    ) {
+        checkReferer(request);
+    }
+    return h.continue;
+});
 
 function getLogLevel() {
     if (DW_DEV_MODE) {
@@ -373,7 +378,8 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
     if (!hasRegisteredPublishPlugin) {
         events.on(event.PUBLISH_CHART, async ({ chart, outDir, fileMap }) => {
-            const dest = path.resolve(general.localChartPublishRoot, chart.publicId);
+            const publicId = await chart.getPublicId();
+            const dest = path.resolve(general.localChartPublishRoot, publicId);
 
             for (const file of fileMap) {
                 const basename = path.basename(file);
@@ -389,7 +395,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
             await fs.remove(outDir);
 
-            return `${scheme}://${general.chart_domain}/${chart.publicId}`;
+            return `${scheme}://${general.chart_domain}/${publicId}`;
         });
     }
 
