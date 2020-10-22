@@ -146,11 +146,7 @@ function checkReferer(request) {
 }
 
 server.ext('onPreResponse', function (request, h) {
-    if (
-        !CSRF_SAFE_METHODS.has(request.method.toLowerCase()) &&
-        get(request, 'auth.isAuthenticated') &&
-        get(request, 'auth.credentials.session')
-    ) {
+    if (!CSRF_SAFE_METHODS.has(request.method.toLowerCase()) && usesCookieAuth(request)) {
         checkReferer(request);
     }
     return h.continue;
@@ -187,6 +183,10 @@ async function getVersionInfo() {
     }
 }
 
+function usesCookieAuth(request) {
+    return get(request, 'auth.isAuthenticated') && get(request, 'auth.credentials.session');
+}
+
 async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     const { commit, version } = await getVersionInfo();
     await server.register([
@@ -216,10 +216,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
                 },
                 restful: true,
                 skip: function (request) {
-                    // Allow cross-site requests that use the Authorization header instead of a
-                    // cookie to authenticate, because where there are no cookies, there is no CSRF
-                    // risk.
-                    return !request.headers.cookie;
+                    // Allow cross-site requests that are not authenticated with a cookie, because
+                    // where there are no cookies, there is no CSRF risk.
+                    return !usesCookieAuth(request);
                 }
             }
         }
