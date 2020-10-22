@@ -206,7 +206,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
                 cookieOptions: {
                     domain: '.' + config.api.domain,
                     isHttpOnly: false,
-                    isSameSite: DW_DEV_MODE ? 'None' : 'Lax',
+                    isSameSite: 'Lax',
                     isSecure: config.frontend.https
                 },
                 restful: true,
