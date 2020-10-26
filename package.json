@@ -40,7 +40,9 @@
             "tables/src/*",
             "tables/static/*",
             "visualization*/src/*",
-            "visualization*/static/*"
+            "visualization*/static/*",
+            "external-data/src/*",
+            "external-data/static/*"
         ]
     },
     "repository": {
