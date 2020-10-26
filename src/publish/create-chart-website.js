@@ -178,6 +178,11 @@ module.exports = async function createChartWebsite(
         fs.writeFile(path.join(outDir, fileName), content)
     ]);
 
+    const [polyfillScript] = await Promise.all([
+        copyFileHashed(path.join(chartCore.path.dist, 'load-polyfills.js'), path.join(outDir)),
+        fs.writeFile(path.join(outDir, fileName), content)
+    ]);
+
     dependencies.push(path.join('lib/vis/', fileName));
 
     function getAssetLink(asset) {
@@ -214,6 +219,7 @@ module.exports = async function createChartWebsite(
         __DW_SVELTE_PROPS__: stringify(props),
         CHART_HTML: html,
         CHART_HEAD: head,
+        POLYFILL_SCRIPT: getAssetLink(`../../lib/${polyfillScript}`),
         CORE_SCRIPT: getAssetLink(`../../lib/${coreScript}`),
         CSS: css,
         SCRIPTS: dependencies.map(file => getAssetLink(`../../${file}`)),
@@ -241,6 +247,7 @@ module.exports = async function createChartWebsite(
         ...dependencies,
         ...polyfillFiles,
         ...blocksFiles,
+        path.join('lib/', polyfillScript),
         path.join('lib/', coreScript),
         'index.html'
     ];
