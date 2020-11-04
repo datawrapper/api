@@ -16,6 +16,8 @@ html(lang="en")
       window.__DW_SVELTE_PROPS__.isStylePlain = /[?&]plain=1/.test(window.location.search);
       window.__DW_SVELTE_PROPS__.isStyleStatic = /[?&]static=1/.test(window.location.search);
 
+    script(src=POLYFILL_SCRIPT)
+
     each src in SCRIPTS
       script(src=src)
 
