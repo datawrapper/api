@@ -86,7 +86,7 @@ module.exports = (server, options) => {
 };
 
 async function exportChart(request, h) {
-    const { query, payload, params, auth, logger, server } = request;
+    const { query, payload, params, auth, logger, server, headers } = request;
     const { events, event } = server.app;
     const user = auth.artifacts;
 
@@ -107,7 +107,9 @@ async function exportChart(request, h) {
                 user,
                 data: payload,
                 auth,
-                logger
+                logger,
+                server,
+                headers
             })
         ).find(res => res.status === 'success' && res.data);
 
