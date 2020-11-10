@@ -120,9 +120,7 @@ async function exportChart(request, h) {
                 user,
                 data: payload,
                 auth,
-                logger,
-                server,
-                headers
+                logger
             })
         ).find(res => res.status === 'success' && res.data);
 
