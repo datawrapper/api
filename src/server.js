@@ -1,5 +1,3 @@
-/* global URL */
-
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
 const Crumb = require('@hapi/crumb');
@@ -117,39 +115,6 @@ const server = Hapi.server({
             }
         }
     }
-});
-
-const CSRF_SAFE_METHODS = new Set(['get', 'head', 'options', 'trace']); // according to RFC7231
-
-/**
- * Check the request Referer header to prevent CSRF.
- *
- * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
- */
-function checkReferer(request) {
-    if (!request.headers.referer) {
-        return;
-    }
-    let url;
-    try {
-        url = new URL(request.headers.referer);
-    } catch (e) {
-        throw Boom.unauthorized('Malformed Referer header');
-    }
-    if (!acceptedOrigins.has(url.origin)) {
-        throw Boom.unauthorized(
-            `Referer header doesn't match any trusted origins for request ${request.method.toUpperCase()} ${
-                request.url
-            } from ${request.headers.referer}`
-        );
-    }
-}
-
-server.ext('onPreResponse', function (request, h) {
-    if (!CSRF_SAFE_METHODS.has(request.method.toLowerCase()) && usesCookieAuth(request)) {
-        checkReferer(request);
-    }
-    return h.continue;
 });
 
 function getLogLevel() {
