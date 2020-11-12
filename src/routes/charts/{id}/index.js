@@ -335,7 +335,7 @@ async function getAdditionalMetadata(chart, { server }) {
                 let results = await server.app.events.emit(
                     server.app.event.GET_CHART_DISPLAY_URL,
                     {
-                        chartId: chart.id
+                        chart
                     },
                     { filter: 'success' }
                 );
