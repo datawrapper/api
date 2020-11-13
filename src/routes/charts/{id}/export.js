@@ -86,7 +86,7 @@ module.exports = (server, options) => {
 };
 
 async function exportChart(request, h) {
-    const { query, payload, params, auth, logger, server } = request;
+    const { query, payload, params, auth, logger, server, headers } = request;
     const { events, event } = server.app;
     const user = auth.artifacts;
 
@@ -100,6 +100,19 @@ async function exportChart(request, h) {
     // further authoritzation is handled by plugins
 
     Object.assign(payload, params);
+
+    if (!headers.origin) {
+        try {
+            // refresh external data
+            await server.inject({
+                url: `/v3/charts/${payload.id}/data/refresh`,
+                method: 'POST',
+                auth,
+                headers
+            });
+        } catch (ex) {}
+    }
+
     try {
         const result = (
             await events.emit(event.CHART_EXPORT, {
