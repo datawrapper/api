@@ -105,6 +105,8 @@ async function exportChart(request, h) {
             await events.emit(event.CHART_EXPORT, {
                 chart,
                 user,
+                key: `export-${payload.format}`,
+                priority: 5,
                 data: payload,
                 auth,
                 logger
