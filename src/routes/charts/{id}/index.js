@@ -307,7 +307,8 @@ async function deleteChart(request, h) {
     });
 
     await server.app.events.emit(server.app.event.CHART_DELETED, {
-        chart
+        chart,
+        user: auth.artifacts
     });
 
     return h.response().code(204);
