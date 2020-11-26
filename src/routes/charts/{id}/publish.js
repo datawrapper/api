@@ -218,6 +218,7 @@ async function publishChart(request, h) {
     });
 
     return {
+        status: 'ok',
         data: await prepareChart(chart),
         version: newPublicVersion,
         url: destination
