@@ -306,6 +306,11 @@ async function deleteChart(request, h) {
         deleted_at: new Date()
     });
 
+    await server.app.events.emit(server.app.event.CHART_DELETED, {
+        chart,
+        user: auth.artifacts
+    });
+
     return h.response().code(204);
 }
 
