@@ -73,6 +73,7 @@ module.exports = {
 
         require('./settings')(server, options);
         require('./data')(server, options);
+        require('./otp')(server, options);
 
         // DELETE /v3/me
         server.route({
