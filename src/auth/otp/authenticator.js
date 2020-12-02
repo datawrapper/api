@@ -1,22 +1,17 @@
-const { promisify } = require('util');
-const yub = require('yub');
-const yubVerify = promisify(yub.verify);
+const { authenticator } = require('otplib');
 const { getUserData, setUserData, unsetUserData } = require('@datawrapper/orm/utils/userData');
 const Boom = require('@hapi/boom');
-const get = require('lodash/get');
-
-const USER_DATA_KEY = '.otp_yubikey';
+const USER_DATA_KEY = '.otp_authenticator';
 
 module.exports = {
-    id: 'yubikey',
-    title: 'YubiKey',
+    id: 'authenticator',
+    title: 'Authenticator',
     /*
      * Returns true if Yubikey client has been configured
      * in config.api.otp.yubikey
      */
     isEnabled({ config }) {
-        const api = config('api');
-        return get(api, 'otp.yubikey.clientId') && get(api, 'otp.yubikey.secretKey');
+        return true;
     },
 
     async isEnabledForUser({ user }) {
@@ -28,17 +23,11 @@ module.exports = {
      * and if they do, require a valid OTP for login
      */
     async verify({ user, otp, config }) {
-        const api = config('api');
-
-        yub.init(api.otp.yubikey.clientId, api.otp.yubikey.secretKey);
         // check if the user has configured an OTP
         const userOTP = await getUserData(user.id, USER_DATA_KEY);
         if (userOTP) {
             // user has enabled OTP, so we require it
-            const otpRes = await yubVerify(otp);
-            if (otpRes.valid && otpRes.identity === userOTP) {
-                return true;
-            }
+            return authenticator.verify({ token: otp, secret: userOTP });
         }
         return false;
     },
@@ -46,16 +35,13 @@ module.exports = {
     /*
      * Enable OTP for a user (or reset the otp)
      */
-    async enable({ user, config, otp }) {
-        const api = config('api');
-        if (!otp) throw Boom.unauthorized('Need OTP');
-        yub.init(api.otp.yubikey.clientId, api.otp.yubikey.secretKey);
-        const otpRes = await yubVerify(otp);
-        if (!otpRes.valid) {
+    async enable({ user, otp }) {
+        const [secret, token] = otp.split(':');
+        if (!authenticator.verify({ token, secret })) {
             throw Boom.unauthorized('Invalid OTP');
         }
-        // otp is valid, store device identity
-        await setUserData(user.id, USER_DATA_KEY, otpRes.identity);
+        // store authenticator secret
+        await setUserData(user.id, USER_DATA_KEY, secret);
     },
 
     /*
@@ -63,5 +49,13 @@ module.exports = {
      */
     async disable({ user }) {
         await unsetUserData(user.id, USER_DATA_KEY);
+    },
+
+    data() {
+        return {
+            issuer: 'Datawrapper',
+            qrcode: true,
+            secret: authenticator.generateSecret()
+        };
     }
 };
