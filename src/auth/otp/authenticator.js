@@ -6,9 +6,9 @@ const USER_DATA_KEY = '.otp_authenticator';
 module.exports = {
     id: 'authenticator',
     title: 'Authenticator',
+
     /*
-     * Returns true if Yubikey client has been configured
-     * in config.api.otp.yubikey
+     * Authenticator OTP doesn't need to be configured
      */
     isEnabled({ config }) {
         return true;
