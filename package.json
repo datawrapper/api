@@ -80,6 +80,7 @@
         "lodash": "4.17.19",
         "mime": "2.4.4",
         "nanoid": "2.1.11",
+        "otplib": "^12.0.1",
         "postcss": "7.0.27",
         "postcss-default-unit": "1.0.0",
         "postcss-discard": "0.3.7",

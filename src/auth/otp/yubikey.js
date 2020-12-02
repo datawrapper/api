@@ -35,15 +35,12 @@ module.exports = {
         const userOTP = await getUserData(user.id, USER_DATA_KEY);
         if (userOTP) {
             // user has enabled OTP, so we require it
-            if (!otp) {
-                // no OTP in payload, return error
-                throw Boom.unauthorized('Need OTP');
-            }
             const otpRes = await yubVerify(otp);
-            if (!otpRes.valid || otpRes.identity !== userOTP) {
-                throw Boom.unauthorized('Invalid OTP');
+            if (otpRes.valid && otpRes.identity === userOTP) {
+                return true;
             }
         }
+        return false;
     },
 
     /*

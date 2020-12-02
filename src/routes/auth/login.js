@@ -123,12 +123,25 @@ async function loginUser(request, h) {
     }
 
     // check if one of our otp providers is configured on server
+    const enabledOTPProviders = [];
     for (let i = 0; i < otpProviders.length; i++) {
         const otpProvider = otpProviders[i];
-        if (otpProvider.isEnabled({ config })) {
-            // verify otp
-            await otpProvider.verify({ config, user, otp });
+        if (otpProvider.isEnabled({ config }) && (await otpProvider.isEnabledForUser({ user }))) {
+            enabledOTPProviders.push(otpProvider);
         }
+    }
+    if (enabledOTPProviders.length > 0) {
+        if (!otp) return Boom.unauthorized('Need OTP');
+        let success = false;
+        for (let i = 0; i < enabledOTPProviders.length; i++) {
+            const otpProvider = enabledOTPProviders[i];
+            const res = await otpProvider.verify({ user, otp, config });
+            if (res) {
+                success = true;
+                break;
+            }
+        }
+        if (!success) return Boom.unauthorized('Invalid OTP');
     }
 
     const session = await login(
