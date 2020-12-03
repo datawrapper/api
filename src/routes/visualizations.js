@@ -72,7 +72,7 @@ async function register(server, options) {
 
         if (themeCode !== 200) return Boom.badRequest(`Theme [${query.theme}] does not exist.`);
 
-        // try to find a sha file in vis plugin
+        // try to find a .githead file in vis plugin
         const pluginRoot = get(
             server.methods.config('general'),
             'localPluginRoot',
