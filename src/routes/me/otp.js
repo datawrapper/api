@@ -29,7 +29,8 @@ module.exports = async (server, options) => {
                         id: otpProvider.id,
                         title: otpProvider.title,
                         installed,
-                        enabled
+                        enabled,
+                        data: otpProvider.data ? otpProvider.data() : {}
                     });
                 }
             }

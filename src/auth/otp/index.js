@@ -1,1 +1,1 @@
-module.exports = [require('./yubikey')];
+module.exports = [require('./authenticator'), require('./yubikey')];

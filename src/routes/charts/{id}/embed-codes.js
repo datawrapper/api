@@ -156,4 +156,59 @@ module.exports = async (server, options) => {
             }
         }
     });
+
+    // GET /v3/charts/{id}/display-urls
+    server.route({
+        method: 'GET',
+        path: '/display-urls',
+        options: {
+            tags: ['api'],
+            description: 'Get share URLs for a chart',
+            notes: `Request the available URLs to directly share a chart.`,
+            auth: {
+                access: {
+                    scope: ['chart:read']
+                }
+            },
+            plugins: {
+                'hapi-swagger': {
+                    produces: ['application/json']
+                }
+            },
+            validate: {
+                params: Joi.object({
+                    id: Joi.string().length(5).required()
+                })
+            },
+            response: createResponseConfig({
+                schema: Joi.array().items(
+                    Joi.object({
+                        id: Joi.string(),
+                        name: Joi.string(),
+                        url: Joi.string()
+                    })
+                )
+            })
+        },
+        async handler(request, h) {
+            const { params, auth, server } = request;
+            const chart = await server.methods.loadChart(params.id);
+
+            const displayUrls = (
+                await server.app.events.emit(
+                    server.app.event.GET_CHART_DISPLAY_URL,
+                    {
+                        chart
+                    },
+                    { filter: 'success' }
+                )
+            ).map(el =>
+                Object.assign(el, {
+                    name: translate(el.id, { scope: 'core', language: auth.artifacts.language })
+                })
+            );
+
+            return displayUrls;
+        }
+    });
 };
