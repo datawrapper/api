@@ -1,4 +1,5 @@
 const fs = require('fs-extra');
+const path = require('path');
 const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 const chartCore = require('@datawrapper/chart-core');
@@ -71,7 +72,19 @@ async function register(server, options) {
 
         if (themeCode !== 200) return Boom.badRequest(`Theme [${query.theme}] does not exist.`);
 
-        const cacheKey = `${query.theme}__${params.id}`;
+        // try to find a .githead file in vis plugin
+        const pluginRoot = get(
+            server.methods.config('general'),
+            'localPluginRoot',
+            path.join(__dirname, '../../../../plugins')
+        );
+        const pluginGitHead = path.join(pluginRoot, vis.__plugin, '.githead');
+        let githead = 'head';
+        if (fs.existsSync(pluginGitHead)) {
+            githead = await fs.readFile(pluginGitHead);
+        }
+
+        const cacheKey = `${query.theme}__${params.id}__${githead}`;
         const cachedCSS = await styleCache.get(cacheKey);
         const cacheStyles = get(server.methods.config('general'), 'cache.styles', false);
 
