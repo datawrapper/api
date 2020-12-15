@@ -57,6 +57,10 @@ async function compileCSS({ theme, filePaths }) {
         delete theme.data.vis['locator-maps'].markerPresets;
     }
 
+    if (theme.data.options && theme.data.options.menu) {
+        delete theme.data.options.menu.icon;
+    }
+
     let { css } = await less.render(inputLess, {
         paths: paths,
         modifyVars: flatten({
