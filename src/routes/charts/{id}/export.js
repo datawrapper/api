@@ -32,7 +32,8 @@ module.exports = (server, options) => {
                         width: Joi.number(),
                         color: Joi.string().default('auto')
                     }),
-                    fullVector: Joi.boolean().default(false)
+                    fullVector: Joi.boolean().default(false),
+                    transparent: Joi.boolean().default(false)
                 })
             }
         },

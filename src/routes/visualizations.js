@@ -4,6 +4,7 @@ const Boom = require('@hapi/boom');
 const Joi = require('@hapi/joi');
 const chartCore = require('@datawrapper/chart-core');
 const get = require('lodash/get');
+const set = require('lodash/set');
 
 const { compileCSS } = require('../publish/compile-css.js');
 
@@ -53,7 +54,8 @@ async function register(server, options) {
             },
             validate: {
                 query: Joi.object({
-                    theme: Joi.string().default('datawrapper')
+                    theme: Joi.string().default('datawrapper'),
+                    transparent: Joi.boolean().optional().default(false)
                 })
             }
         },
@@ -72,6 +74,8 @@ async function register(server, options) {
 
         if (themeCode !== 200) return Boom.badRequest(`Theme [${query.theme}] does not exist.`);
 
+        const transparent = !!query.transparent;
+
         // try to find a .githead file in vis plugin
         const pluginRoot = get(
             server.methods.config('general'),
@@ -88,8 +92,12 @@ async function register(server, options) {
         const cachedCSS = await styleCache.get(cacheKey);
         const cacheStyles = get(server.methods.config('general'), 'cache.styles', false);
 
-        if (cacheStyles && cachedCSS) {
+        if (cacheStyles && !transparent && cachedCSS) {
             return h.response(cachedCSS).header('Content-Type', 'text/css');
+        }
+
+        if (transparent) {
+            set(theme, 'data.style.body.background', 'transparent');
         }
 
         const css = await compileCSS({
@@ -97,7 +105,9 @@ async function register(server, options) {
             filePaths: [chartCore.less, vis.less]
         });
 
-        await styleCache.set(cacheKey, css);
+        if (!transparent) {
+            await styleCache.set(cacheKey, css);
+        }
 
         return h.response(css).header('Content-Type', 'text/css');
     }
