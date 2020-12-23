@@ -78,7 +78,8 @@ module.exports = (server, options) => {
                     borderWidth: Joi.number(),
                     borderColor: Joi.string(),
                     download: Joi.boolean().default(false),
-                    fullVector: Joi.boolean().default(false)
+                    fullVector: Joi.boolean().default(false),
+                    transparent: Joi.boolean().default(false)
                 })
             }
         },
