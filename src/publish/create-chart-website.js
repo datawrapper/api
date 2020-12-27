@@ -67,33 +67,20 @@ module.exports = async function createChartWebsite(
         throw Boom.notFound();
     }
 
-    const { data } = publishData;
-    const chartJSON = publishData.chart;
+    const { data, chart: chartAttributes, visualization, theme, styles, locales, blocks,
+        chartAfterHeadHTML, chartAfterBodyHTML } = publishData;
     const locale = chart.language || 'en-US';
-
-    delete publishData.data;
-    delete publishData.chart;
 
     if (!data) {
         await log('error-data');
         throw Boom.conflict('No chart data available.');
     }
 
-    /**
-     * Load visualization information
-     */
-    const vis = visualizations.get(chart.type);
-    if (!vis) {
-        await log('error-vis-not-supported');
-        throw Boom.notImplemented(`"${chart.type}" is currently not supported.`);
-    }
-
     // load vendor locales needed by visualization
-    const locales = {};
-    if (vis.dependencies.dayjs) {
+    if (visualization.dependencies.dayjs) {
         locales.dayjs = await loadVendorLocale('dayjs', locale);
     }
-    if (vis.dependencies.numeral) {
+    if (visualization.dependencies.numeral) {
         locales.numeral = await loadVendorLocale('numeral', locale);
     }
 
@@ -101,42 +88,12 @@ module.exports = async function createChartWebsite(
     log('preparing');
 
     /**
-     * Load theme information
-     */
-    let theme = await Theme.findByPk(chart.theme);
-
-    if (!theme) {
-        throw Boom.badRequest('Chart theme does not exist.');
-    }
-
-    const [themeFonts, themeData, themeLess] = await Promise.all([
-        theme.getMergedAssets(),
-        theme.getMergedData(),
-        theme.getMergedLess()
-    ]);
-    theme = theme.toJSON();
-    theme.data = themeData;
-    theme.fonts = themeFonts;
-    theme.less = themeLess;
-
-    /**
-     * Load assets like CSS, Javascript and translations
-     */
-    const [css, { fileName, content }] = await Promise.all([
-        compileCSS({ theme, filePaths: [chartCore.less, vis.less] }),
-        readFileAndHash(vis.script)
-    ]);
-    theme.less = ''; /* reset "theme.less" to not inline it twice into the HTML */
-    vis.locale = publishData.locales;
-    delete publishData.locales;
-
-    /**
      * Collect data for server side rendering with Svelte and Pug
      */
     const props = {
         data: {
-            visJSON: vis,
-            chartJSON,
+            visJSON: visualization,
+            chartJSON: chartAttributes,
             publishData,
             chartData: data,
             isPreview: false,

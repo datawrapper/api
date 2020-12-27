@@ -1,7 +1,7 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { createResponseConfig } = require('../../../schemas/response');
-const { Chart, Action, ChartPublic, ChartAccessToken, User } = require('@datawrapper/orm/models');
+const { Chart, Action, ChartPublic, ChartAccessToken, Theme, User } = require('@datawrapper/orm/models');
 const get = require('lodash/get');
 const set = require('lodash/set');
 const { prepareChart } = require('../../../utils/index.js');
@@ -310,6 +310,21 @@ async function publishData(request, h) {
     const additionalData = await getAdditionalMetadata(chart, { server });
 
     const data = { data: res.result, chart: await prepareChart(chart, additionalData) };
+
+    // the vis
+    data.visualization = server.app.visualizations.get(chart.type);
+
+    // the theme
+    const theme = await Theme.findByPk(chart.theme);
+    data.theme = await theme.getMergedData();
+
+    // the styles
+    const styleRes = await request.server.inject({
+        url: `/v3/visualizations/${data.visualization.id}/styles.css?theme=${theme.id}`,
+        auth,
+        headers
+    });
+    data.styles = styleRes.result;
 
     const htmlBodyResults = await server.app.events.emit(
         server.app.event.CHART_AFTER_BODY_HTML,
