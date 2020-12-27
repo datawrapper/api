@@ -1,7 +1,14 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { createResponseConfig } = require('../../../schemas/response');
-const { Chart, Action, ChartPublic, ChartAccessToken, Theme, User } = require('@datawrapper/orm/models');
+const {
+    Chart,
+    Action,
+    ChartPublic,
+    ChartAccessToken,
+    Theme,
+    User
+} = require('@datawrapper/orm/models');
 const get = require('lodash/get');
 const set = require('lodash/set');
 const { prepareChart } = require('../../../utils/index.js');

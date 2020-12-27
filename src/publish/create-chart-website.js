@@ -67,8 +67,17 @@ module.exports = async function createChartWebsite(
         throw Boom.notFound();
     }
 
-    const { data, chart: chartAttributes, visualization, theme, styles, locales, blocks,
-        chartAfterHeadHTML, chartAfterBodyHTML } = publishData;
+    const {
+        data,
+        chart: chartAttributes,
+        visualization,
+        theme,
+        styles,
+        locales,
+        blocks,
+        chartAfterHeadHTML,
+        chartAfterBodyHTML
+    } = publishData;
     const locale = chart.language || 'en-US';
 
     if (!data) {
