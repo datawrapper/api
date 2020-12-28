@@ -323,7 +323,10 @@ async function publishData(request, h) {
 
     // the theme
     const theme = await Theme.findByPk(chart.theme);
-    data.theme = await theme.getMergedData();
+    data.theme = {
+        id: theme.id,
+        data: await theme.getMergedData()
+    };
 
     // the styles
     const styleRes = await request.server.inject({

@@ -104,7 +104,17 @@ module.exports = async (server, options) => {
                     ...getTemplate(
                         `<iframe title="%chart_title%" aria-label="%chart_type%" id="datawrapper-chart-%chart_id%" src="%chart_url%" scrolling="no" frameborder="0" style="border: none;" width="%chart_width%" height="%chart_height%"></iframe>`
                     )
+                },
+                // pure javascript
+                {
+                    id: 'javascript',
+                    preferred: preferred === 'javascript',
+                    title: 'Javascript',
+                    ...getTemplate(
+                        `<script type="text/javascript" src="%chart_url%/embed.js"></script>`
+                    )
                 }
+
             ];
 
             if (team && preferred === 'custom') {
