@@ -107,14 +107,13 @@ module.exports = async (server, options) => {
                 },
                 // pure javascript
                 {
-                    id: 'javascript',
-                    preferred: preferred === 'javascript',
-                    title: 'Javascript',
+                    id: 'web-component',
+                    preferred: preferred === 'web-component',
+                    title: 'Web Component',
                     ...getTemplate(
                         `<script type="text/javascript" src="%chart_url%/embed.js"></script>`
                     )
                 }
-
             ];
 
             if (team && preferred === 'custom') {

@@ -3,13 +3,11 @@ const path = require('path');
 const fs = require('fs-extra');
 const os = require('os');
 const pug = require('pug');
-const { Theme } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
 const { stringify, readFileAndHash, copyFileHashed, noop } = require('../utils/index.js');
 
-const { compileCSS } = require('./compile-css');
 const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
 
 /**
@@ -51,8 +49,6 @@ module.exports = async function createChartWebsite(
         publish = false
     } = {}
 ) {
-    const { visualizations } = server.app;
-
     /**
      * Load chart information
      * (including metadata, data, basemaps, etc.)
@@ -71,7 +67,6 @@ module.exports = async function createChartWebsite(
         await log('error-data');
         throw Boom.conflict('No chart data available.');
     }
-
 
     const chartLocale = publishData.chart.language || 'en-US';
     const locales = {};
@@ -106,7 +101,10 @@ module.exports = async function createChartWebsite(
     const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
 
     /* Copy dependencies into temporary directory and hash them on the way */
-    const dependencyPromises = [dependencies, publishData.visualization.libraries.map(lib => lib.file)]
+    const dependencyPromises = [
+        dependencies,
+        publishData.visualization.libraries.map(lib => lib.file)
+    ]
         .flat()
         .map(filePath => copyFileHashed(filePath, outDir));
 
