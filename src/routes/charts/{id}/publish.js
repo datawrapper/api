@@ -320,9 +320,12 @@ async function publishData(request, h) {
 
     // the vis
     data.visualization = server.app.visualizations.get(chart.type);
+    const themeId = query.theme || chart.theme;
+
+    data.chart.theme = themeId;
 
     // the theme
-    const theme = await Theme.findByPk(chart.theme);
+    const theme = await Theme.findByPk(themeId);
     data.theme = {
         id: theme.id,
         data: await theme.getMergedData()
@@ -330,7 +333,7 @@ async function publishData(request, h) {
 
     // the styles
     const styleRes = await request.server.inject({
-        url: `/v3/visualizations/${data.visualization.id}/styles.css?theme=${theme.id}`,
+        url: `/v3/visualizations/${data.visualization.id}/styles.css?theme=${themeId}`,
         auth,
         headers
     });
