@@ -109,7 +109,7 @@ module.exports = async (server, options) => {
                 {
                     id: 'web-component',
                     preferred: preferred === 'web-component',
-                    title: 'Web Component',
+                    title: 'web component',
                     ...getTemplate(
                         `<script type="text/javascript" src="%chart_url%/embed.js"></script>`
                     )
