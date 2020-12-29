@@ -153,8 +153,6 @@ module.exports = async function createChartWebsite(
 
     publishData.blocks = publishedBlocks;
 
-    const styles = publishData.styles;
-
     /**
      * Render the visualizations entry: "index.html"
      */
@@ -164,8 +162,8 @@ module.exports = async function createChartWebsite(
         CHART_HEAD: head,
         POLYFILL_SCRIPT: getAssetLink(`../../lib/${polyfillScript}`),
         CORE_SCRIPT: getAssetLink(`../../lib/${coreScript}`),
-        CSS: styles,
         SCRIPTS: dependencies.map(file => getAssetLink(`../../${file}`)),
+        CSS: `${publishData.styles.fonts}\n${publishData.styles.css}`,
         CHART_CLASS: [
             `vis-height-${get(publishData.visualization, 'height', 'fit')}`,
             `theme-${get(publishData.theme, 'id')}`,
@@ -184,10 +182,11 @@ module.exports = async function createChartWebsite(
         polyfillFiles = await Promise.all(polyfillPromises);
     }
 
-    const embedJS = `__dw.renderInto(${JSON.stringify(publishData)});`;
-    await fs.writeFile(path.join(outDir, 'embed.js'), embedJS, { encoding: 'utf-8' });
+    publishData.dependencies = dependencies.map(file => getAssetLink(`../../${file}`));
 
-    await fs.writeFile(path.join(outDir, 'styles.css'), styles, { encoding: 'utf-8' });
+    const webComponentJS = await fs.readFile(path.join(chartCore.path.dist, 'web-component.js'));
+    const embedJS = `${webComponentJS}\n\n\n__dw.renderInto(${JSON.stringify(publishData)});`;
+    await fs.writeFile(path.join(outDir, 'embed.js'), embedJS, { encoding: 'utf-8' });
 
     /* write "index.html", visualization Javascript and other assets */
     await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
@@ -198,8 +197,7 @@ module.exports = async function createChartWebsite(
         path.join('lib/', polyfillScript),
         path.join('lib/', coreScript),
         'index.html',
-        'embed.js',
-        'styles.css'
+        'embed.js'
     ];
 
     async function cleanup() {
