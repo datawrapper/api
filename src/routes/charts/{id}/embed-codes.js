@@ -19,7 +19,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Get embed codes for a chart',
-            notes: `Request the responsive and static embed code of a chart.`,
+            notes: `Request the responsive and static embed code of a chart. Requires scope \`chart:read\`.`,
             auth: {
                 access: {
                     scope: ['chart:read']

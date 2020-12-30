@@ -20,6 +20,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Fetch user information',
+                notes: `Requires scope \`user:read\`.`,
                 auth: {
                     access: { scope: ['user:read'] }
                 },
@@ -40,6 +41,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Update user information',
+                notes: `Requires scope \`user:write\`.`,
                 auth: {
                     access: { scope: ['user:write'] }
                 },
@@ -89,6 +91,10 @@ module.exports = {
                     access: { scope: ['user:write'] }
                 },
                 description: 'Delete user',
+                notes: `**Be careful!** This is a destructive action.
+                        By deleting your account you will loose access to all of your charts.
+                        If this endpoint should be used in an application (CMS), it is recommended to
+                        ask the user for confirmation. Requires scope \`user:write\`.`,
                 validate: {
                     params: Joi.object({
                         id: Joi.number().required().description('User ID')

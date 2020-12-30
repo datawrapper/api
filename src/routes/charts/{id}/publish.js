@@ -16,6 +16,7 @@ module.exports = (server, options) => {
         options: {
             tags: ['api'],
             description: 'Publish a chart',
+            notes: 'Requires scope `chart:write`.',
             auth: {
                 access: { scope: ['chart:write'] }
             },
@@ -58,7 +59,8 @@ module.exports = (server, options) => {
         path: '/publish/status/{version}',
         options: {
             tags: ['api'],
-            description: 'Check the publish status of a chart',
+            description: 'Get publish status',
+            notes: 'Check the publish status of a chart.  Requires scope `chart:read`.',
             auth: {
                 access: { scope: ['chart:read'] }
             },

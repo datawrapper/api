@@ -48,7 +48,7 @@ module.exports = (server, options) => {
             tags: ['api'],
             description: 'Export chart',
             notes: `Export your chart as image or document for use in print or presentations.
-                        Not all formats might be available to you, based on your account.`,
+                        Not all formats might be available to you, based on your account. Requires scope \`chart:read\`.`,
             auth: {
                 access: {
                     scope: ['chart:read']

@@ -54,6 +54,7 @@ module.exports = (server, options) => {
         options: {
             tags: ['api'],
             description: 'Copies a chart',
+            nodes: 'Requires scope `chart:write`.',
             auth: {
                 access: { scope: ['chart:write'] }
             },
@@ -130,6 +131,7 @@ module.exports = (server, options) => {
         options: {
             tags: ['api'],
             description: 'Fork a chart',
+            notes: 'Requires scope `chart:write`.',
             auth: {
                 access: { scope: ['chart:write'] }
             },

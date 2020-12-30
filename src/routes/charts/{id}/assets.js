@@ -16,7 +16,7 @@ module.exports = (server, options) => {
             auth: {
                 access: { scope: ['chart:read'] }
             },
-            notes: `Request an asset associated with a chart.`,
+            notes: `Request an asset associated with a chart. Requires scope \`chart:read\`.`,
             plugins: {
                 'hapi-swagger': {
                     produces: ['text/csv', 'application/json']
@@ -40,7 +40,7 @@ module.exports = (server, options) => {
             tags: ['api'],
             description: 'Upload chart data',
             notes: `Upload data for a chart, which is usually a CSV.
-                        An example looks like this: \`/v3/charts/{id}/assets/{id}.csv.\``,
+                        An example looks like this: \`/v3/charts/{id}/assets/{id}.csv\`. Requires scope \`chart:write\`.`,
             auth: {
                 access: { scope: ['chart:write'] }
             },

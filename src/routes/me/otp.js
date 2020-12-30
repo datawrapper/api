@@ -10,6 +10,7 @@ module.exports = async (server, options) => {
         path: '/otp',
         options: {
             description: 'Get list of supported OTP providers',
+            notes: `Requires scope \`user:read\`.`,
             auth: {
                 access: { scope: ['user:read'] }
             },
@@ -44,6 +45,7 @@ module.exports = async (server, options) => {
         path: '/otp/{provider}',
         options: {
             description: 'Enable OTP for user login',
+            notes: `Requires scope \`user:write\`.`,
             auth: {
                 access: { scope: ['user:write'] }
             },
@@ -82,6 +84,7 @@ module.exports = async (server, options) => {
         path: '/otp/{provider}',
         options: {
             description: 'Disable OTP for user login',
+            notes: `Requires scope \`user:write\`.`,
             auth: {
                 access: { scope: ['user:write'] }
             },

@@ -10,7 +10,7 @@ const routes = [
         path: '/',
         scope: 'folder:read',
         description: 'List folders',
-        notes: 'Get a list of folders and their associated charts.',
+        notes: `Get a list of folders and their associated charts. Requires scope \`ufolder:read\`.`,
         response: listResponse,
         async handler(request, h) {
             const { auth } = request;
@@ -92,6 +92,7 @@ const routes = [
         method: 'POST',
         path: '/',
         description: 'Create a folder',
+        notes: `Requires scope \`folder:write\`.`,
         scope: 'folder:write',
         payload: Joi.object({
             organizationId: Joi.string()

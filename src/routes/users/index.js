@@ -29,6 +29,7 @@ module.exports = {
                     access: { scope: ['user:read'] }
                 },
                 description: 'List users',
+                notes: `Requires scope \`user:read\`.`,
                 validate: {
                     query: Joi.object({
                         teamId: Joi.string().description('Filter users by team.'),

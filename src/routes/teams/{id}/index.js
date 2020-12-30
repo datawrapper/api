@@ -26,6 +26,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Fetch team information',
+                notes: `Requires scope \`team:read\` or \`team:write\`.`,
                 auth: {
                     access: { scope: ['team:read', 'team:write'] }
                 },
@@ -46,7 +47,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Delete a team',
-                notes: `**Be careful!** This is a destructive action that can only be performed by team owners.`,
+                notes: `**Be careful!** This is a destructive action that can only be performed by team owners. Requires scope \`team:write\`.`,
                 auth: {
                     access: { scope: ['team:write'] }
                 },
@@ -67,6 +68,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Update a team',
+                notes: `Requires scope \`team:write\`.`,
                 auth: {
                     access: { scope: ['team:write'] }
                 },
