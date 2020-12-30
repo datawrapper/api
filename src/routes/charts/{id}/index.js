@@ -20,7 +20,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Fetch chart metadata',
-                notes: `Requires scope \`chart:read\`.`,
+                notes: `Requires scope \`chart:read\` or \`chart:write\`.`,
                 auth: {
                     access: { scope: ['chart:read', 'chart:write'] }
                 },
