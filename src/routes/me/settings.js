@@ -11,7 +11,7 @@ module.exports = async (server, options) => {
             auth: {
                 access: { scope: ['user:write'] }
             },
-            notes: 'Use this endpoint to change your active team.',
+            notes: `Use this endpoint to change your active team. Requires scope \`user:write\`.`,
             validate: {
                 payload: {
                     activeTeam: Joi.string()

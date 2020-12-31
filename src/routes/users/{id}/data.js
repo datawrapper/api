@@ -11,6 +11,7 @@ module.exports = async (server, options) => {
         path: '/data',
         options: {
             description: 'Update user data',
+            notes: `Requires scope \`user:write\`.`,
             auth: {
                 access: { scope: ['user:write'] }
             },
