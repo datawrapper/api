@@ -185,7 +185,7 @@ module.exports = async function createChartWebsite(
     publishData.dependencies = dependencies.map(file => getAssetLink(`../../${file}`));
 
     const webComponentJS = await fs.readFile(path.join(chartCore.path.dist, 'web-component.js'));
-    const embedJS = `${webComponentJS}\n\n\n__dw.renderInto(${JSON.stringify(publishData)});`;
+    const embedJS = `${webComponentJS}\n\n\n__dw.render(${JSON.stringify(publishData)});`;
     await fs.writeFile(path.join(outDir, 'embed.js'), embedJS, { encoding: 'utf-8' });
 
     /* write "index.html", visualization Javascript and other assets */
