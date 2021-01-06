@@ -50,7 +50,7 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/chart-core": "^8.23.2",
+        "@datawrapper/chart-core": "^8.23.3",
         "@datawrapper/locales": "^1.1.1",
         "@datawrapper/orm": "^3.20.1",
         "@datawrapper/schemas": "^1.9.0",
