@@ -32,7 +32,8 @@ module.exports = (server, options) => {
                         width: Joi.number(),
                         color: Joi.string().default('auto')
                     }),
-                    fullVector: Joi.boolean().default(false)
+                    fullVector: Joi.boolean().default(false),
+                    transparent: Joi.boolean().default(false)
                 })
             }
         },
@@ -47,7 +48,7 @@ module.exports = (server, options) => {
             tags: ['api'],
             description: 'Export chart',
             notes: `Export your chart as image or document for use in print or presentations.
-                        Not all formats might be available to you, based on your account.`,
+                        Not all formats might be available to you, based on your account. Requires scope \`chart:read\`.`,
             auth: {
                 access: {
                     scope: ['chart:read']
@@ -77,7 +78,8 @@ module.exports = (server, options) => {
                     borderWidth: Joi.number(),
                     borderColor: Joi.string(),
                     download: Joi.boolean().default(false),
-                    fullVector: Joi.boolean().default(false)
+                    fullVector: Joi.boolean().default(false),
+                    transparent: Joi.boolean().default(false)
                 })
             }
         },
@@ -86,7 +88,7 @@ module.exports = (server, options) => {
 };
 
 async function exportChart(request, h) {
-    const { query, payload, params, auth, logger, server } = request;
+    const { query, payload, params, auth, logger, server, headers } = request;
     const { events, event } = server.app;
     const user = auth.artifacts;
 
@@ -100,11 +102,26 @@ async function exportChart(request, h) {
     // further authoritzation is handled by plugins
 
     Object.assign(payload, params);
+
+    if (!headers.origin) {
+        try {
+            // refresh external data
+            await server.inject({
+                url: `/v3/charts/${payload.id}/data/refresh`,
+                method: 'POST',
+                auth,
+                headers
+            });
+        } catch (ex) {}
+    }
+
     try {
         const result = (
             await events.emit(event.CHART_EXPORT, {
                 chart,
                 user,
+                key: `export-${payload.format}`,
+                priority: 5,
                 data: payload,
                 auth,
                 logger

@@ -6,6 +6,7 @@ const { Op } = db;
 const { login, createSession, getStateOpts } = require('@datawrapper/service-utils/auth')(
     require('@datawrapper/orm/models')
 );
+const otpProviders = require('../../auth/otp');
 
 module.exports = async (server, options) => {
     // POST /v3/auth/login
@@ -21,7 +22,8 @@ module.exports = async (server, options) => {
                 payload: Joi.object({
                     email: Joi.string().email().required().example('tony@stark-industries.com'),
                     password: Joi.string().required().example('morgan-3000'),
-                    keepSession: Joi.boolean().default(true)
+                    keepSession: Joi.boolean().default(true),
+                    otp: Joi.string()
                 })
             },
             plugins: {
@@ -96,7 +98,7 @@ module.exports = async (server, options) => {
 };
 
 async function loginUser(request, h) {
-    const { email, password, keepSession } = request.payload;
+    const { email, password, keepSession, otp } = request.payload;
     const user = await User.findOne({
         where: { email },
         attributes: ['id', 'pwd', 'reset_password_token']
@@ -121,6 +123,28 @@ async function loginUser(request, h) {
 
     if (!isValid) {
         return Boom.unauthorized('Invalid credentials');
+    }
+
+    // check if one of our otp providers is configured on server
+    const enabledOTPProviders = [];
+    for (let i = 0; i < otpProviders.length; i++) {
+        const otpProvider = otpProviders[i];
+        if (otpProvider.isEnabled({ config }) && (await otpProvider.isEnabledForUser({ user }))) {
+            enabledOTPProviders.push(otpProvider);
+        }
+    }
+    if (enabledOTPProviders.length > 0) {
+        if (!otp) return Boom.unauthorized('Need OTP');
+        let success = false;
+        for (let i = 0; i < enabledOTPProviders.length; i++) {
+            const otpProvider = enabledOTPProviders[i];
+            const res = await otpProvider.verify({ user, otp, config });
+            if (res) {
+                success = true;
+                break;
+            }
+        }
+        if (!success) return Boom.unauthorized('Invalid OTP');
     }
 
     const session = await login(

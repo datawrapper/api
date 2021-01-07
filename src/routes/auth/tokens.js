@@ -20,7 +20,8 @@ module.exports = async (server, options) => {
                 access: { scope: ['auth:read'] }
             },
             description: 'List API tokens',
-            notes: 'Response will not include full tokens for security reasons.',
+            notes:
+                'Response will not include full tokens for security reasons. Requires scope `auth:read`.',
             validate: {
                 query: Joi.object({
                     limit: Joi.number()
@@ -47,7 +48,7 @@ module.exports = async (server, options) => {
             description: 'Create API token',
             notes: `This endpoint will create a new API Token and show it in the response body.
                      It is possible to create a comment with every token to have a reference where it is used.
-                     Make sure to save the token somewhere, since you won't be able to see it again.`,
+                     Make sure to save the token somewhere, since you won't be able to see it again.  Requires scope \`auth:write\`.`,
             auth: {
                 access: { scope: ['auth:write'] }
             },
@@ -108,7 +109,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Edit API token',
             notes:
-                'Edit an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
+                'Edit an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.  Requires scope `auth:write`.',
             auth: {
                 access: { scope: ['auth:write'] }
             },
@@ -159,7 +160,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             description: 'Delete API token',
             notes:
-                'Delete (=revoke) an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.',
+                'Delete (=revoke) an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.  Requires scope `auth:write`.',
             auth: {
                 access: { scope: ['auth:write'] }
             },
@@ -194,7 +195,7 @@ module.exports = async (server, options) => {
         path: '/token-scopes',
         options: {
             tags: ['api'],
-            description: 'Get list of valid token scopes',
+            description: 'Get list of valid token scopes.  Requires scope `auth:read`.',
             auth: {
                 access: { scope: ['auth:read'] }
             }

@@ -24,7 +24,7 @@ module.exports = {
                 },
                 notes: `Search and filter a list of your charts.
                         The returned chart objects, do not include the full chart metadata.
-                        To get the full metadata use [/v3/charts/{id}](ref:getchartsid).`,
+                        To get the full metadata use [/v3/charts/{id}](ref:getchartsid).  Requires scope \`chart:read\`.`,
                 validate: {
                     query: Joi.object({
                         userId: Joi.any().description('ID of the user to fetch charts for.'),
@@ -64,6 +64,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Create new chart',
+                notes: 'Requires scope `chart:write`.',
                 auth: {
                     access: { scope: ['chart:write'] }
                 },

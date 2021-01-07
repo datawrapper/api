@@ -20,6 +20,7 @@ module.exports = {
             options: {
                 tags: ['api'],
                 description: 'Fetch chart metadata',
+                notes: `Requires scope \`chart:read\` or \`chart:write\`.`,
                 auth: {
                     access: { scope: ['chart:read', 'chart:write'] }
                 },
@@ -48,7 +49,7 @@ module.exports = {
                 description: 'Delete a chart',
                 notes: `This action is permanent. Be careful when using this endpoint.
                         If this endpoint should be used in an application (CMS), it is recommended to
-                        ask the user for confirmation.`,
+                        ask the user for confirmation.  Requires scope \`chart:write\`.`,
                 auth: {
                     access: { scope: ['chart', 'chart:write'] }
                 },
@@ -97,7 +98,8 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
-                description: 'Update chart. Allows for partial metadata updates (JSON merge patch)',
+                description:
+                    'Update chart. Allows for partial metadata updates (JSON merge patch).  Requires scope `chart:write`.',
                 auth: {
                     access: { scope: ['chart:write'] }
                 },
@@ -121,7 +123,8 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
-                description: 'Update chart. Replaces the entire metadata object.',
+                description:
+                    'Update chart. Replaces the entire metadata object.  Requires scope `chart:write`.',
                 auth: {
                     access: { scope: ['chart:write'] }
                 },
@@ -306,6 +309,11 @@ async function deleteChart(request, h) {
         deleted_at: new Date()
     });
 
+    await server.app.events.emit(server.app.event.CHART_DELETED, {
+        chart,
+        user: auth.artifacts
+    });
+
     return h.response().code(204);
 }
 
@@ -335,7 +343,7 @@ async function getAdditionalMetadata(chart, { server }) {
                 let results = await server.app.events.emit(
                     server.app.event.GET_CHART_DISPLAY_URL,
                     {
-                        chartId: chart.id
+                        chart
                     },
                     { filter: 'success' }
                 );
