@@ -42,7 +42,9 @@
             "visualization*/src/*",
             "visualization*/static/*",
             "external-data/src/*",
-            "external-data/static/*"
+            "external-data/static/*",
+            "simple-maps/src/*",
+            "simple-maps/static/*"
         ]
     },
     "repository": {
