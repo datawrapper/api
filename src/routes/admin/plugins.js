@@ -89,11 +89,14 @@ function register(server, options) {
         }
         // if the plugin is a git repo we update it using git pull
         // get current branch
-        const { stdout: branch } = await exec('git rev-parse --abbrev-ref HEAD');
+        const { stdout: branch } = await exec('git rev-parse --abbrev-ref HEAD', {
+            cwd: pluginLocation
+        });
+        log.info(`update plugin from branch origin/${branch}`);
         // fetch all updates from origin
-        await exec('git fetch origin');
+        await exec('git fetch origin', { cwd: pluginLocation });
         // reset local repo to latest origin branch
-        await exec(`git reset --hard origin/${branch}`);
+        await exec(`git reset --hard origin/${branch}`, { cwd: pluginLocation });
 
         /* bust visualization css cache */
         const visualizations = [];
