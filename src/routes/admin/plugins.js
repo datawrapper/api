@@ -85,13 +85,13 @@ function register(server, options) {
         const pluginLocation = path.join(general.localPluginRoot, name);
         const isGitRepo = await fs.pathExists(path.join(pluginLocation, '.git/index'));
         if (!isGitRepo) {
-            return Boom.notImplemented("Cannot update plugins which aren't git repos");
+            return Boom.notImplemented(
+                "Cannot update plugins which aren't git repos (or not installed yet)"
+            );
         }
         // if the plugin is a git repo we update it using git pull
         // get current branch
-        const { stdout: branch } = await exec('git rev-parse --abbrev-ref HEAD', {
-            cwd: pluginLocation
-        });
+        const branch = payload.branch;
         const result = [`Updating plugin ${name} from branch origin/${branch}`, 'git fetch origin'];
         // fetch all updates from origin
         await exec('git fetch origin', { cwd: pluginLocation });
