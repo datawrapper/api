@@ -85,18 +85,21 @@ function register(server, options) {
         const pluginLocation = path.join(general.localPluginRoot, name);
         const isGitRepo = await fs.pathExists(path.join(pluginLocation, '.git/index'));
         if (!isGitRepo) {
-            return Boom.notImplemented("cannot update plugins which aren't git repos");
+            return Boom.notImplemented("Cannot update plugins which aren't git repos");
         }
         // if the plugin is a git repo we update it using git pull
         // get current branch
         const { stdout: branch } = await exec('git rev-parse --abbrev-ref HEAD', {
             cwd: pluginLocation
         });
-        log.info(`update plugin from branch origin/${branch}`);
+        const result = [`Updating plugin ${name} from branch origin/${branch}`, 'git fetch origin'];
         // fetch all updates from origin
         await exec('git fetch origin', { cwd: pluginLocation });
         // reset local repo to latest origin branch
-        await exec(`git reset --hard origin/${branch}`, { cwd: pluginLocation });
+        const gitResetCmd = `git reset --hard origin/${branch}`;
+        result.push(gitResetCmd);
+        const { stdout: gitResetOut } = await exec(gitResetCmd, { cwd: pluginLocation });
+        result.push(gitResetOut);
 
         /* bust visualization css cache */
         const visualizations = [];
@@ -112,6 +115,7 @@ function register(server, options) {
                 const promise = styleCache.drop(`${id}__${vis}`).catch(() => {
                     server.logger().info(`Unable to drop cache key [${id}__${vis}]`);
                 });
+                result.push(`Dropping cache key ${id}__${vis}`);
                 dropOperationPromises.push(promise);
             }
         }
@@ -119,6 +123,6 @@ function register(server, options) {
         await Promise.all(dropOperationPromises);
 
         log.info('[Done] Update plugin', payload.name);
-        return h.response().code(204);
+        return { log: result };
     }
 }
