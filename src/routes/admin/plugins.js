@@ -92,7 +92,13 @@ function register(server, options) {
         // if the plugin is a git repo we update it using git pull
         // get current branch
         const branch = payload.branch;
-        const result = [`Updating plugin ${name} from branch origin/${branch}`, 'git fetch origin'];
+        const result = [`Updating plugin ${name} from branch origin/${branch}`];
+        const { stdout: oldCommit } = await exec(
+            'git log --pretty=format:"#%h: %s (%an, %ar)" -1',
+            { cwd: pluginLocation }
+        );
+        result.push(`Plugin is at commit:\n${oldCommit}`);
+        result.push('git fetch origin');
         // fetch all updates from origin
         await exec('git fetch origin', { cwd: pluginLocation });
         // reset local repo to latest origin branch
