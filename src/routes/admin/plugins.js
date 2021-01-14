@@ -110,17 +110,24 @@ function register(server, options) {
         const themes = await Theme.findAll({ attributes: ['id'] });
 
         const dropOperationPromises = [];
+        const droppedCacheKeys = [];
         for (const vis of visualizations) {
             for (const { id } of themes) {
                 const promise = styleCache.drop(`${id}__${vis}`).catch(() => {
                     server.logger().info(`Unable to drop cache key [${id}__${vis}]`);
                 });
-                result.push(`Dropping cache key ${id}__${vis}`);
+                droppedCacheKeys.push(`${id}__${vis}`);
                 dropOperationPromises.push(promise);
             }
         }
 
         await Promise.all(dropOperationPromises);
+
+        result.push(
+            `Dropped ${droppedCacheKeys.length} cache keys (e.g., ${droppedCacheKeys
+                .slice(0, 2)
+                .join(', ')})`
+        );
 
         log.info('[Done] Update plugin', payload.name);
         return { log: result };
