@@ -97,7 +97,7 @@ function register(server, options) {
             'git log --pretty=format:"#%h: %s (%an, %ar)" -1',
             { cwd: pluginLocation }
         );
-        result.push(`Plugin is at commit:\n${oldCommit}`);
+        result.push(`Plugin is at commit:\n${oldCommit}\n`);
         result.push('git fetch origin');
         // fetch all updates from origin
         await exec('git fetch origin', { cwd: pluginLocation });
