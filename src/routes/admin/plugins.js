@@ -5,6 +5,8 @@ const exec = promisify(require('child_process').exec);
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { Theme } = require('@datawrapper/orm/models');
+const some = require('lodash/some');
+const isEqual = require('lodash/isEqual');
 
 function getNormalizedName(str) {
     const match = /(?:.*plugin-)?(.*)/.exec(str);
@@ -92,19 +94,49 @@ function register(server, options) {
         // if the plugin is a git repo we update it using git pull
         // get current branch
         const branch = payload.branch;
+        const cwd = pluginLocation;
         const result = [`Updating plugin ${name} from branch origin/${branch}`];
         const { stdout: oldCommit } = await exec(
             'git log --pretty=format:"#%h: %s (%an, %ar)" -1',
-            { cwd: pluginLocation }
+            { cwd }
         );
         result.push(`Plugin is at commit:\n${oldCommit}\n`);
         result.push('git fetch origin');
+        // get list of files that have changed
+        const changedFiles = (
+            await exec(`git diff --name-only origin/${branch} ${branch}`, { cwd })
+        ).stdout.split('\n');
+        let needsPm2Reload = some(['api.js', 'crons.js', 'frontend.js'], file =>
+            changedFiles.includes(file)
+        );
+        if (changedFiles.includes('package.json')) {
+            // compare old package.json with new one to see
+            // if the dependencies have changed
+            const hasPackageJSON = await fs.pathExists(path.join(pluginLocation, 'package.json'));
+            if (!hasPackageJSON) needsPm2Reload = true;
+            else {
+                const { dependencies: oldDeps } = JSON.parse(
+                    await fs.read(path.join(pluginLocation, 'package.json'))
+                );
+                const { dependencies: newDeps } = JSON.parse(
+                    (await exec(`git show origin/${branch}:package.json`, { cwd })) || '{}'
+                );
+                if (!isEqual(oldDeps, newDeps)) {
+                    needsPm2Reload = true;
+                }
+            }
+        }
+        if (needsPm2Reload) {
+            return Boom.notImplemented(
+                'This plugin update requires reloading the APi, which must be done manually on the server.'
+            );
+        }
         // fetch all updates from origin
-        await exec('git fetch origin', { cwd: pluginLocation });
+        await exec('git fetch origin', { cwd });
         // reset local repo to latest origin branch
         const gitResetCmd = `git reset --hard origin/${branch}`;
         result.push(gitResetCmd);
-        const { stdout: gitResetOut } = await exec(gitResetCmd, { cwd: pluginLocation });
+        const { stdout: gitResetOut } = await exec(gitResetCmd, { cwd });
         result.push(gitResetOut);
 
         /* bust visualization css cache */
