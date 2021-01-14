@@ -125,11 +125,11 @@ function register(server, options) {
 
         result.push(
             `Dropped ${droppedCacheKeys.length} cache keys (e.g., ${droppedCacheKeys
-                .slice(0, 2)
+                .slice(0, 3)
                 .join(', ')})`
         );
 
         log.info('[Done] Update plugin', payload.name);
-        return { log: result };
+        return { log: result.join('\n') };
     }
 }
