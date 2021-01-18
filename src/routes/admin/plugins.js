@@ -106,8 +106,19 @@ function register(server, options) {
         const changedFiles = (
             await exec(`git diff --name-only origin/${branch} ${branch}`, { cwd })
         ).stdout.split('\n');
-        let needsPm2Reload = some(['api.js', 'crons.js', 'frontend.js'], file =>
-            changedFiles.includes(file)
+        let needsPm2Reload = some(
+            [
+                'api.js',
+                'crons.js',
+                'frontend.js',
+                /^src\/api\//,
+                /^src\/crons\//,
+                /^src\/frontend\/$/
+            ],
+            file =>
+                typeof file === 'string'
+                    ? changedFiles.includes(file) // exact file name match
+                    : some(changedFiles, f => file.test(f)) // regex pattern match
         );
         if (changedFiles.includes('package.json')) {
             // compare old package.json with new one to see
