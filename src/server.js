@@ -179,6 +179,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
                     isSameSite: 'Lax',
                     isSecure: config.frontend.https
                 },
+                logUnauthorized: true,
                 restful: true,
                 skip: function (request) {
                     // Allow cross-site requests that are not authenticated with a cookie, because
