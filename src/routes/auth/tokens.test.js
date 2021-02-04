@@ -27,12 +27,18 @@ test('Tokens can be created, fetched and deleted', async t => {
         credentials: { session: t.context.session, scope: ['auth:read', 'auth:write'] },
         artifacts: User.build({ id: t.context.user.id })
     };
+    const headers = {
+        cookie: 'crumb=abc',
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
+    };
 
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/tokens',
         payload: { comment: 'Test Token' },
-        auth
+        auth,
+        headers
     });
 
     const tokenId = res.result.id;
@@ -54,7 +60,8 @@ test('Tokens can be created, fetched and deleted', async t => {
     res = await t.context.server.inject({
         method: 'DELETE',
         url: `/v3/auth/tokens/${tokenId}`,
-        auth
+        auth,
+        headers
     });
 
     t.is(res.statusCode, 204);
@@ -70,6 +77,11 @@ test('The scope of newly created tokens cannot exceed the session scopes', async
         },
         artifacts: User.build({ id: t.context.user.id })
     };
+    const headers = {
+        cookie: 'crumb=abc',
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
+    };
 
     let res = await t.context.server.inject({
         method: 'POST',
@@ -78,7 +90,8 @@ test('The scope of newly created tokens cannot exceed the session scopes', async
             comment: 'Test Token',
             scopes: ['chart:read']
         },
-        auth
+        auth,
+        headers
     });
 
     const cleanup = [res.result.id];
@@ -91,7 +104,8 @@ test('The scope of newly created tokens cannot exceed the session scopes', async
         payload: {
             comment: 'Test Token'
         },
-        auth
+        auth,
+        headers
     });
 
     t.is(res.statusCode, 201);
@@ -112,7 +126,8 @@ test('The scope of newly created tokens cannot exceed the session scopes', async
             comment: 'Test Token',
             scopes: ['chart:write']
         },
-        auth
+        auth,
+        headers
     });
 
     t.is(res.statusCode, 401);

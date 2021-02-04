@@ -11,6 +11,9 @@ module.exports = async (server, options) => {
             auth: {
                 mode: 'try',
                 access: { scope: ['auth:write'] }
+            },
+            plugins: {
+                crumb: false
             }
         },
         async handler(request, h) {

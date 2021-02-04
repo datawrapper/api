@@ -29,7 +29,9 @@ test('User cannot change password without old password', async t => {
             method: 'PATCH',
             url: '/v3/me',
             headers: {
-                cookie: `DW-SESSION=${session.id}`
+                cookie: `DW-SESSION=${session.id}; crumb=abc`,
+                'X-CSRF-Token': 'abc',
+                referer: 'http://localhost'
             },
             payload
         });
@@ -82,7 +84,9 @@ test('User can delete their account and are logged out', async t => {
         method: 'DELETE',
         url: '/v3/me',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: user.email,
@@ -110,7 +114,9 @@ test('User cannot delete their account while owning team', async t => {
         method: 'DELETE',
         url: '/v3/me',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: user.email,
@@ -124,7 +130,9 @@ test('User cannot delete their account while owning team', async t => {
         method: 'DELETE',
         url: `/v3/teams/${team.id}`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -134,7 +142,9 @@ test('User cannot delete their account while owning team', async t => {
         method: 'DELETE',
         url: '/v3/me',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: user.email,
@@ -152,7 +162,9 @@ test('User can delete their account if only admin of a team', async t => {
         method: 'DELETE',
         url: '/v3/me',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: user.email,
