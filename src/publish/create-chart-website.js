@@ -46,7 +46,8 @@ module.exports = async function createChartWebsite(
         log = noop,
         includePolyfills = true,
         flatRessources = false,
-        publish = false
+        publish = false,
+        onlyEmbedJS = false
     } = {}
 ) {
     /**
@@ -89,6 +90,41 @@ module.exports = async function createChartWebsite(
     });
 
     log('rendering');
+
+    if (onlyEmbedJS) {
+        const frontend = server.methods.config('frontend');
+        const api = server.methods.config('api');
+
+        const frontendBase = `${frontend.https ? 'https' : 'http'}://${frontend.domain}`;
+        const chartCoreBase = `${frontendBase}/lib/chart-core`;
+
+        const dependencies = getDependencies({
+            locale: chartLocale,
+            dependencies: publishData.visualization.dependencies
+        }).map(file => `${chartCoreBase}/${file}`);
+
+        // dependencies.push(...publishData.visualization.libraries);
+
+        dependencies.push(
+            `${api.https ? 'https' : 'http'}://${api.subdomain}.${api.domain}/v3/visualizations/${
+                publishData.visualization.id
+            }/script.js`
+        );
+
+        publishData.dependencies = dependencies;
+
+        publishData.blocks = publishData.blocks.map(block => {
+            block.source.js = `${frontendBase}${block.source.js}`;
+            block.source.css = `${frontendBase}${block.source.css}`;
+            return block;
+        });
+
+        const webComponentJS = await fs.readFile(
+            path.join(chartCore.path.dist, 'web-component.js')
+        );
+        const embedJS = `${webComponentJS}\n\n\n__dw.render(${JSON.stringify(publishData)});`;
+        return embedJS;
+    }
 
     const { html, head } = chartCore.svelte.render(publishData);
 
@@ -152,7 +188,6 @@ module.exports = async function createChartWebsite(
         .flat();
 
     publishData.blocks = publishedBlocks;
-
     /**
      * Render the visualizations entry: "index.html"
      */
