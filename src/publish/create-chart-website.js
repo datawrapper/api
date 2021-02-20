@@ -86,7 +86,8 @@ module.exports = async function createChartWebsite(
     publishData = Object.assign(publishData, {
         isIframe: true,
         isPreview: false,
-        locales
+        locales,
+        polyfillUri: `../../lib/vendor`
     });
 
     log('rendering');
