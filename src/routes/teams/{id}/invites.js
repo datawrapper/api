@@ -26,6 +26,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Invite a person',
+            notes: `Requires scope \`team:write\`.`,
             auth: {
                 access: { scope: ['team:write'] }
             },
@@ -57,6 +58,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Accept a team invitation',
+            notes: `Requires scope \`team:write\`.`,
             auth: {
                 access: { scope: ['team:write'] }
             },

@@ -29,8 +29,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'List team members',
-            notes:
-                'Get a list of team members and some additional information like their team role.',
+            notes: `Get a list of team members and some additional information like their team role. Requires scopes \`team:read\` *and* \`user:read\`.`,
             auth: {
                 access: { scope: ['+team:read', '+user:read'] }
             },
@@ -72,6 +71,7 @@ module.exports = async (server, options) => {
         path: `/members`,
         options: {
             description: 'Add a team member',
+            notes: `Requires scope \`team:write\`.`,
             auth: {
                 access: { scope: ['team:write'] }
             },
@@ -103,6 +103,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Remove a team member',
+            notes: `Requires scope \`team:write\`.`,
             auth: {
                 access: { scope: ['team:write'] }
             },
@@ -126,6 +127,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Set team member status',
+            notes: `Requires scope \`team:write\`.`,
             auth: {
                 access: { scope: ['team:write'] }
             },

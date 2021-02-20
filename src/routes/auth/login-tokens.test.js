@@ -25,15 +25,21 @@ test.before(async t => {
         credentials: data.session,
         artifacts: data.user
     };
+    t.context.headers = {
+        cookie: 'crumb=abc',
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
+    };
 });
 
 test('Login token can be created and used once', async t => {
-    const { auth } = t.context;
+    const { auth, headers } = t.context;
 
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login-tokens',
-        auth
+        auth,
+        headers
     });
 
     t.is(res.statusCode, 201);
@@ -44,7 +50,7 @@ test('Login token can be created and used once', async t => {
         url: `/v3/auth/login/${res.result.token}`
     });
 
-    const cookie = parseSetCookie(res2.headers['set-cookie'][0]);
+    const cookie = parseSetCookie(res2.headers['set-cookie'].find(s => s.includes(`DW-SESSION`)));
 
     t.truthy(res2.result['DW-SESSION']);
     t.is(res2.statusCode, 302);
@@ -59,12 +65,13 @@ test('Login token can be created and used once', async t => {
 });
 
 test('Login token can be created and deleted', async t => {
-    const { auth } = t.context;
+    const { auth, headers } = t.context;
 
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login-tokens',
-        auth
+        auth,
+        headers
     });
 
     t.is(res.statusCode, 201);
@@ -73,7 +80,8 @@ test('Login token can be created and deleted', async t => {
     const res2 = await t.context.server.inject({
         method: 'DELETE',
         url: `/v3/auth/login-tokens/${res.result.id}`,
-        auth
+        auth,
+        headers
     });
 
     t.is(res2.statusCode, 204);
@@ -87,12 +95,13 @@ test('Login token can be created and deleted', async t => {
 });
 
 test('Login token can be created and retrieved', async t => {
-    const { auth } = t.context;
+    const { auth, headers } = t.context;
 
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login-tokens',
-        auth
+        auth,
+        headers
     });
 
     t.is(res.statusCode, 201);
@@ -101,7 +110,8 @@ test('Login token can be created and retrieved', async t => {
     const res2 = await t.context.server.inject({
         method: 'GET',
         url: `/v3/auth/login-tokens`,
-        auth
+        auth,
+        headers
     });
 
     t.is(res2.statusCode, 200);
@@ -111,18 +121,21 @@ test('Login token can be created and retrieved', async t => {
     await t.context.server.inject({
         method: 'DELETE',
         url: `/v3/auth/login-tokens/${res.result.id}`,
-        auth
+        auth,
+        headers
     });
 });
 
 test('Login token with chart ID can be created and forwards correctly', async t => {
-    const { auth } = t.context;
+    const { auth, headers } = t.context;
 
     const chart = await t.context.server.inject({
         method: 'POST',
         url: '/v3/charts',
         headers: {
-            cookie: `DW-SESSION=${auth.credentials.id}`
+            cookie: `DW-SESSION=${auth.credentials.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {}
     });
@@ -131,6 +144,7 @@ test('Login token with chart ID can be created and forwards correctly', async t 
         method: 'POST',
         url: '/v3/auth/login-tokens',
         auth,
+        headers,
         payload: {
             chartId: chart.result.id,
             step: 'preview'
@@ -143,7 +157,8 @@ test('Login token with chart ID can be created and forwards correctly', async t 
     const res2 = await t.context.server.inject({
         method: 'GET',
         url: `/v3/auth/login/${res.result.token}`,
-        auth
+        auth,
+        headers
     });
 
     t.truthy(res2.result['DW-SESSION']);
@@ -152,13 +167,14 @@ test('Login token with chart ID can be created and forwards correctly', async t 
 });
 
 test('Login token expires after five minutes', async t => {
-    const { auth, models } = t.context;
+    const { auth, headers, models } = t.context;
     const { AccessToken } = models;
 
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login-tokens',
-        auth
+        auth,
+        headers
     });
 
     t.is(res.statusCode, 201);
@@ -186,12 +202,13 @@ test('Login token expires after five minutes', async t => {
 });
 
 test('Login token with chart ID that user cannot edit cannot be created', async t => {
-    const { auth } = t.context;
+    const { auth, headers } = t.context;
 
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login-tokens',
         auth,
+        headers,
         payload: {
             chartId: 'notmy'
         }
@@ -201,12 +218,13 @@ test('Login token with chart ID that user cannot edit cannot be created', async 
 });
 
 test('Token with invalid chart ID cannot be created', async t => {
-    const { auth } = t.context;
+    const { auth, headers } = t.context;
 
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login-tokens',
         auth,
+        headers,
         payload: {
             chartId: `'"); DROP TABLE users;`
         }
@@ -216,12 +234,13 @@ test('Token with invalid chart ID cannot be created', async t => {
 });
 
 test('Token with invalid edit step cannot be created', async t => {
-    const { auth } = t.context;
+    const { auth, headers } = t.context;
 
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login-tokens',
         auth,
+        headers,
         payload: {
             chartId: 'abcde',
             step: `'"); DROP TABLE charts;`

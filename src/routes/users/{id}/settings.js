@@ -13,6 +13,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Update user settings',
+            notes: `Requires scope \`user:write\`.`,
             auth: {
                 access: { scope: ['user:write'] }
             },
