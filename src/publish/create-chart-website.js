@@ -91,6 +91,50 @@ module.exports = async function createChartWebsite(
 
     log('rendering');
 
+    async function getEmbedJS(parameters) {
+        const webComponentJS = await fs.readFile(
+            path.join(chartCore.path.dist, 'web-component.js'),
+            'utf-8'
+        );
+
+        const { result: embedCodes } = await server.inject({
+            url: `/v3/charts/${chart.id}/embed-codes`,
+            auth,
+            headers
+        });
+
+        const responsiveEmbed = embedCodes
+            .filter(el => el.id === 'responsive')[0]
+            .code.replace(/'/g, "\\'")
+            .replace(/\//g, '\\/')
+            .replace(/\n/g, '');
+
+        // be careful: this needs to run in IE11, too
+        const embedJS = `(function() {
+// determine the script origin
+var scripts = document.getElementsByTagName('script');
+
+var origin = scripts[scripts.length - 1]
+    .getAttribute('src')
+    .split('/')
+    .slice(0, -1)
+    .join('/');
+
+if (!document.head.attachShadow) {
+    // all bets are off, back to iframe
+    var responsiveEmbed = '${responsiveEmbed}';
+    document.write(responsiveEmbed.replace(/src="null"/g, 'src="' + origin + '/index.html"'));
+} else {
+    ${webComponentJS}
+
+    __dw.render(Object.assign(
+        ${JSON.stringify(parameters)},
+        { origin: origin }
+    ));
+}})()`;
+        return embedJS;
+    }
+
     if (onlyEmbedJS) {
         const frontend = server.methods.config('frontend');
         const api = server.methods.config('api');
@@ -119,11 +163,7 @@ module.exports = async function createChartWebsite(
             return block;
         });
 
-        const webComponentJS = await fs.readFile(
-            path.join(chartCore.path.dist, 'web-component.js')
-        );
-        const embedJS = `${webComponentJS}\n\n\n__dw.render(${JSON.stringify(publishData)});`;
-        return embedJS;
+        return await getEmbedJS(publishData);
     }
 
     const { html, head } = chartCore.svelte.render(publishData);
@@ -220,9 +260,9 @@ module.exports = async function createChartWebsite(
 
     publishData.dependencies = dependencies.map(file => getAssetLink(`../../${file}`));
 
-    const webComponentJS = await fs.readFile(path.join(chartCore.path.dist, 'web-component.js'));
-    const embedJS = `${webComponentJS}\n\n\n__dw.render(${JSON.stringify(publishData)});`;
-    await fs.writeFile(path.join(outDir, 'embed.js'), embedJS, { encoding: 'utf-8' });
+    await fs.writeFile(path.join(outDir, 'embed.js'), await getEmbedJS(publishData), {
+        encoding: 'utf-8'
+    });
 
     /* write "index.html", visualization Javascript and other assets */
     await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
