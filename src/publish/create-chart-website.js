@@ -218,6 +218,7 @@ module.exports = async function createChartWebsite(
     const indexHTML = renderHTML({
         __DW_SVELTE_PROPS__: stringify(props),
         CHART_LANGUAGE: locale.split(/_|-/)[0],
+        META_ROBOTS: 'noindex, nofollow',
         CHART_HTML: html,
         CHART_HEAD: head,
         POLYFILL_SCRIPT: getAssetLink(`../../lib/${polyfillScript}`),
