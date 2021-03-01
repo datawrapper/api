@@ -4,7 +4,6 @@ const fs = require('fs-extra');
 const os = require('os');
 const pug = require('pug');
 const chartCore = require('@datawrapper/chart-core');
-const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const get = require('lodash/get');
 const { stringify, readFileAndHash, copyFileHashed, noop } = require('../utils/index.js');
 
@@ -69,16 +68,11 @@ module.exports = async function createChartWebsite(
         throw Boom.conflict('No chart data available.');
     }
 
-    const chartLocale = publishData.chart.language || 'en-US';
-    const locales = {};
-
-    // load vendor locales needed by visualization
-    if (publishData.visualization.dependencies.dayjs) {
-        locales.dayjs = await loadVendorLocale('dayjs', chartLocale);
-    }
-    if (publishData.visualization.dependencies.numeral) {
-        locales.numeral = await loadVendorLocale('numeral', chartLocale);
-    }
+    const chartLocale = publishData.chartAttrs.language || 'en-US';
+    const locales = {
+        dayjs: await loadVendorLocale('dayjs', chartLocale),
+        numeral: await loadVendorLocale('numeral', chartLocale)
+    };
 
     // no need to await this...
     log('preparing');
@@ -143,20 +137,13 @@ if (!document.head.attachShadow) {
         const frontendBase = `${frontend.https ? 'https' : 'http'}://${frontend.domain}`;
         const chartCoreBase = `${frontendBase}/lib/chart-core`;
 
-        const dependencies = getDependencies({
-            locale: chartLocale,
-            dependencies: publishData.visualization.dependencies
-        }).map(file => `${chartCoreBase}/${file}`);
-
-        // dependencies.push(...publishData.visualization.libraries);
-
-        dependencies.push(
+        publishData.dependencies = [
+            `${chartCoreBase}/dw-2.0.min.js`,
+            ...publishData.visualization.libraries,
             `${api.https ? 'https' : 'http'}://${api.subdomain}.${api.domain}/v3/visualizations/${
                 publishData.visualization.id
             }/script.js`
-        );
-
-        publishData.dependencies = dependencies;
+        ];
 
         publishData.blocks = publishData.blocks.map(block => {
             block.source.js = `${frontendBase}${block.source.js}`;
@@ -169,10 +156,7 @@ if (!document.head.attachShadow) {
 
     const { html, head } = chartCore.svelte.render(publishData);
 
-    let dependencies = getDependencies({
-        locale: chartLocale,
-        dependencies: publishData.visualization.dependencies
-    }).map(file => path.join(chartCore.path.dist, file));
+    let dependencies = ['dw-2.0.min.js'].map(file => path.join(chartCore.path.dist, file));
 
     /* Create a temporary directory */
     const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));

@@ -357,13 +357,13 @@ async function publishData(request, h) {
 
     const additionalData = await getAdditionalMetadata(chart, { server });
 
-    const data = { data: res.result, chart: await prepareChart(chart, additionalData) };
+    const data = { data: res.result, chartAttrs: await prepareChart(chart, additionalData) };
 
     // the vis
     data.visualization = server.app.visualizations.get(chart.type);
     const themeId = query.theme || chart.theme;
 
-    data.chart.theme = themeId;
+    data.chartAttrs.theme = themeId;
 
     // the theme
     const theme = await Theme.findByPk(themeId);
@@ -402,15 +402,26 @@ async function publishData(request, h) {
     );
     data.chartAfterHeadHTML = htmlHeadResults.join('\n');
 
-    // chart locales
-    data.locales = getScope('chart', chart.language || 'en-US');
+    // chart translations
+    data.translations = getScope('chart', chart.language || 'en-US');
 
-    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
-        chart,
-        auth,
-        ott: query.ott,
-        data
-    });
+    data.assets = {};
+
+    const assets = await server.app.events.emit(
+        server.app.event.CHART_ASSETS,
+        {
+            chart,
+            auth,
+            ott: query.ott
+        },
+        { filter: 'success' }
+    );
+
+    assets
+        .filter(el => typeof el === 'object')
+        .forEach(({ id, asset }) => {
+            data.assets[id] = asset;
+        });
 
     if (query.ott) {
         await ChartAccessToken.destroy({
