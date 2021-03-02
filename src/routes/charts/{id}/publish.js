@@ -338,6 +338,10 @@ async function publishData(request, h) {
     // chart locales
     data.locales = getScope('chart', chart.language || 'en-US');
 
+    data.externalDataUrl = await server.app.events.emit(server.app.event.EXTERNAL_DATA_URL, null, {
+        filter: 'first'
+    });
+
     await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
         chart,
         auth,
