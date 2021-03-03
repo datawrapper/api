@@ -69,6 +69,9 @@ async function downloadCoreTranslations() {
 
         const apiFile = `${path.resolve(__dirname, '../locale')}/${locale}.json`;
         fs.writeFileSync(apiFile, JSON.stringify(locales[locale], null, 2));
+
+        const frontendFile = `${path.resolve(__dirname, '../../frontend/locale')}/${locale}.json`;
+        fs.writeFileSync(frontendFile, JSON.stringify(locales[locale], null, 2));
     }
 
     process.stdout.write(chalk`
