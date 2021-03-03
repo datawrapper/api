@@ -86,10 +86,13 @@ async function publishChart(request, h) {
     const { createChartWebsite } = server.methods;
     const user = auth.artifacts;
     const chart = await server.methods.loadChart(params.id);
+    const logger = server.logger();
 
     if (!chart || !(await chart.isPublishableBy(user))) {
         throw Boom.unauthorized();
     }
+
+    logger.info(`${chart.id}: Starting chart publication`);
 
     const publishStatus = [];
     const publishStatusAction = await server.methods.logAction(
@@ -114,6 +117,8 @@ async function publishChart(request, h) {
      * and update some database entries!
      */
 
+    logger.info(`${chart.id}: Writing chart.public.csv`);
+
     /* write public CSV file (used when forking a chart) */
     await events.emit(event.PUT_CHART_ASSET, {
         chart,
@@ -126,6 +131,8 @@ async function publishChart(request, h) {
 
     /* move assets to publish location */
     let destination, eventError;
+
+    logger.info(`${chart.id}: Beginning writing remote files`);
 
     try {
         destination = await events.emit(
@@ -145,6 +152,8 @@ async function publishChart(request, h) {
         eventError = error;
     }
 
+    logger.info(`${chart.id}: Cleaning up temp files`);
+
     /**
      * All files were moved and the temporary directory is not needed anymore.
      */
@@ -156,6 +165,8 @@ async function publishChart(request, h) {
 
     const now = new Date();
 
+    logger.info(`${chart.id}: Updating chart object in database`);
+
     /* we need to update chart here to get the correct public_url
        in out embed codes */
     await chart.update({
@@ -164,6 +175,8 @@ async function publishChart(request, h) {
         public_url: destination,
         last_edit_step: 5
     });
+
+    logger.info(`${chart.id}: Fetching new embed codes`);
 
     /* store new embed codes in chart metadata */
     const embedCodes = {};
@@ -196,12 +209,18 @@ async function publishChart(request, h) {
         organization_id: chart.organization_id
     });
 
+    logger.info(`${chart.id}: Updating embed codes and ChartPublic object`);
+
     await Promise.all([chartUpdatePromise, chartPublicPromise]);
 
     request.logger.debug({ dest: destination }, `Chart [${chart.id}] published`);
 
+    logger.info(`${chart.id}: Logging chart publication event in database`);
+
     // log action that chart has been published
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
+
+    logger.info(`${chart.id}: Sending CHART_PUBLISHED event`);
 
     // for image publishing and things that we want to (optionally)
     // make the user wait for and/or inform about in publish UI
@@ -213,11 +232,15 @@ async function publishChart(request, h) {
 
     logPublishStatus('done');
 
+    logger.info(`${chart.id}: Sending AFTER_CHART_PUBLISHED event`);
+
     // for webhooks and notifications
     server.app.events.emit(server.app.event.AFTER_CHART_PUBLISHED, {
         chart,
         user
     });
+
+    logger.info(`${chart.id}: Returning published chart`);
 
     return {
         data: await prepareChart(chart),

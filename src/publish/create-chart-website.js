@@ -52,6 +52,9 @@ module.exports = async function createChartWebsite(
     } = {}
 ) {
     const { visualizations } = server.app;
+    const logger = server.logger();
+
+    logger.info(`${chart.id}: Fetching chart information`);
 
     /**
      * Load chart information
@@ -79,6 +82,8 @@ module.exports = async function createChartWebsite(
         throw Boom.conflict('No chart data available.');
     }
 
+    logger.info(`${chart.id}: Fetching visualization`);
+
     /**
      * Load visualization information
      */
@@ -100,6 +105,8 @@ module.exports = async function createChartWebsite(
     // no need to await this...
     log('preparing');
 
+    logger.info(`${chart.id}: Fetching theme`);
+
     /**
      * Load theme information
      */
@@ -118,6 +125,8 @@ module.exports = async function createChartWebsite(
     theme.data = themeData;
     theme.fonts = themeFonts;
     theme.less = themeLess;
+
+    logger.info(`${chart.id}: Loading theme CSS`);
 
     /**
      * Load assets like CSS, Javascript and translations
@@ -154,12 +163,16 @@ module.exports = async function createChartWebsite(
 
     log('rendering');
 
+    logger.info(`${chart.id}: Rendering chart`);
+
     const { html, head } = chartCore.svelte.render(props);
 
     let dependencies = getDependencies({
         locale,
         dependencies: vis.dependencies
     }).map(file => path.join(chartCore.path.dist, file));
+
+    logger.info(`${chart.id}: Creating remporary directory`);
 
     /* Create a temporary directory */
     const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
@@ -172,6 +185,8 @@ module.exports = async function createChartWebsite(
     dependencies = (await Promise.all(dependencyPromises)).map(file =>
         path.join('lib/vendor/', file)
     );
+
+    logger.info(`${chart.id}: Copying temporary files`);
 
     const [coreScript] = await Promise.all([
         copyFileHashed(path.join(chartCore.path.dist, 'main.js'), path.join(outDir)),
@@ -212,6 +227,8 @@ module.exports = async function createChartWebsite(
 
     props.data.publishData.blocks = publishedBlocks;
 
+    logger.info(`${chart.id}: Render entrypoints`);
+
     /**
      * Render the visualizations entry: "index.html"
      */
@@ -232,6 +249,8 @@ module.exports = async function createChartWebsite(
         ]
     });
 
+    logger.info(`${chart.id}: Copy polyfills`);
+
     let polyfillFiles = [];
     if (includePolyfills) {
         /* Copy polyfills to destination */
@@ -242,6 +261,8 @@ module.exports = async function createChartWebsite(
         });
         polyfillFiles = await Promise.all(polyfillPromises);
     }
+
+    logger.info(`${chart.id}: Write entrypoints`);
 
     /* write "index.html", visualization Javascript and other assets */
     await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
