@@ -248,7 +248,13 @@ module.exports = async function createChartWebsite(
 
     /* write "data.csv", including changes made in step 2 */
     const dataset = await dwChart(chartJSON).load(data);
-    await fs.writeFile(path.join(outDir, 'data.csv'), dataset.csv(), { encoding: 'utf-8' });
+    const isJSON = get(chartJSON, 'metadata.data.json');
+    const dataFile = `data.${isJSON ? 'json' : 'csv'}`;
+    await fs.writeFile(
+        path.join(outDir, dataFile),
+        isJSON ? JSON.stringify(dataset) : dataset.csv(),
+        { encoding: 'utf-8' }
+    );
 
     const fileMap = [
         ...dependencies,
@@ -257,7 +263,7 @@ module.exports = async function createChartWebsite(
         path.join('lib/', polyfillScript),
         path.join('lib/', coreScript),
         'index.html',
-        'data.csv'
+        dataFile
     ];
 
     async function cleanup() {
