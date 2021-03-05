@@ -214,7 +214,7 @@ async function createChart(request, h) {
         payload &&
         payload.organizationId &&
         !isAdmin &&
-        !(await user.hasTeam(payload.organizationId))
+        !(await user.hasActivatedTeam(payload.organizationId))
     ) {
         return Boom.unauthorized('User is not allowed to create a chart in that team.');
     }
@@ -234,7 +234,7 @@ async function createChart(request, h) {
             !folder ||
             (!isAdmin &&
                 folder.user_id !== auth.artifacts.id &&
-                !(await user.hasTeam(folder.org_id)))
+                !(await user.hasActivatedTeam(folder.org_id)))
         ) {
             payload.folderId = undefined;
             request.logger.info('Invalid folder id. User does not have access to this folder');

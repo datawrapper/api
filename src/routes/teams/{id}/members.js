@@ -153,13 +153,9 @@ module.exports = async (server, options) => {
 
 async function getTeamMembers(request, h) {
     const { query, params, auth, server } = request;
+    const user = auth.artifacts;
 
-    const hasTeam = !!(await UserTeam.findOne({
-        where: {
-            user_id: auth.artifacts.id,
-            organization_id: params.id
-        }
-    }));
+    const hasTeam = await user.hasTeam(params.id);
 
     if (!hasTeam && !server.methods.isAdmin(request)) {
         return Boom.unauthorized();
