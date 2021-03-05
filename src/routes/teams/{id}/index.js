@@ -97,12 +97,8 @@ async function getTeam(request, h) {
     const { url, server, auth, params } = request;
 
     const isAdmin = server.methods.isAdmin(request);
-    const hasTeam = !!(await UserTeam.findOne({
-        where: {
-            user_id: auth.artifacts.id,
-            organization_id: params.id
-        }
-    }));
+    const user = auth.artifacts;
+    const hasTeam = await user.hasActivatedTeam(params.id);
 
     if (!hasTeam && !isAdmin) {
         return Boom.unauthorized();
