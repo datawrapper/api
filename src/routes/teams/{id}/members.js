@@ -155,7 +155,7 @@ async function getTeamMembers(request, h) {
     const { query, params, auth, server } = request;
     const user = auth.artifacts;
 
-    const hasTeam = await user.hasTeam(params.id);
+    const hasTeam = await user.hasActivatedTeam(params.id);
 
     if (!hasTeam && !server.methods.isAdmin(request)) {
         return Boom.unauthorized();
