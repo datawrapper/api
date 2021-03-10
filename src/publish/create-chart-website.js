@@ -6,9 +6,9 @@ const pug = require('pug');
 const { Theme } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
-const dwChart = require('esm')(module)('@datawrapper/chart-core/lib/dw/chart').default;
 const get = require('lodash/get');
 const { stringify, readFileAndHash, copyFileHashed, noop } = require('../utils/index.js');
+
 const { compileCSS } = require('./compile-css');
 const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
 
@@ -245,25 +245,13 @@ module.exports = async function createChartWebsite(
 
     /* write "index.html", visualization Javascript and other assets */
     await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
-
-    /* write "data.csv", including changes made in step 2 */
-    const dataset = await dwChart(chartJSON).load(data);
-    const isJSON = get(chartJSON, 'metadata.data.json');
-    const dataFile = `data.${isJSON ? 'json' : 'csv'}`;
-    await fs.writeFile(
-        path.join(outDir, dataFile),
-        isJSON ? JSON.stringify(dataset) : dataset.csv(),
-        { encoding: 'utf-8' }
-    );
-
     const fileMap = [
         ...dependencies,
         ...polyfillFiles,
         ...blocksFiles,
         path.join('lib/', polyfillScript),
         path.join('lib/', coreScript),
-        'index.html',
-        dataFile
+        'index.html'
     ];
 
     async function cleanup() {
