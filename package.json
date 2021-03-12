@@ -52,7 +52,7 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/chart-core": "^8.24.2",
+        "@datawrapper/chart-core": "^8.26.2",
         "@datawrapper/locales": "^1.1.2",
         "@datawrapper/orm": "^3.22.1",
         "@datawrapper/schemas": "^1.11.0",
@@ -71,6 +71,7 @@
         "bcryptjs": "2.4.3",
         "chalk": "3.0.0",
         "cssnano": "4.1.10",
+        "esm": "^3.2.25",
         "fs-extra": "8.1.0",
         "got": "10.7.0",
         "hapi-auth-bearer-token": "6.2.1",
