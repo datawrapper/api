@@ -35,16 +35,31 @@
         "ignore": [
             "d3*/src/*",
             "d3*/static/*",
+            "d3*/tests/*",
             "locator-maps/src/*",
             "locator-maps/static/*",
+            "locator-maps/tests/*",
             "tables/src/*",
             "tables/static/*",
+            "tables/tests/*",
+            "team-*/src/*",
+            "team-*/static/*",
             "visualization*/src/*",
             "visualization*/static/*",
+            "visualization*/tests/*",
             "external-data/src/*",
             "external-data/static/*",
             "simple-maps/src/*",
-            "simple-maps/static/*"
+            "simple-maps/static/*",
+            "image-publishing/src/*",
+            "image-publishing/static/*",
+            "subscriptions/src/*",
+            "subscriptions/static/*",
+            "social-sharing/src/*",
+            "social-sharing/static/*",
+            "chart-locale-select/src/*",
+            "chart-locale-select/static/*",
+            "themes/static/*"
         ]
     },
     "repository": {
@@ -52,7 +67,7 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/chart-core": "^8.27.1",
+        "@datawrapper/chart-core": "^8.27.2",
         "@datawrapper/locales": "^1.1.2",
         "@datawrapper/orm": "^3.22.1",
         "@datawrapper/schemas": "^1.11.0",
