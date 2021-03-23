@@ -129,11 +129,16 @@ module.exports = (server, options) => {
                         if (checkUrl(metadataUrl)) {
                             const metadata = (await got(metadataUrl)).body;
 
-                            await events.emit(event.PUT_CHART_ASSET, {
-                                chart,
-                                data: metadata,
-                                filename: `${chart.id}.metadata.json`
-                            });
+                            try {
+                                JSON.parse(metadata);
+
+                                // @todo: validate against metadata schema
+                                await events.emit(event.PUT_CHART_ASSET, {
+                                    chart,
+                                    data: metadata,
+                                    filename: `${chart.id}.metadata.json`
+                                });
+                            } catch (ex) {}
                         }
                     } catch (ex) {}
                 }
