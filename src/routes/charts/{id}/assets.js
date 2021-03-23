@@ -135,6 +135,7 @@ function getAssetWhitelist(id) {
     return [
         '{id}.csv',
         '{id}.public.csv',
+        '{id}.metadata.json',
         '{id}.map.json',
         '{id}.minimap.json',
         '{id}.highlight.json'
