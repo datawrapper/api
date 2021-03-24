@@ -1,7 +1,7 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { prepareChart } = require('../../../utils/index.js');
-const { translate } = require('../../../utils/l10n.js');
+const { translate } = require('@datawrapper/service-utils/l10n.js');
 const { Chart, User, ChartPublic, Session } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const clone = require('lodash/clone');

@@ -3,7 +3,7 @@ const path = require('path');
 const models = require('@datawrapper/orm/models');
 const get = require('lodash/get');
 const { promisify } = require('util');
-const { addScope } = require('./utils/l10n');
+const { addScope } = require('@datawrapper/service-utils/l10n');
 const readFile = promisify(fs.readFile);
 const readDir = promisify(fs.readdir);
 
