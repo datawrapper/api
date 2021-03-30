@@ -44,6 +44,8 @@
             "tables/tests/*",
             "team-*/src/*",
             "team-*/static/*",
+            "admin-*/src/*",
+            "admin-*/static/*",
             "visualization*/src/*",
             "visualization*/static/*",
             "visualization*/tests/*",
