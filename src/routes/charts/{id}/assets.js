@@ -14,7 +14,7 @@ module.exports = (server, options) => {
             tags: ['api'],
             description: 'Fetch chart asset',
             auth: {
-                access: { scope: ['chart:read'] }
+                mode: 'try'
             },
             notes: `Request an asset associated with a chart. Requires scope \`chart:read\`.`,
             plugins: {
@@ -79,26 +79,32 @@ async function getChartAsset(request, h) {
 
     const filename = params.asset;
 
-    let isEditable = await chart.isEditableBy(request.auth.artifacts, auth.credentials.session);
+    if (auth.isAuthenticated) {
+        let isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
 
-    if (!isEditable && query.ott) {
-        // we do not destroy the access token here, because this request might
-        // have been internally injected from the /chart/:id/publish/data endpoint
-        const count = await ChartAccessToken.count({
-            where: {
-                chart_id: params.id,
-                token: query.ott
-            },
-            limit: 1
-        });
+        if (!isEditable && query.ott) {
+            // we do not destroy the access token here, because this request might
+            // have been internally injected from the /chart/:id/publish/data endpoint
+            const count = await ChartAccessToken.count({
+                where: {
+                    chart_id: params.id,
+                    token: query.ott
+                },
+                limit: 1
+            });
 
-        if (count === 1) {
-            isEditable = true;
+            if (count === 1) {
+                isEditable = true;
+            }
         }
-    }
 
-    if (filename !== `${chart.id}.public.csv` && !isEditable) {
-        return Boom.forbidden();
+        if (!isEditable || auth.credentials.scope.indexOf('chart:read') === -1) {
+            return Boom.forbidden();
+        }
+    } else {
+        if (filename !== `${chart.id}.public.csv`) {
+            return Boom.forbidden();
+        }
     }
 
     if (!getAssetWhitelist(params.id).includes(params.asset)) {
