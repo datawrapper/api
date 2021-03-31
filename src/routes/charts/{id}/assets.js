@@ -98,7 +98,10 @@ async function getChartAsset(request, h) {
             }
         }
 
-        if (!isEditable || auth.credentials.scope.indexOf('chart:read') === -1) {
+        if (
+            filename !== `${chart.id}.public.csv` &&
+            (!isEditable || auth.credentials.scope.indexOf('chart:read') === -1)
+        ) {
             return Boom.forbidden();
         }
     } else {
