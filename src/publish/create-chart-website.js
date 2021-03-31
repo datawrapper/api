@@ -298,7 +298,7 @@ async function loadVendorLocale(vendor, locale, team) {
     }
     // no locale found at all
     return {
-        base:localeBase,
-        custom: get(team,`settings.locales.${vendor}.${locale.replace('_', '-')}`,{})
-    }
+        base: localeBase,
+        custom: get(team, `settings.locales.${vendor}.${locale.replace('_', '-')}`, {})
+    };
 }
