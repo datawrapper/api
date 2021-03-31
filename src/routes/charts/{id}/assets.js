@@ -79,7 +79,13 @@ async function getChartAsset(request, h) {
 
     const filename = params.asset;
 
-    if (auth.isAuthenticated) {
+    if (filename !== `${chart.id}.public.csv`) {
+        // unauthenticated users can never access non-public assets
+        if (!auth.isAuthenticated) {
+            return Boom.forbidden();
+        }
+
+        // user is authenticated, but we still need to determine if the user has the rights to edit
         let isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
 
         if (!isEditable && query.ott) {
@@ -98,14 +104,7 @@ async function getChartAsset(request, h) {
             }
         }
 
-        if (
-            filename !== `${chart.id}.public.csv` &&
-            (!isEditable || auth.credentials.scope.indexOf('chart:read') === -1)
-        ) {
-            return Boom.forbidden();
-        }
-    } else {
-        if (filename !== `${chart.id}.public.csv`) {
+        if (!isEditable || auth.credentials.scope.indexOf('chart:read') === -1) {
             return Boom.forbidden();
         }
     }
