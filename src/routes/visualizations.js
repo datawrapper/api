@@ -133,7 +133,7 @@ async function register(server, options) {
         });
 
         if (statusCode !== 200) {
-            return new Boom(result.message, result);
+            return new Boom.Boom(result.message, result);
         }
 
         const file = result.script;

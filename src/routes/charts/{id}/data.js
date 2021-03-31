@@ -3,6 +3,7 @@ const Boom = require('@hapi/boom');
 const { noContentResponse } = require('../../../schemas/response');
 const checkUrl = require('@datawrapper/service-utils/checkUrl');
 const got = require('got');
+const get = require('lodash/get');
 
 module.exports = (server, options) => {
     const { events, event } = server.app;
@@ -117,6 +118,30 @@ module.exports = (server, options) => {
                     chart.changed('last_modified_at', true);
                     await chart.save();
                 } catch (ex) {}
+
+                if (
+                    get(chart, 'metadata.data.upload-method') === 'external-data' &&
+                    get(chart, 'metadata.data.external-metadata')
+                ) {
+                    try {
+                        const metadataUrl = get(chart, 'metadata.data.external-metadata');
+
+                        if (checkUrl(metadataUrl)) {
+                            const metadata = (await got(metadataUrl)).body;
+
+                            try {
+                                JSON.parse(metadata);
+
+                                // @todo: validate against metadata schema
+                                await events.emit(event.PUT_CHART_ASSET, {
+                                    chart,
+                                    data: metadata,
+                                    filename: `${chart.id}.metadata.json`
+                                });
+                            } catch (ex) {}
+                        }
+                    } catch (ex) {}
+                }
             }
 
             await events.emit(event.CUSTOM_EXTERNAL_DATA, { chart });
