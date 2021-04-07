@@ -17,7 +17,7 @@ const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 
 const { generateToken, loadChart } = require('./utils');
-const { addScope } = require('./utils/l10n');
+const { addScope } = require('@datawrapper/service-utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
@@ -229,7 +229,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.validator(Joi);
 
     server.app.event = eventList;
-    server.app.events = new ApiEventEmitter({ logger: server.logger });
+    server.app.events = new ApiEventEmitter({ logger: server.logger, eventList });
     server.app.visualizations = new Map();
     server.app.exportFormats = new Set();
     server.app.scopes = new Set();

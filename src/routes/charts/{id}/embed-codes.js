@@ -4,7 +4,7 @@ const Joi = require('@hapi/joi');
 const get = require('lodash/get');
 const path = require('path');
 const fs = require('fs-extra');
-const { translate } = require('../../../utils/l10n');
+const { translate } = require('@datawrapper/service-utils/l10n');
 const sanitizeHtml = require('sanitize-html');
 const chartCore = require('@datawrapper/chart-core');
 
