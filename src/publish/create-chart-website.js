@@ -280,7 +280,6 @@ async function loadVendorLocale(vendor, locale, team) {
         '../../node_modules/@datawrapper/locales/locales/',
         vendor
     );
-    let localeBase = 'null';
     const culture = locale.replace('_', '-').toLowerCase();
     const tryFiles = [`${culture}.js`];
     if (culture.length > 2) {
@@ -290,14 +289,15 @@ async function loadVendorLocale(vendor, locale, team) {
     for (let i = 0; i < tryFiles.length; i++) {
         const file = path.join(basePath, tryFiles[i]);
         try {
-            localeBase = await fs.readFile(file, 'utf-8');
-            break;
+            const localeBase = await fs.readFile(file, 'utf-8');
+            return {
+                base: localeBase,
+                custom: get(team, `settings.locales.${vendor}.${locale.replace('_', '-')}`, {})
+            }
         } catch (e) {
             // file not found, so try next
         }
     }
-    return {
-        base: localeBase,
-        custom: get(team, `settings.locales.${vendor}.${locale.replace('_', '-')}`, {})
-    };
+    // no locale found at all
+    return 'null';
 }
