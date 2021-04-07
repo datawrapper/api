@@ -293,7 +293,7 @@ async function loadVendorLocale(vendor, locale, team) {
             return {
                 base: localeBase,
                 custom: get(team, `settings.locales.${vendor}.${locale.replace('_', '-')}`, {})
-            }
+            };
         } catch (e) {
             // file not found, so try next
         }
