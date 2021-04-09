@@ -357,13 +357,13 @@ async function publishData(request, h) {
 
     const additionalData = await getAdditionalMetadata(chart, { server });
 
-    const data = { data: res.result, chartAttrs: await prepareChart(chart, additionalData) };
+    const data = { data: res.result, chart: await prepareChart(chart, additionalData) };
 
     // the vis
     data.visualization = server.app.visualizations.get(chart.type);
     const themeId = query.theme || chart.theme;
 
-    data.chartAttrs.theme = themeId;
+    data.chart.theme = themeId;
 
     // the theme
     const theme = await Theme.findByPk(themeId);

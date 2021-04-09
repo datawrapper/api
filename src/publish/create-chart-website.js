@@ -68,7 +68,7 @@ module.exports = async function createChartWebsite(
         throw Boom.conflict('No chart data available.');
     }
 
-    const chartLocale = publishData.chartAttrs.language || 'en-US';
+    const chartLocale = publishData.chart.language || 'en-US';
     const locales = {
         dayjs: await loadVendorLocale('dayjs', chartLocale),
         numeral: await loadVendorLocale('numeral', chartLocale)
