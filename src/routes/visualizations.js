@@ -45,7 +45,7 @@ async function register(server, options) {
         // also include translated title
         vis.__title = translate(vis.title, {
             scope: vis.__plugin,
-            language: auth.artifacts.language
+            language: get(auth.artifacts, 'language') || 'en-US'
         });
 
         return h.response(vis);
