@@ -846,5 +846,17 @@
   "teams / defaults / h3": "",
   "visualize / annotate / aria-description": "Description alternative pour les lecteurs d'écran",
   "visualize / annotate / aria-description / help": "S'il est défini, ce texte est utilisé comme représentation textuelle de la visualisation pour les lecteurs d'écran. Cela remplacera la description textuelle automatique générée par Datawrapper.",
-  "visualize / annotate / aria-description / placeholder": "Décrivez les informations présentées pour les lecteurs qui ne peuvent pas voir la visualisation"
+  "visualize / annotate / aria-description / placeholder": "Décrivez les informations présentées pour les lecteurs qui ne peuvent pas voir la visualisation",
+  "create / hed": "Créer une nouvelle visualisation Datawrapper",
+  "create / confirm": "Veuillez confirmer que vous voulez créer une nouvelle visualisation basée sur ces données :",
+  "create / confirm-q": "Voulez-vous créer une visualisation avec ces données maintenant ?",
+  "create / confirm-q / yes": "Oui, créer une nouvelle visualisation",
+  "create / confirm-q / no": "Non",
+  "create / footer": "",
+  "create / field / type": "Type de visualisation",
+  "create / field / dataset columns": "",
+  "create / field / dataset rows": "",
+  "create / field / dataset": "",
+  "create / show dataset": "",
+  "create / hide dataset": ""
 }
