@@ -17,7 +17,7 @@ const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 const registerVisualizations = require('@datawrapper/service-utils/registerVisualizations');
 const { generateToken, loadChart } = require('./utils');
-const { addScope } = require('@datawrapper/service-utils/l10n');
+const { addScope, translate } = require('@datawrapper/service-utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
@@ -245,6 +245,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             ? [...server.app.scopes, ...server.app.adminScopes]
             : Array.from(server.app.scopes);
     });
+    server.method('translate', translate);
 
     const { validateThemeData } = schemas.initialize({
         getSchema: config.api.schemaBaseUrl
