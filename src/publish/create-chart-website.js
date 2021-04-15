@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const os = require('os');
 const pug = require('pug');
-const { Theme } = require('@datawrapper/orm/models');
+const { Theme, Team } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
 const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies');
 const dwChart = require('esm')(module)('@datawrapper/chart-core/lib/dw/chart').default;
@@ -88,13 +88,14 @@ module.exports = async function createChartWebsite(
         throw Boom.notImplemented(`"${chart.type}" is currently not supported.`);
     }
 
+    const team = await Team.findByPk(chart.organization_id);
     // load vendor locales needed by visualization
     const locales = {};
     if (vis.dependencies.dayjs) {
-        locales.dayjs = await loadVendorLocale('dayjs', locale);
+        locales.dayjs = await loadVendorLocale('dayjs', locale, team);
     }
     if (vis.dependencies.numeral) {
-        locales.numeral = await loadVendorLocale('numeral', locale);
+        locales.numeral = await loadVendorLocale('numeral', locale, team);
     }
 
     // no need to await this...
@@ -273,7 +274,7 @@ module.exports = async function createChartWebsite(
     return { data, outDir, fileMap, cleanup };
 };
 
-async function loadVendorLocale(vendor, locale) {
+async function loadVendorLocale(vendor, locale, team) {
     const basePath = path.resolve(
         __dirname,
         '../../node_modules/@datawrapper/locales/locales/',
@@ -288,7 +289,11 @@ async function loadVendorLocale(vendor, locale) {
     for (let i = 0; i < tryFiles.length; i++) {
         const file = path.join(basePath, tryFiles[i]);
         try {
-            return await fs.readFile(file, 'utf-8');
+            const localeBase = await fs.readFile(file, 'utf-8');
+            return {
+                base: localeBase,
+                custom: get(team, `settings.locales.${vendor}.${locale.replace('_', '-')}`, {})
+            };
         } catch (e) {
             // file not found, so try next
         }

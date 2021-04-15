@@ -5,6 +5,7 @@ const Joi = require('@hapi/joi');
 const chartCore = require('@datawrapper/chart-core');
 const get = require('lodash/get');
 const set = require('lodash/set');
+const { translate } = require('@datawrapper/service-utils/l10n');
 
 const { compileCSS } = require('../publish/compile-css.js');
 
@@ -36,10 +37,16 @@ async function register(server, options) {
     });
 
     async function getVisualization(request, h) {
-        const { params, server } = request;
+        const { params, server, auth } = request;
 
         const vis = server.app.visualizations.get(params.id);
         if (!vis) return Boom.notFound();
+
+        // also include translated title
+        vis.__title = translate(vis.title, {
+            scope: vis.__plugin,
+            language: get(auth.artifacts, 'language') || 'en-US'
+        });
 
         return h.response(vis);
     }

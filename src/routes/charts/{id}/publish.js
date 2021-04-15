@@ -6,7 +6,7 @@ const get = require('lodash/get');
 const set = require('lodash/set');
 const { prepareChart } = require('../../../utils/index.js');
 const { Op } = require('@datawrapper/orm').db;
-const { getScope } = require('../../../utils/l10n');
+const { getScope } = require('@datawrapper/service-utils/l10n');
 
 module.exports = (server, options) => {
     // POST /v3/charts/{id}/publish

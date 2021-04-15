@@ -103,9 +103,6 @@ module.exports = (server, options) => {
             }
 
             if (chart.external_data && checkUrl(chart.external_data)) {
-                if (!checkUrl(chart.external_data))
-                    throw new Error('Unsupported external data URL');
-
                 try {
                     const data = (await got(chart.external_data)).body;
 

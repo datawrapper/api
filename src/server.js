@@ -15,9 +15,9 @@ const {
 } = require('@datawrapper/schemas/config');
 const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
-
+const registerVisualizations = require('@datawrapper/service-utils/registerVisualizations');
 const { generateToken, loadChart } = require('./utils');
-const { addScope } = require('./utils/l10n');
+const { addScope } = require('@datawrapper/service-utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
@@ -229,8 +229,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.validator(Joi);
 
     server.app.event = eventList;
-    server.app.events = new ApiEventEmitter({ logger: server.logger });
-    server.app.visualizations = new Map();
+    server.app.events = new ApiEventEmitter({ logger: server.logger, eventList });
     server.app.exportFormats = new Set();
     server.app.scopes = new Set();
     server.app.adminScopes = new Set();
@@ -240,25 +239,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
     server.method('createChartWebsite', require('./publish/create-chart-website.js'));
-    server.method('registerVisualization', function (plugin, visualizations = []) {
-        visualizations.forEach(vis => {
-            const visualization = server.app.visualizations.get(vis.id);
-
-            if (visualization) {
-                server
-                    .logger()
-                    .warn(
-                        { status: 'skipping', registeredBy: plugin },
-                        `[Visualization] "${vis.id}" already registered.`
-                    );
-                return;
-            }
-
-            vis.__plugin = plugin;
-            vis.libraries = vis.libraries || [];
-            server.app.visualizations.set(vis.id, vis);
-        });
-    });
+    server.method('registerVisualization', registerVisualizations(server));
     server.method('getScopes', (admin = false) => {
         return admin
             ? [...server.app.scopes, ...server.app.adminScopes]
