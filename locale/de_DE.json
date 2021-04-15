@@ -858,5 +858,12 @@
   "create / field / dataset rows": "Datensatzzeilen",
   "create / field / dataset": "Daten",
   "create / show dataset": "Daten anzeigen",
-  "create / hide dataset": "Daten ausblenden"
+  "create / hide dataset": "Daten ausblenden",
+  "error / not-found / hed": "",
+  "error / not-found / text": "",
+  "error / unexpected / hed": "",
+  "error / bad-request / hed": "",
+  "error / bad-request / text": "",
+  "error / forbidden / hed": "",
+  "error / forbidden / text": ""
 }
