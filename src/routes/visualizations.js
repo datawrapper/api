@@ -110,7 +110,7 @@ async function register(server, options) {
 
         const css = await compileCSS({
             theme,
-            filePaths: [chartCore.css, chartCore.less, vis.less]
+            filePaths: [chartCore.less, vis.less]
         });
 
         if (!transparent) {
