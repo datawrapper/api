@@ -104,8 +104,8 @@ module.exports = async function createChartWebsite(
     const assets = {};
     const assetsFiles = [];
     for (const asset of publishData.assets) {
-        const { name, prefix, cached, value } = asset;
-        if (!cached) {
+        const { name, prefix, shared, value } = asset;
+        if (!shared) {
             assets[name] = {
                 value
             };
@@ -114,7 +114,7 @@ module.exports = async function createChartWebsite(
             const assetPath = (prefix ? prefix + '/' : '') + hashed;
 
             assets[name] = {
-                cached: true,
+                shared: true,
                 url: getAssetLink(`../../lib/${assetPath}`)
             };
 
