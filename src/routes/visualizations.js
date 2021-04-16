@@ -7,7 +7,7 @@ const get = require('lodash/get');
 const set = require('lodash/set');
 const { translate } = require('@datawrapper/service-utils/l10n');
 
-const { createFontEntries, compileCSS } = require('../publish/compile-css.js');
+const { compileCSS } = require('../publish/compile-css.js');
 
 module.exports = {
     name: 'routes/visualizations',
@@ -53,7 +53,7 @@ async function register(server, options) {
 
     server.route({
         method: 'GET',
-        path: '/{id}/styles',
+        path: '/{id}/styles.css',
         options: {
             auth: {
                 mode: 'try',
@@ -98,10 +98,9 @@ async function register(server, options) {
         const cacheKey = `${query.theme}__${params.id}__${githead}`;
         const cachedCSS = await styleCache.get(cacheKey);
         const cacheStyles = get(server.methods.config('general'), 'cache.styles', false);
-        const fonts = createFontEntries(theme.fonts, theme.data);
 
         if (cacheStyles && !transparent && cachedCSS) {
-            return { css: cachedCSS, fonts };
+            return h.response(cachedCSS).header('Content-Type', 'text/css');
         }
 
         if (transparent) {
@@ -117,7 +116,7 @@ async function register(server, options) {
             await styleCache.set(cacheKey, css);
         }
 
-        return { css, fonts };
+        return h.response(css).header('Content-Type', 'text/css');
     }
 
     server.route({

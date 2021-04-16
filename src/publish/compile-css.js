@@ -44,7 +44,12 @@ async function compileCSS({ theme, filePaths }) {
         varString = varString.concat(`${variable}: ${CSS_ELIMINATION_KEYWORD};`);
     }
 
-    const inputLess = [varString, lessString, theme.less].join('');
+    const inputLess = [
+        varString,
+        createFontEntries(theme.fonts, theme.data),
+        lessString,
+        theme.less
+    ].join('');
 
     // todo: find a better solution or clean up map styles
     if (theme.data.vis && theme.data.vis['locator-maps']) {
