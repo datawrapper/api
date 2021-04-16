@@ -1,7 +1,14 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { createResponseConfig } = require('../../../schemas/response');
-const { Chart, Action, ChartPublic, ChartAccessToken, User } = require('@datawrapper/orm/models');
+const {
+    Chart,
+    Action,
+    ChartPublic,
+    ChartAccessToken,
+    Theme,
+    User
+} = require('@datawrapper/orm/models');
 const get = require('lodash/get');
 const set = require('lodash/set');
 const { prepareChart } = require('../../../utils/index.js');
@@ -313,6 +320,27 @@ async function publishData(request, h) {
 
     const data = { data: res.result, chart: await prepareChart(chart, additionalData) };
 
+    // the vis
+    data.visualization = server.app.visualizations.get(chart.type);
+    const themeId = query.theme || chart.theme;
+
+    data.chart.theme = themeId;
+
+    // the theme
+    const theme = await Theme.findByPk(themeId);
+    data.theme = {
+        id: theme.id,
+        data: await theme.getMergedData()
+    };
+
+    // the styles
+    const styleRes = await request.server.inject({
+        url: `/v3/visualizations/${data.visualization.id}/styles?theme=${themeId}`,
+        auth,
+        headers
+    });
+    data.styles = styleRes.result;
+
     const htmlBodyResults = await server.app.events.emit(
         server.app.event.CHART_AFTER_BODY_HTML,
         {
@@ -335,18 +363,29 @@ async function publishData(request, h) {
     );
     data.chartAfterHeadHTML = htmlHeadResults.join('\n');
 
-    // chart locales
-    data.locales = getScope('chart', chart.language || 'en-US');
+    // chart translations
+    data.translations = getScope('chart', chart.language || 'en-US');
+
+    data.assets = {};
+
+    const assets = await server.app.events.emit(
+        server.app.event.CHART_ASSETS,
+        {
+            chart,
+            auth,
+            ott: query.ott
+        },
+        { filter: 'success' }
+    );
+
+    assets
+        .filter(el => typeof el === 'object')
+        .forEach(({ id, asset }) => {
+            data.assets[id] = asset;
+        });
 
     data.externalDataUrl = await server.app.events.emit(server.app.event.EXTERNAL_DATA_URL, null, {
         filter: 'first'
-    });
-
-    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
-        chart,
-        auth,
-        ott: query.ott,
-        data
     });
 
     if (query.ott) {
