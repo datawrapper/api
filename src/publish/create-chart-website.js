@@ -96,7 +96,9 @@ module.exports = async function createChartWebsite(
     const dependencyPromises = [
         dependencies,
         publishData.visualization.libraries.map(lib => lib.file)
-    ];
+    ]
+        .flat()
+        .map(filePath => copyFileHashed(filePath, outDir));
 
     dependencies = (await Promise.all(dependencyPromises)).map(file =>
         path.join('lib/vendor/', file)
@@ -143,6 +145,9 @@ module.exports = async function createChartWebsite(
 
     publishData.blocks = publishedBlocks;
 
+    const css = publishData.styles;
+    delete publishData.styles;
+
     /**
      * Render the visualizations entry: "index.html"
      */
@@ -154,6 +159,7 @@ module.exports = async function createChartWebsite(
         CHART_HEAD: head,
         POLYFILL_SCRIPT: getAssetLink(`../../lib/${polyfillScript}`),
         CORE_SCRIPT: getAssetLink(`../../lib/${coreScript}`),
+        CSS: css,
         SCRIPTS: dependencies.map(file => getAssetLink(`../../${file}`)),
         CHART_CLASS: [
             `vis-height-${get(publishData.visualization, 'height', 'fit')}`,
