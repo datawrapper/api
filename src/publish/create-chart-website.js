@@ -6,7 +6,13 @@ const pug = require('pug');
 const chartCore = require('@datawrapper/chart-core');
 const dwChart = require('esm')(module)('@datawrapper/chart-core/lib/dw/chart').default;
 const get = require('lodash/get');
-const { stringify, readFileAndHash, copyFileHashed, noop } = require('../utils/index.js');
+const {
+    stringify,
+    readFileAndHash,
+    copyFileHashed,
+    writeFileHashed,
+    noop
+} = require('../utils/index.js');
 const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
 
 /**
@@ -91,6 +97,29 @@ module.exports = async function createChartWebsite(
 
     /* Create a temporary directory */
     const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
+
+    /* Copy assets */
+    const assets = {};
+    const assetsFiles = [];
+    for (const asset of publishData.assets) {
+        const { name, prefix, cached, value } = asset;
+        if (!cached) {
+            assets[name] = {
+                value
+            };
+        } else {
+            const hashed = await writeFileHashed(name, value, outDir);
+            const assetPath = (prefix ? prefix + '/' : '') + hashed;
+
+            assets[name] = {
+                cached: true,
+                url: getAssetLink(`../../lib/${assetPath}`)
+            };
+
+            assetsFiles.push(`lib/${assetPath}`);
+        }
+    }
+    publishData.assets = assets;
 
     /* Copy dependencies into temporary directory and hash them on the way */
     const dependencyPromises = [
@@ -198,6 +227,7 @@ module.exports = async function createChartWebsite(
         ...dependencies,
         ...polyfillFiles,
         ...blocksFiles,
+        ...assetsFiles,
         path.join('lib/', polyfillScript),
         path.join('lib/', coreScript),
         'index.html',

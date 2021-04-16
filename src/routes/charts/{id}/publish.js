@@ -124,7 +124,7 @@ async function publishChart(request, h) {
     /* write public CSV file (used when forking a chart) */
     await events.emit(event.PUT_CHART_ASSET, {
         chart,
-        data,
+        data: data.data,
         filename: `${chart.id}.public.csv`
     });
 
@@ -366,23 +366,17 @@ async function publishData(request, h) {
     // chart translations
     data.translations = getScope('chart', chart.language || 'en-US');
 
-    data.assets = {};
-
-    const assets = await server.app.events.emit(
-        server.app.event.CHART_ASSETS,
-        {
-            chart,
-            auth,
-            ott: query.ott
-        },
-        { filter: 'success' }
-    );
-
-    assets
-        .filter(el => typeof el === 'object')
-        .forEach(({ id, asset }) => {
-            data.assets[id] = asset;
-        });
+    data.assets = (
+        await server.app.events.emit(
+            server.app.event.CHART_ASSETS,
+            {
+                chart,
+                auth,
+                ott: query.ott
+            },
+            { filter: 'success' }
+        )
+    ).filter(el => typeof el === 'object');
 
     data.externalDataUrl = await server.app.events.emit(server.app.event.EXTERNAL_DATA_URL, null, {
         filter: 'first'

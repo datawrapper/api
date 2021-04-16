@@ -42,6 +42,18 @@ function createHashedFileName(filePath, hash) {
     return path.format({ name, ext });
 }
 
+utils.writeFileHashed = async function (name, value, destination, { prefix, hashLength = 8 } = {}) {
+    let hash = crypto.createHash('sha256');
+    hash.update(value);
+    hash = hash.digest('hex').slice(0, hashLength);
+    let hashedFileName = createHashedFileName(name, hash);
+    if (prefix) {
+        hashedFileName = `${prefix}.${hashedFileName}`;
+    }
+    await fs.writeFile(path.join(destination, hashedFileName), value);
+    return hashedFileName;
+};
+
 utils.copyFileHashed = (filePath, destination, { prefix, hashLength = 8 } = {}) => {
     let hash = crypto.createHash('sha256');
     const outFileName = path.basename(filePath);
