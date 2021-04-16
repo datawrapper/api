@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const os = require('os');
 const pug = require('pug');
+const { Team } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
 const dwChart = require('esm')(module)('@datawrapper/chart-core/lib/dw/chart').default;
 const get = require('lodash/get');
@@ -73,10 +74,11 @@ module.exports = async function createChartWebsite(
         throw Boom.conflict('No chart data available.');
     }
 
+    const team = await Team.findByPk(chart.organization_id);
     const chartLocale = publishData.chart.language || 'en-US';
     const locales = {
-        dayjs: await loadVendorLocale('dayjs', chartLocale),
-        numeral: await loadVendorLocale('numeral', chartLocale)
+        dayjs: await loadVendorLocale('dayjs', chartLocale, team),
+        numeral: await loadVendorLocale('numeral', chartLocale, team)
     };
 
     // no need to await this...
