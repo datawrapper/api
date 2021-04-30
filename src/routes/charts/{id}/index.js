@@ -148,6 +148,7 @@ module.exports = {
         require('./export')(server, options);
         require('./publish')(server, options);
         require('./copy')(server, options);
+        require('./fork')(server, options);
     }
 };
 

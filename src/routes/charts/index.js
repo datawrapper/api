@@ -63,7 +63,7 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
-                description: 'Create new chart',
+                description: 'Create new visualization',
                 notes: 'Requires scope `chart:write`.',
                 auth: {
                     access: { scope: ['chart:write'] }
@@ -72,22 +72,27 @@ module.exports = {
                     payload: Joi.object({
                         title: Joi.string()
                             .example('My cool chart')
-                            .description('Title of your chart. This will be the chart headline.'),
+                            .description(
+                                'Title of your visualization. This will be the visualization headline.'
+                            ),
                         theme: Joi.string()
                             .example('datawrapper')
                             .description('Chart theme to use.'),
                         type: Joi.string()
                             .example('d3-lines')
                             .description(
-                                'Type of the chart, like line chart, bar chart, ... Type keys can be found [here].'
+                                'Type of the visualization, like line chart, bar chart, ... Type keys can be found [here].'
                             ),
+                        forkable: Joi.boolean().description(
+                            'Set to true if you want to allow other users to fork this visualization'
+                        ),
                         metadata: Joi.object({
                             data: Joi.object({
                                 transpose: Joi.boolean()
                             }).unknown(true)
                         })
                             .description(
-                                'Metadata that saves all chart specific settings and options.'
+                                'Metadata that saves all visualization specific settings and options.'
                             )
                             .unknown(true)
                     })
