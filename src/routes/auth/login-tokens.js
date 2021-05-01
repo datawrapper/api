@@ -45,7 +45,7 @@ module.exports = async (server, options) => {
         },
         async handler(request, h) {
             const { auth, payload, server } = request;
-            const { api } = server.methods.config();
+            const { frontend, api } = server.methods.config();
 
             if (!auth.artifacts.isActivated()) {
                 // only activated users may create login tokens
@@ -87,7 +87,7 @@ module.exports = async (server, options) => {
                 .response({
                     id: token.id,
                     token: token.token,
-                    redirect_url: `${api.https ? 'https' : 'http'}://${api.subdomain}.${
+                    redirect_url: `${frontend.https ? 'https' : 'http'}://${api.subdomain}.${
                         api.domain
                     }/v3/auth/login/${token.token}`
                 })
