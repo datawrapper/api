@@ -14,13 +14,19 @@ test.before(async t => {
         credentials: data.session,
         artifacts: data.user
     };
+    t.context.headers = {
+        cookie: 'crumb=abc',
+        'X-CSRF-Token': 'abc',
+        referer: 'http://localhost'
+    };
 });
 
 test('It should be possible to create, fetch, edit and delete charts', async t => {
     let chart = await t.context.server.inject({
         method: 'POST',
         url: '/v3/charts',
-        auth: t.context.auth
+        auth: t.context.auth,
+        headers: t.context.headers
     });
 
     t.is(chart.result.authorId, t.context.data.user.id);
@@ -40,6 +46,7 @@ test('It should be possible to create, fetch, edit and delete charts', async t =
         method: 'PATCH',
         url: `/v3/charts/${chart.result.id}`,
         auth: t.context.auth,
+        headers: t.context.headers,
         payload: {
             title: 'TEST TITLE'
         }
@@ -50,7 +57,8 @@ test('It should be possible to create, fetch, edit and delete charts', async t =
     chart = await t.context.server.inject({
         method: 'DELETE',
         url: `/v3/charts/${chart.result.id}`,
-        auth: t.context.auth
+        auth: t.context.auth,
+        headers: t.context.headers
     });
 
     t.is(chart.statusCode, 204);
@@ -60,7 +68,8 @@ test('Admins should see author information', async t => {
     let chart = await t.context.server.inject({
         method: 'POST',
         url: '/v3/charts',
-        auth: t.context.auth
+        auth: t.context.auth,
+        headers: t.context.headers
     });
 
     chart = await t.context.server.inject({
@@ -79,7 +88,9 @@ test('Users can not change the author ID of a chart', async t => {
         method: 'POST',
         url: '/v3/charts',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -89,7 +100,9 @@ test('Users can not change the author ID of a chart', async t => {
         method: 'PATCH',
         url: `/v3/charts/${chart.result.id}`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             authorId: null
@@ -105,7 +118,9 @@ test('Users can edit chart medatata', async t => {
         method: 'POST',
         url: '/v3/charts',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             metadata: {
@@ -123,7 +138,9 @@ test('Users can edit chart medatata', async t => {
         method: 'PATCH',
         url: `/v3/charts/${chart.result.id}`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             metadata: {
@@ -150,7 +167,9 @@ test('Users can edit chart medatata', async t => {
         method: 'PATCH',
         url: `/v3/charts/${chart.result.id}`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             metadata: {
@@ -191,7 +210,9 @@ test('PUT request replace metadata', async t => {
         method: 'POST',
         url: '/v3/charts',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             metadata: {
@@ -212,7 +233,9 @@ test('PUT request replace metadata', async t => {
         method: 'PUT',
         url: `/v3/charts/${chart.result.id}`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             metadata: {

@@ -36,7 +36,9 @@ test('Guest charts are associated after signup', async t => {
         method: 'POST',
         url: '/v3/charts',
         headers: {
-            cookie: `DW-SESSION=${session}`
+            cookie: `DW-SESSION=${session}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             title: 'Test guest chart'
@@ -52,7 +54,9 @@ test('Guest charts are associated after signup', async t => {
         method: 'POST',
         url: '/v3/auth/signup',
         headers: {
-            cookie: `DW-SESSION=${session}`
+            cookie: `DW-SESSION=${session}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: t.context.getCredentials()
     });

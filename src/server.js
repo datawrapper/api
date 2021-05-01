@@ -1,7 +1,6 @@
-/* global URL */
-
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
+const Crumb = require('@hapi/crumb');
 const Joi = require('@hapi/joi');
 const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
@@ -16,9 +15,9 @@ const {
 } = require('@datawrapper/schemas/config');
 const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
-
+const registerVisualizations = require('@datawrapper/service-utils/registerVisualizations');
 const { generateToken, loadChart } = require('./utils');
-const { addScope } = require('./utils/l10n');
+const { addScope, translate } = require('@datawrapper/service-utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
@@ -118,66 +117,6 @@ const server = Hapi.server({
     }
 });
 
-const CSRF_COOKIE_NAME = 'crumb';
-const CSRF_TOKEN_HEADER = 'X-CSRF-Token';
-const CSRF_SAFE_METHODS = new Set(['get', 'head', 'options', 'trace']); // according to RFC7231
-
-/**
- * Check the request Referer header to prevent CSRF.
- *
- * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
- */
-function checkReferer(request) {
-    if (!request.headers.referer) {
-        return;
-    }
-    let url;
-    try {
-        url = new URL(request.headers.referer);
-    } catch (e) {
-        server.logger().warn('Malformed Referer header');
-        return;
-    }
-    if (!acceptedOrigins.has(url.origin)) {
-        server
-            .logger()
-            .warn(
-                `Referer header doesn't match any trusted origins for request ${request.method.toUpperCase()} ${
-                    request.url
-                } from ${request.headers.referer}`
-            );
-    }
-}
-
-function checkCSRFHeader(request) {
-    const csrfCrumb =
-        typeof request.state[CSRF_COOKIE_NAME] === 'object'
-            ? request.state[CSRF_COOKIE_NAME][0]
-            : request.state[CSRF_COOKIE_NAME];
-
-    if (!csrfCrumb || csrfCrumb !== request.headers[CSRF_TOKEN_HEADER.toLowerCase()]) {
-        server
-            .logger()
-            .warn(
-                `CSRF token header is not set for request ${request.method.toUpperCase()} ${
-                    request.url
-                } from ${request.headers.referer}`
-            );
-    }
-}
-
-server.ext('onPreResponse', function (request, h) {
-    if (
-        !CSRF_SAFE_METHODS.has(request.method.toLowerCase()) &&
-        get(request, 'auth.isAuthenticated') &&
-        get(request, 'auth.credentials.session')
-    ) {
-        checkReferer(request);
-        checkCSRFHeader(request);
-    }
-    return h.continue;
-});
-
 function getLogLevel() {
     if (DW_DEV_MODE) {
         return 'debug';
@@ -209,19 +148,47 @@ async function getVersionInfo() {
     }
 }
 
+function usesCookieAuth(request) {
+    return get(request, 'auth.isAuthenticated') && get(request, 'auth.credentials.session');
+}
+
 async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     const { commit, version } = await getVersionInfo();
-    await server.register({
-        plugin: require('hapi-pino'),
-        options: {
-            prettyPrint: true,
-            timestamp: () => `,"time":"${new Date().toISOString()}"`,
-            logEvents: ['request', 'log', 'onPostStart', 'onPostStop', 'request-error'],
-            level: getLogLevel(),
-            base: { name: commit || version },
-            redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]']
+    await server.register([
+        {
+            plugin: require('hapi-pino'),
+            options: {
+                prettyPrint: true,
+                timestamp: () => `,"time":"${new Date().toISOString()}"`,
+                logEvents: ['request', 'log', 'onPostStart', 'onPostStop', 'request-error'],
+                level: getLogLevel(),
+                base: { name: commit || version },
+                redact: [
+                    'req.headers.authorization',
+                    'req.headers.cookie',
+                    'res.headers["set-cookie"]'
+                ]
+            }
+        },
+        {
+            plugin: Crumb,
+            options: {
+                cookieOptions: {
+                    domain: '.' + config.api.domain,
+                    isHttpOnly: false,
+                    isSameSite: 'Lax',
+                    isSecure: config.frontend.https
+                },
+                logUnauthorized: true,
+                restful: true,
+                skip: function (request) {
+                    // Allow cross-site requests that are not authenticated with a cookie, because
+                    // where there are no cookies, there is no CSRF risk.
+                    return !usesCookieAuth(request);
+                }
+            }
         }
-    });
+    ]);
 
     server.logger().info(
         {
@@ -262,8 +229,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.validator(Joi);
 
     server.app.event = eventList;
-    server.app.events = new ApiEventEmitter({ logger: server.logger });
-    server.app.visualizations = new Map();
+    server.app.events = new ApiEventEmitter({ logger: server.logger, eventList });
     server.app.exportFormats = new Set();
     server.app.scopes = new Set();
     server.app.adminScopes = new Set();
@@ -273,30 +239,13 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.method('generateToken', generateToken);
     server.method('logAction', require('@datawrapper/orm/utils/action').logAction);
     server.method('createChartWebsite', require('./publish/create-chart-website.js'));
-    server.method('registerVisualization', function (plugin, visualizations = []) {
-        visualizations.forEach(vis => {
-            const visualization = server.app.visualizations.get(vis.id);
-
-            if (visualization) {
-                server
-                    .logger()
-                    .warn(
-                        { status: 'skipping', registeredBy: plugin },
-                        `[Visualization] "${vis.id}" already registered.`
-                    );
-                return;
-            }
-
-            vis.__plugin = plugin;
-            vis.libraries = vis.libraries || [];
-            server.app.visualizations.set(vis.id, vis);
-        });
-    });
+    server.method('registerVisualization', registerVisualizations(server));
     server.method('getScopes', (admin = false) => {
         return admin
             ? [...server.app.scopes, ...server.app.adminScopes]
             : Array.from(server.app.scopes);
     });
+    server.method('translate', translate);
 
     const { validateThemeData } = schemas.initialize({
         getSchema: config.api.schemaBaseUrl

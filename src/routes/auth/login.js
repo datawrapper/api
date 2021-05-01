@@ -25,6 +25,9 @@ module.exports = async (server, options) => {
                     keepSession: Joi.boolean().default(true),
                     otp: Joi.string()
                 })
+            },
+            plugins: {
+                crumb: false
             }
         },
         handler: loginUser

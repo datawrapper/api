@@ -101,7 +101,9 @@ test("Users can't change protected fields using PATCH", async t => {
         method: 'PATCH',
         url: `/v3/users/${user.user.id}`,
         headers: {
-            cookie: `DW-SESSION=${user.session.id}`,
+            cookie: `DW-SESSION=${user.session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost',
             'Content-Type': 'application/json'
         },
         payload: forbiddenFields
@@ -118,7 +120,9 @@ test("Users can't change protected fields using PATCH", async t => {
         method: 'PATCH',
         url: `/v3/users/${user.user.id}`,
         headers: {
-            cookie: `DW-SESSION=${user.session.id}`,
+            cookie: `DW-SESSION=${user.session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost',
             'Content-Type': 'application/json'
         },
         payload: protectedFields
@@ -147,7 +151,9 @@ test('Users can change allowed fields', async t => {
         method: 'PATCH',
         url: `/v3/users/${user.id}`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`,
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost',
             'Content-Type': 'application/json'
         },
         payload: allowedFields
@@ -180,7 +186,9 @@ test('User cannot change email if it already exists', async t => {
         method: 'PATCH',
         url: `/v3/users/${user1.id}`,
         headers: {
-            cookie: `DW-SESSION=${session.id}`,
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost',
             'Content-Type': 'application/json'
         },
         payload: {

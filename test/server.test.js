@@ -1,10 +1,13 @@
 const test = require('ava');
 const EventEmitter = require('events');
 const OpenAPIValidator = require('openapi-schema-validator').default;
-const { init } = require('../src/server');
+const { setup } = require('./helpers/setup');
 
 test.before(async t => {
-    t.context.server = await init();
+    const { server, getUser } = await setup();
+
+    t.context.user = await getUser();
+    t.context.server = server;
 });
 
 test('Server should be registered', t => {
@@ -29,4 +32,22 @@ test('3/ should redirect to v3/', async t => {
 test('Events should be available', t => {
     t.true(t.context.server.app.events instanceof EventEmitter);
     t.is(typeof t.context.server.app.event, 'object');
+});
+
+test('CSRF check is skipped for requests authenticated with a token', async t => {
+    const { user, token } = t.context.user;
+
+    const res = await t.context.server.inject({
+        method: 'DELETE',
+        url: `/v3/me`,
+        headers: {
+            authorization: `Bearer ${token}`
+        },
+        payload: {
+            email: user.email,
+            password: 'test-password'
+        }
+    });
+
+    t.is(res.statusCode, 204);
 });

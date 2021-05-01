@@ -114,7 +114,7 @@ const routes = [
             };
 
             if (payload.organizationId) {
-                if (!isAdmin && !(await user.hasTeam(payload.organizationId))) {
+                if (!isAdmin && !(await user.hasActivatedTeam(payload.organizationId))) {
                     return Boom.unauthorized('User does not have access to the specified team.');
                 }
 
@@ -131,7 +131,7 @@ const routes = [
                     !folder ||
                     (!isAdmin &&
                         folder.user_id !== auth.artifacts.id &&
-                        !(await user.hasTeam(folder.org_id)))
+                        !(await user.hasActivatedTeam(folder.org_id)))
                 ) {
                     return Boom.unauthorized(
                         'User does not have access to the specified parent folder, or it does not exist.'

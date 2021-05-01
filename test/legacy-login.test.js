@@ -29,6 +29,11 @@ test('Client hashed password', async t => {
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
+        headers: {
+            cookie: 'crumb=abc',
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
+        },
         payload: {
             email: t.context.userEmail,
             password: CLIENT_HASH
@@ -43,6 +48,11 @@ test('Non hashed password', async t => {
     const res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
+        headers: {
+            cookie: 'crumb=abc',
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
+        },
         payload: {
             email: t.context.userEmail,
             password: USER_PASSWORD
@@ -57,6 +67,11 @@ test('Migrate client hashed password to new hash', async t => {
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
+        headers: {
+            cookie: 'crumb=abc',
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
+        },
         payload: {
             email: t.context.userEmail,
             password: CLIENT_HASH
@@ -69,6 +84,11 @@ test('Migrate client hashed password to new hash', async t => {
     res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
+        headers: {
+            cookie: 'crumb=abc',
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
+        },
         payload: {
             email: t.context.userEmail,
             password: USER_PASSWORD
@@ -83,6 +103,11 @@ test('Migrate password to new hash', async t => {
     let res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
+        headers: {
+            cookie: 'crumb=abc',
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
+        },
         payload: {
             email: t.context.userEmail,
             password: USER_PASSWORD
@@ -95,6 +120,11 @@ test('Migrate password to new hash', async t => {
     res = await t.context.server.inject({
         method: 'POST',
         url: '/v3/auth/login',
+        headers: {
+            cookie: 'crumb=abc',
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
+        },
         payload: {
             email: t.context.userEmail,
             password: USER_PASSWORD

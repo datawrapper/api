@@ -18,7 +18,9 @@ test('User can set and unset activeTeam herself', async t => {
         method: 'PATCH',
         url: '/v3/me/settings',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             activeTeam: team.id
@@ -32,7 +34,9 @@ test('User can set and unset activeTeam herself', async t => {
         method: 'PATCH',
         url: '/v3/me/settings',
         headers: {
-            cookie: `DW-SESSION=${session.id}`
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             activeTeam: null

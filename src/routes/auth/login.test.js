@@ -49,7 +49,9 @@ test('Login and logout work with correct credentials', async t => {
         method: 'POST',
         url: '/v3/auth/logout',
         headers: {
-            cookie: `DW-SESSION=${session}`
+            cookie: `DW-SESSION=${session}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -81,7 +83,7 @@ test("Login set's correct cookie", async t => {
         }
     });
 
-    let cookie = parseSetCookie(res.headers['set-cookie'][0]);
+    let cookie = parseSetCookie(res.headers['set-cookie'].find(s => s.includes(`DW-SESSION`)));
     t.log('session', cookie['DW-SESSION']);
     await t.context.addToCleanup('session', cookie['DW-SESSION']);
     let maxAge = cookie['Max-Age'] / 24 / 60 / 60; // convert to seconds
@@ -100,7 +102,7 @@ test("Login set's correct cookie", async t => {
         }
     });
 
-    cookie = parseSetCookie(res.headers['set-cookie'][0]);
+    cookie = parseSetCookie(res.headers['set-cookie'].find(s => s.includes(`DW-SESSION`)));
     t.log('session', cookie['DW-SESSION']);
     await t.context.addToCleanup('session', cookie['DW-SESSION']);
     maxAge = cookie['Max-Age'] / 24 / 60 / 60; // convert to seconds
@@ -113,7 +115,9 @@ test('Logout errors with invalid session', async t => {
         method: 'POST',
         url: '/v3/auth/logout',
         headers: {
-            cookie: `DW-SESSION=Loki`
+            cookie: 'DW-SESSION=Loki; crumb=abc',
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
@@ -149,7 +153,9 @@ test('Guest charts are associated after login', async t => {
         method: 'POST',
         url: '/v3/charts',
         headers: {
-            cookie: `DW-SESSION=${session}`
+            cookie: `DW-SESSION=${session}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             title: 'Test guest chart'
@@ -167,7 +173,9 @@ test('Guest charts are associated after login', async t => {
         method: 'POST',
         url: '/v3/auth/login',
         headers: {
-            cookie: `DW-SESSION=${session}`
+            cookie: `DW-SESSION=${session}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         },
         payload: {
             email: user.email,
@@ -209,7 +217,9 @@ test('Login and logout updates session fields', async t => {
         method: 'POST',
         url: '/v3/auth/logout',
         headers: {
-            cookie: `DW-SESSION=${sessionId}`
+            cookie: `DW-SESSION=${sessionId}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
         }
     });
 
