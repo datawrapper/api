@@ -3,8 +3,9 @@ const Boom = require('@hapi/boom');
 const { prepareChart } = require('../../../utils/index.js');
 const { translate } = require('@datawrapper/service-utils/l10n');
 const findChartId = require('@datawrapper/service-utils/findChartId');
-const { Chart, User } = require('@datawrapper/orm/models');
+const { User } = require('@datawrapper/orm/models');
 const clone = require('lodash/clone');
+const createChart = require('@datawrapper/service-utils/createChart');
 
 module.exports = (server, options) => {
     const { event, events } = server.app;
@@ -28,6 +29,7 @@ module.exports = (server, options) => {
         },
         async handler(request, h) {
             const { server, params, auth, headers } = request;
+            const { session } = auth.credentials;
             const srcChart = await server.methods.loadChart(params.id);
             const isAdmin = server.methods.isAdmin(request);
             const user = await User.findByPk(auth.artifacts.id);
@@ -66,8 +68,7 @@ module.exports = (server, options) => {
                 newChart.in_folder = null;
             }
 
-            const chart = await Chart.create(newChart);
-
+            const chart = await createChart({ server, user, payload: newChart, session });
             await server.methods.copyChartAssets(srcChart, chart);
 
             try {
