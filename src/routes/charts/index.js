@@ -1,11 +1,11 @@
 const Joi = require('@hapi/joi');
-const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
 const { decamelizeKeys, decamelize } = require('humps');
 const set = require('lodash/set');
-const { Chart, User, Folder } = require('@datawrapper/orm/models');
+const { Chart, User } = require('@datawrapper/orm/models');
 const { prepareChart } = require('../../utils/index.js');
 const { listResponse, chartResponse } = require('../../schemas/response');
+const createChart = require('@datawrapper/service-utils/createChart');
 
 module.exports = {
     name: 'routes/charts',
@@ -86,22 +86,45 @@ module.exports = {
                         forkable: Joi.boolean().description(
                             'Set to true if you want to allow other users to fork this visualization'
                         ),
+                        organizationId: Joi.string().description(
+                            'ID of the team (formerlly known as organization) that the visualization should be created in.  The authenticated user must have access to this team.'
+                        ),
+                        folderId: Joi.number()
+                            .integer()
+                            .description(
+                                'ID of the folder that the visualization should be created in. The authenticated user must have access to this folder.'
+                            ),
+                        externalData: Joi.string().description('URL of external dataset'),
+                        lastEditStep: Joi.number()
+                            .integer()
+                            .description('Current position in chart editor workflow'),
                         metadata: Joi.object({
+                            axes: Joi.object(),
                             data: Joi.object({
                                 transpose: Joi.boolean()
-                            }).unknown(true)
+                            }).unknown(true),
+                            describe: Joi.object({
+                                intro: Joi.string(),
+                                byline: Joi.string(),
+                                'source-url': Joi.string(),
+                                'source-name': Joi.string(),
+                                'aria-description': Joi.string()
+                            }).unknown(true),
+                            annotate: Joi.object({
+                                notes: Joi.string()
+                            }).unknown(true),
+                            publish: Joi.object(),
+                            custom: Joi.object()
                         })
                             .description(
                                 'Metadata that saves all visualization specific settings and options.'
                             )
                             .unknown(true)
-                    })
-                        .unknown(true)
-                        .allow(null)
+                    }).allow(null)
                 },
                 response: chartResponse
             },
-            handler: createChart
+            handler: createChartHandler
         });
 
         server.register(require('./{id}'), {
@@ -205,63 +228,21 @@ async function getAllCharts(request, h) {
     return chartList;
 }
 
-async function createChart(request, h) {
+async function createChartHandler(request, h) {
     const { url, auth, payload, server } = request;
+    const { session } = auth.credentials;
     const user = auth.artifacts;
-    const isAdmin = server.methods.isAdmin(request);
 
-    async function findChartId() {
-        const id = server.methods.generateToken(5);
-        return (await Chart.findByPk(id)) ? findChartId() : id;
-    }
-
-    if (
-        payload &&
-        payload.organizationId &&
-        !isAdmin &&
-        !(await user.hasActivatedTeam(payload.organizationId))
-    ) {
-        return Boom.unauthorized('User is not allowed to create a chart in that team.');
-    }
-
-    if (payload && payload.type) {
-        // validate chart type
-        if (!server.app.visualizations.has(payload.type)) {
-            return Boom.badRequest('Invalid chart type');
-        }
-    }
-
-    if (payload && payload.folderId) {
-        // check if folder belongs to user to team
-        const folder = await Folder.findOne({ where: { id: payload.folderId } });
-
-        if (
-            !folder ||
-            (!isAdmin &&
-                folder.user_id !== auth.artifacts.id &&
-                !(await user.hasActivatedTeam(folder.org_id)))
-        ) {
-            payload.folderId = undefined;
-            request.logger.info('Invalid folder id. User does not have access to this folder');
-        } else {
-            payload.inFolder = payload.folderId;
-            payload.folderId = undefined;
-            payload.organizationId = folder.org_id ? folder.org_id : null;
-        }
-    }
-
-    const id = await findChartId();
-    const chart = await Chart.create({
+    const newChart = {
         title: '',
-        theme: 'default',
         type: 'd3-bars',
-        language: user.language,
         ...decamelizeKeys(payload),
-        metadata: payload && payload.metadata ? payload.metadata : { data: {} },
-        author_id: user.id,
-        guest_session: user.role === 'guest' ? auth.credentials.session : undefined,
-        id
-    });
+        folderId: payload.folderId,
+        teamId: payload.organizationId,
+        metadata: payload && payload.metadata ? payload.metadata : { data: {} }
+    };
+
+    const chart = await createChart({ server, user, payload: newChart, session });
 
     // log chart/edit
     await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
