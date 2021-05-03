@@ -172,5 +172,8 @@
             "./test/helpers/setup.js"
         ],
         "snapshotDir": "test/__snapshots__"
+    },
+    "optionalDependencies": {
+        "fsevents": "^2.1.2"
     }
 }
