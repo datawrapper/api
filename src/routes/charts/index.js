@@ -240,8 +240,8 @@ async function createChartHandler(request, h) {
         title: '',
         type: 'd3-bars',
         ...decamelizeKeys(payload),
-        folderId: payload.folderId,
-        teamId: payload.organizationId,
+        folderId: payload ? payload.folderId : undefined,
+        teamId: payload ? payload.organizationId : undefined,
         metadata: payload && payload.metadata ? payload.metadata : { data: {} }
     };
 
