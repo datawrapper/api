@@ -87,7 +87,7 @@ module.exports = {
                             'Set to true if you want to allow other users to fork this visualization'
                         ),
                         organizationId: Joi.string().description(
-                            'ID of the team (formerlly known as organization) that the visualization should be created in.  The authenticated user must have access to this team.'
+                            'ID of the team (formerly known as organization) that the visualization should be created in.  The authenticated user must have access to this team.'
                         ),
                         folderId: Joi.number()
                             .integer()
