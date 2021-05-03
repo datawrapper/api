@@ -131,6 +131,7 @@ test('Users can edit chart medatata', async t => {
         }
     });
 
+    t.is(chart.statusCode, 201);
     t.is(chart.result.metadata.annotate.notes, 'note-1');
     t.log('set new metadata property: ', chart.result.metadata.annotate.notes);
 

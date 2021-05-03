@@ -7,13 +7,6 @@ test.before(async t => {
     t.context.server = server;
     t.context.getUser = getUser;
     t.context.getTeamWithUser = getTeamWithUser;
-
-    // register fake d3-bars type
-    server.methods.registerVisualization('d3-bars', [
-        {
-            id: 'd3-bars'
-        }
-    ]);
 });
 
 test('User can copy chart, attributes match', async t => {
