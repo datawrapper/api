@@ -97,24 +97,38 @@ module.exports = {
                         externalData: Joi.string().description('URL of external dataset'),
                         language: Joi.string()
                             .regex(/^[a-z]{2}([_-][A-Z]{2})?$/)
-                            .description('URL of external dataset'),
+                            .description('Visualization locale (e.g. en-US)'),
                         lastEditStep: Joi.number()
                             .integer()
+                            .min(1)
+                            .max(4)
                             .description('Current position in chart editor workflow'),
                         metadata: Joi.object({
-                            axes: Joi.object(),
+                            axes: Joi.object().description(
+                                'Mapping of dataset columns to visualization "axes"'
+                            ),
                             data: Joi.object({
                                 transpose: Joi.boolean()
                             }).unknown(true),
                             describe: Joi.object({
-                                intro: Joi.string(),
-                                byline: Joi.string(),
-                                'source-url': Joi.string(),
-                                'source-name': Joi.string(),
-                                'aria-description': Joi.string()
+                                intro: Joi.string().description('The visualization description'),
+                                byline: Joi.string().description(
+                                    'Byline as shown in the visualization footer'
+                                ),
+                                'source-name': Joi.string().description(
+                                    'Source as shown in visualization footer'
+                                ),
+                                'source-url': Joi.string().description(
+                                    'Source URL as shown in visualization footer'
+                                ),
+                                'aria-description': Joi.string().description(
+                                    'Alternative description of visualization shown in screen readers (instead of the visualization)'
+                                )
                             }).unknown(true),
                             annotate: Joi.object({
-                                notes: Joi.string()
+                                notes: Joi.string().description(
+                                    'Notes as shown underneath visualization'
+                                )
                             }).unknown(true),
                             publish: Joi.object(),
                             custom: Joi.object()
