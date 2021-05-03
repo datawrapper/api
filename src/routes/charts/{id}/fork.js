@@ -55,6 +55,8 @@ module.exports = (server, options) => {
                 set(newMeta, 'describe.byline', '');
             }
 
+            console.error({ newMeta });
+
             const newChart = {
                 type: publicChart.type,
                 title: publicChart.title,
