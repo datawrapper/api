@@ -283,6 +283,8 @@ test('User can fork unprotected chart, attributes match', async t => {
         }
     };
 
+    console.error({ forkedChart, expectedAttributes });
+
     // compare attributes
     for (var attr in expectedAttributes) {
         if (attr === 'metadata') {
