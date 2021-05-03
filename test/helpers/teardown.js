@@ -39,10 +39,14 @@ async function main() {
         }
     });
 
-    // disable foreign key checks
-    await ORM.db.query('SET FOREIGN_KEY_CHECKS=0;');
-
     try {
+        // remove all public charts
+        await models.ChartPublic.destroy({ where: { author_id: { [Op.in]: list.user } } });
+        // first remove charts that are forked
+        await models.Chart.destroy({
+            where: { forked_from: { [Op.not]: null }, author_id: { [Op.in]: list.user } }
+        });
+
         const [actions, , , tokens, sessions, themes] = await Promise.all([
             models.Action.destroy({ where: { id: { [Op.not]: null } } }),
             models.Chart.destroy({ where: { author_id: { [Op.in]: list.user } } }),
@@ -66,9 +70,6 @@ async function main() {
     } catch (e) {
         console.error(e);
     }
-
-    // enable foreign key checks again
-    await ORM.db.query('SET FOREIGN_KEY_CHECKS=1;');
 
     fs.unlinkSync(cleanupFile);
     process.exit(0);
