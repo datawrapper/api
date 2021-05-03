@@ -19,6 +19,13 @@ test.before(async t => {
         'X-CSRF-Token': 'abc',
         referer: 'http://localhost'
     };
+
+    // register fake d3-bars type
+    server.methods.registerVisualization('d3-bars', [
+        {
+            id: 'd3-bars'
+        }
+    ]);
 });
 
 test('Should be possible to search in multiple fields', async t => {

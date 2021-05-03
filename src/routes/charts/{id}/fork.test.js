@@ -8,6 +8,13 @@ test.before(async t => {
     t.context.server = server;
     t.context.getUser = getUser;
     t.context.getTeamWithUser = getTeamWithUser;
+
+    // register fake d3-bars type
+    server.methods.registerVisualization('d3-bars', [
+        {
+            id: 'd3-bars'
+        }
+    ]);
 });
 
 test("User can't fork an unforkable visualization", async t => {
@@ -37,6 +44,8 @@ test("User can't fork an unforkable visualization", async t => {
         headers,
         payload: attributes
     });
+
+    t.is(createResponse.statusCode, 201);
 
     // fork new chart
     const forkResponse = await t.context.server.inject({
