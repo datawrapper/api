@@ -95,6 +95,9 @@ module.exports = {
                                 'ID of the folder that the visualization should be created in. The authenticated user must have access to this folder.'
                             ),
                         externalData: Joi.string().description('URL of external dataset'),
+                        language: Joi.string()
+                            .regex(/^[a-z]{2}([_-][A-Z]{2})?$/)
+                            .description('URL of external dataset'),
                         lastEditStep: Joi.number()
                             .integer()
                             .description('Current position in chart editor workflow'),
