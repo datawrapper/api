@@ -23,7 +23,7 @@
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
         "test": "DW_CONFIG_PATH=test/_config.test.js ava --verbose || true",
-        "test:ci": "DW_CONFIG_PATH=test/_config.ci.js ava --verbose || true",
+        "test:ci": "DW_CONFIG_PATH=test/_config.ci.js ava --verbose",
         "test:update-snapshots": "DW_CONFIG_PATH=test/_config.test.js ava --update-snapshots",
         "update-translations": "node scripts/update-translations.js",
         "clean:db": "DW_CONFIG_PATH=test/_config.test.js node test/helpers/teardown.js",
