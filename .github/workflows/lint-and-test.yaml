@@ -16,7 +16,7 @@ jobs:
       - name: Code linting
         run: npm run lint
       - name: Run tests
-        run: npm test
+        run: npm run test:ci
       - name: DB cleanup
-        run: npm run clean:db
+        run: npm run clean:db:ci
         if: ${{ failure() }}
