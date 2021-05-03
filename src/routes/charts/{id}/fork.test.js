@@ -242,7 +242,7 @@ test('User can fork unprotected chart, attributes match', async t => {
 
     // create ChartPublic manually since /publish isn't working from tests yes
     const { ChartPublic } = require('@datawrapper/orm/models');
-    const publicChart = await ChartPublic.create(decamelizeKeys(createResponse.result));
+    await ChartPublic.create(decamelizeKeys(createResponse.result));
 
     // fork new chart
     const forkResponse = await server.inject({
@@ -282,13 +282,6 @@ test('User can fork unprotected chart, attributes match', async t => {
             }
         }
     };
-
-    console.error({
-        forkedChart,
-        expectedAttributes,
-        createdChart: createResponse.result,
-        publicChart: publicChart.dataValues
-    });
 
     // compare attributes
     for (var attr in expectedAttributes) {

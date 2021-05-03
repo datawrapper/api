@@ -65,27 +65,6 @@ module.exports = (server, options) => {
                 last_edit_step: 3
             };
 
-            const defaultMetadata = {
-                data: {},
-                describe: {
-                    'source-name': '',
-                    'source-url': '',
-                    intro: '',
-                    byline: '',
-                    'aria-description': ''
-                },
-                visualize: {},
-                publish: {}
-            };
-            const cloneDeep = require('lodash/cloneDeep');
-            const assignDeep = require('assign-deep');
-
-            console.error({
-                p0: cloneDeep(defaultMetadata),
-                p1: get(newChart, 'metadata'),
-                res: assignDeep(cloneDeep(defaultMetadata), get(newChart, 'metadata') || {})
-            });
-
             const chart = await createChart({ server, user, payload: newChart, session });
             await server.methods.copyChartAssets(srcChart, chart, true);
 
