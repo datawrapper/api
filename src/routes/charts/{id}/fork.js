@@ -37,6 +37,10 @@ module.exports = (server, options) => {
                 return Boom.unauthorized();
             }
 
+            // use source chart to get protect forks status (so users don't have to republish)
+            const isProtectedFork = get(srcChart, 'metadata.publish.protect-forks', true);
+
+            // get public chart to get values
             const publicChart = await ChartPublic.findByPk(srcChart.id);
 
             if (!publicChart) {
@@ -44,8 +48,6 @@ module.exports = (server, options) => {
                 // be forked
                 return Boom.notFound();
             }
-
-            const isProtectedFork = get(publicChart, 'metadata.publish.protect-forks', true);
 
             const newMeta = clone(publicChart.metadata);
 
