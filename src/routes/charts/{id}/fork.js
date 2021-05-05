@@ -80,6 +80,9 @@ module.exports = (server, options) => {
                 });
             } catch (ex) {}
 
+            // log chart/fork
+            await request.server.methods.logAction(user.id, `chart/fork`, chart.id);
+
             await events.emit(event.CHART_FORK, { sourceChart: srcChart, destChart: chart });
             return h.response({ ...(await prepareChart(chart)) }).code(201);
         }

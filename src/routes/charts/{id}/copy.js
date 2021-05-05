@@ -81,6 +81,9 @@ module.exports = (server, options) => {
                 });
             } catch (ex) {}
 
+            // log chart/copy
+            await request.server.methods.logAction(user.id, `chart/copy`, chart.id);
+
             await events.emit(event.CHART_COPY, { sourceChart: srcChart, destChart: chart });
             await server.methods.logAction(user.id, `chart/edit`, chart.id);
             return h.response({ ...(await prepareChart(chart)) }).code(201);
