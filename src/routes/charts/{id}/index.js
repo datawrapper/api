@@ -266,6 +266,10 @@ async function editChart(request, h) {
         delete payload.authorId;
     }
 
+    if ('isFork' in payload && !isAdmin) {
+        delete payload.isFork;
+    }
+
     const newData = assignWithEmptyObjects(await prepareChart(chart), payload);
 
     if (request.method === 'put' && payload.metadata) {
