@@ -33,6 +33,7 @@ module.exports = (server, options) => {
                         color: Joi.string().default('auto')
                     }),
                     fullVector: Joi.boolean().default(false),
+                    ligatures: Joi.boolean().default(true),
                     transparent: Joi.boolean().default(false)
                 })
             }
@@ -79,6 +80,7 @@ module.exports = (server, options) => {
                     borderColor: Joi.string(),
                     download: Joi.boolean().default(false),
                     fullVector: Joi.boolean().default(false),
+                    ligatures: Joi.boolean().default(true),
                     transparent: Joi.boolean().default(false)
                 })
             }
