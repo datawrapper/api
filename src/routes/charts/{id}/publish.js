@@ -7,6 +7,7 @@ const set = require('lodash/set');
 const { prepareChart } = require('../../../utils/index.js');
 const { Op } = require('@datawrapper/orm').db;
 const { getScope } = require('@datawrapper/service-utils/l10n');
+const { getEmbedCodes } = require('./utils');
 
 module.exports = (server, options) => {
     // POST /v3/charts/{id}/publish
@@ -250,6 +251,7 @@ async function publishChartStatus(request, h) {
 
 async function publishData(request, h) {
     const { query, params, server, auth, headers } = request;
+    const { events, event, visualizations } = server.app;
 
     let chart;
 
@@ -313,8 +315,8 @@ async function publishData(request, h) {
 
     const data = { data: res.result, chart: await prepareChart(chart, additionalData) };
 
-    const htmlBodyResults = await server.app.events.emit(
-        server.app.event.CHART_AFTER_BODY_HTML,
+    const htmlBodyResults = await events.emit(
+        event.CHART_AFTER_BODY_HTML,
         {
             chart,
             data,
@@ -324,8 +326,8 @@ async function publishData(request, h) {
     );
     data.chartAfterBodyHTML = htmlBodyResults.join('\n');
 
-    const htmlHeadResults = await server.app.events.emit(
-        server.app.event.CHART_AFTER_HEAD_HTML,
+    const htmlHeadResults = await events.emit(
+        event.CHART_AFTER_HEAD_HTML,
         {
             chart,
             data,
@@ -338,11 +340,11 @@ async function publishData(request, h) {
     // chart locales
     data.locales = getScope('chart', chart.language || 'en-US');
 
-    data.externalDataUrl = await server.app.events.emit(server.app.event.EXTERNAL_DATA_URL, null, {
+    data.externalDataUrl = await events.emit(event.EXTERNAL_DATA_URL, null, {
         filter: 'first'
     });
 
-    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
+    await events.emit(event.CHART_PUBLISH_DATA, {
         chart,
         auth,
         ott: query.ott,
@@ -359,8 +361,8 @@ async function publishData(request, h) {
         });
     }
 
-    const chartBlocks = await server.app.events.emit(
-        server.app.event.CHART_BLOCKS,
+    const chartBlocks = await events.emit(
+        event.CHART_BLOCKS,
         {
             chart,
             user,
@@ -369,6 +371,23 @@ async function publishData(request, h) {
         { filter: 'success' }
     );
     data.blocks = chartBlocks.filter(d => d);
+
+    const publicUrl = await events.emit(event.GET_NEXT_PUBLIC_URL, { chart }, { filter: 'first' });
+
+    if (publicUrl) {
+        const embedCodes = {};
+        const res = await getEmbedCodes({
+            chart,
+            visualizations,
+            user,
+            publicUrl,
+            publicVersion: chart.public_version + 1
+        });
+        res.forEach(embed => {
+            embedCodes[`embed-method-${embed.id}`] = embed.code;
+        });
+        set(data.chart, 'metadata.publish.embed-codes', embedCodes);
+    }
 
     return data;
 }
