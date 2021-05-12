@@ -154,6 +154,7 @@ async function getTeam(request, h) {
 
 async function editTeam(request, h) {
     const { auth, payload, params, server } = request;
+    const { event, events } = server.app;
 
     if (!server.methods.isAdmin(request)) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
@@ -173,6 +174,9 @@ async function editTeam(request, h) {
     let team = await Team.findByPk(params.id);
 
     if (!team) return Boom.notFound();
+
+    // allow plugins to reject team settings
+    await events.emit(event.TEAM_EDIT, { payload: data, team, user: auth.artifacts });
 
     team = await team.update(convertKeys(data, decamelize));
 
