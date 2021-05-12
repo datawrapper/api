@@ -16,7 +16,7 @@ const {
 const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 const registerVisualizations = require('@datawrapper/service-utils/registerVisualizations');
-const { generateToken, loadChart } = require('./utils');
+const { generateToken, loadChart, copyChartAssets } = require('./utils');
 const { addScope, translate } = require('@datawrapper/service-utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
@@ -254,6 +254,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     });
     server.method('validateThemeData', validateThemeData);
     server.method('loadChart', loadChart);
+    server.method('copyChartAssets', copyChartAssets(server));
 
     if (DW_DEV_MODE) {
         server.register([require('@hapi/inert'), require('@hapi/vision')]);

@@ -50,17 +50,33 @@ test('User can copy chart, attributes match', async t => {
         headers
     });
 
+    const expectedAttributes = {
+        ...attributes,
+        metadata: {
+            ...attributes.metadata,
+            data: {},
+            publish: {},
+            describe: {
+                intro: '',
+                'source-name': '',
+                'source-url': '',
+                'aria-description': '',
+                byline: ''
+            }
+        }
+    };
+
     t.is(copiedChart.statusCode, 201);
     t.is(copiedChart.result.authorId, user.id);
     t.is(copiedChart.result.forkedFrom, srcChart.result.id);
     t.is(allMetadata.result.externalData, attributes.externalData);
 
     // compare attributes
-    for (var attr in attributes) {
+    for (var attr in expectedAttributes) {
         if (attr === 'title') {
-            t.is(copiedChart.result[attr], `${attributes[attr]} (Copy)`);
+            t.is(copiedChart.result[attr], `${expectedAttributes[attr]} (Copy)`);
         } else {
-            t.deepEqual(copiedChart.result[attr], attributes[attr]);
+            t.deepEqual(copiedChart.result[attr], expectedAttributes[attr]);
         }
     }
 });
@@ -219,5 +235,5 @@ test('Copies made by admins are stored in their personal root folder ', async t 
 
     t.is(copiedChart.statusCode, 201);
     t.is(copiedChart.result.authorId, adminUser.id);
-    t.is(copiedChart.result.organizationId, null);
+    t.is(copiedChart.result.organizationId, undefined);
 });
