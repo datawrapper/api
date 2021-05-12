@@ -345,6 +345,11 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
             return `${scheme}://${general.chart_domain}/${publicId}`;
         });
+
+        events.on(event.GET_NEXT_PUBLIC_URL, async function ({ chart }) {
+            const publicId = await chart.getPublicId();
+            return `${scheme}://${general.chart_domain}/${publicId}`;
+        });
     }
 
     server.route({
