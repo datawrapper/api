@@ -372,21 +372,29 @@ async function publishData(request, h) {
     );
     data.blocks = chartBlocks.filter(d => d);
 
-    const publicUrl = await events.emit(event.GET_NEXT_PUBLIC_URL, { chart }, { filter: 'first' });
+    if (query.publish === 'true') {
+        /* when publishing, we set the embed codes in the metadata now already,
+         * so that the chart footer embed links are up to date */
+        const publicUrl = await events.emit(
+            event.GET_NEXT_PUBLIC_URL,
+            { chart },
+            { filter: 'first' }
+        );
 
-    if (publicUrl) {
-        const embedCodes = {};
-        const res = await getEmbedCodes({
-            chart,
-            visualizations,
-            user,
-            publicUrl,
-            publicVersion: chart.public_version + 1
-        });
-        res.forEach(embed => {
-            embedCodes[`embed-method-${embed.id}`] = embed.code;
-        });
-        set(data.chart, 'metadata.publish.embed-codes', embedCodes);
+        if (publicUrl) {
+            const embedCodes = {};
+            const res = await getEmbedCodes({
+                chart,
+                visualizations,
+                user,
+                publicUrl,
+                publicVersion: chart.public_version + 1
+            });
+            res.forEach(embed => {
+                embedCodes[`embed-method-${embed.id}`] = embed.code;
+            });
+            set(data.chart, 'metadata.publish.embed-codes', embedCodes);
+        }
     }
 
     return data;
