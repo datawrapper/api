@@ -30,6 +30,7 @@ test('Should be possible to search in multiple fields', async t => {
         payload: {
             title: 'title-search',
             metadata: {
+                axes: [],
                 describe: {
                     intro: 'intro-search',
                     byline: 'byline-search',
@@ -76,6 +77,38 @@ test('Users can create charts in a team they have access to', async t => {
     });
 
     t.is(chart.statusCode, 201);
+});
+
+test('Users can create charts with settings set', async t => {
+    const { team, session } = await t.context.getTeamWithUser('member');
+
+    const chart = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        headers: {
+            cookie: `DW-SESSION=${session.id}; crumb=abc`,
+            'X-CSRF-Token': 'abc',
+            referer: 'http://localhost'
+        },
+        payload: {
+            organizationId: team.id,
+            title: 'My new visualization',
+            type: 'd3-bars',
+            metadata: {
+                axes: [],
+                describe: {
+                    intro: 'A description',
+                    byline: ''
+                }
+            }
+        }
+    });
+
+    t.is(chart.statusCode, 201);
+    t.is(chart.result.type, 'd3-bars');
+    t.is(chart.result.title, 'My new visualization');
+    t.is(chart.result.metadata.describe.intro, 'A description');
+    t.is(chart.result.metadata.describe.byline, '');
 });
 
 test('Users cannot create chart in a team they dont have access to', async t => {

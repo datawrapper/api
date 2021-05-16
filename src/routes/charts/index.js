@@ -74,7 +74,8 @@ module.exports = {
                             .example('My cool chart')
                             .description(
                                 'Title of your visualization. This will be the visualization headline.'
-                            ),
+                            )
+                            .allow(''),
                         theme: Joi.string()
                             .example('datawrapper')
                             .description('Chart theme to use.'),
@@ -104,31 +105,38 @@ module.exports = {
                             .max(4)
                             .description('Current position in chart editor workflow'),
                         metadata: Joi.object({
-                            axes: Joi.object().description(
-                                'Mapping of dataset columns to visualization "axes"'
-                            ),
+                            axes: Joi.alternatives().try(
+                                Joi.object().description(
+                                    'Mapping of dataset columns to visualization "axes"'
+                                ),
+                                Joi.array().length(0)
+                            ), // empty array can happen due to PHP's array->object confusion
                             data: Joi.object({
                                 transpose: Joi.boolean()
                             }).unknown(true),
                             describe: Joi.object({
-                                intro: Joi.string().description('The visualization description'),
-                                byline: Joi.string().description(
-                                    'Byline as shown in the visualization footer'
-                                ),
-                                'source-name': Joi.string().description(
-                                    'Source as shown in visualization footer'
-                                ),
-                                'source-url': Joi.string().description(
-                                    'Source URL as shown in visualization footer'
-                                ),
-                                'aria-description': Joi.string().description(
-                                    'Alternative description of visualization shown in screen readers (instead of the visualization)'
-                                )
+                                intro: Joi.string()
+                                    .description('The visualization description')
+                                    .allow(''),
+                                byline: Joi.string()
+                                    .description('Byline as shown in the visualization footer')
+                                    .allow(''),
+                                'source-name': Joi.string()
+                                    .description('Source as shown in visualization footer')
+                                    .allow(''),
+                                'source-url': Joi.string()
+                                    .description('Source URL as shown in visualization footer')
+                                    .allow(''),
+                                'aria-description': Joi.string()
+                                    .description(
+                                        'Alternative description of visualization shown in screen readers (instead of the visualization)'
+                                    )
+                                    .allow('')
                             }).unknown(true),
                             annotate: Joi.object({
-                                notes: Joi.string().description(
-                                    'Notes as shown underneath visualization'
-                                )
+                                notes: Joi.string()
+                                    .description('Notes as shown underneath visualization')
+                                    .allow('')
                             }).unknown(true),
                             publish: Joi.object(),
                             custom: Joi.object()
@@ -262,7 +270,7 @@ async function createChartHandler(request, h) {
     const chart = await createChart({ server, user, payload: newChart, session });
 
     // log chart/edit
-    await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
+    await request.server.methods.logAction(auth.artifacts.id, `chart/edit`, chart.id);
 
     return h
         .response({ ...(await prepareChart(chart)), url: `${url.pathname}/${chart.id}` })
