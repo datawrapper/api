@@ -53,8 +53,8 @@ module.exports = (server, options) => {
                 metadata: clone(srcChart.metadata),
                 theme: srcChart.theme,
                 language: srcChart.language,
-                organization_id: srcChart.organization_id,
-                in_folder: srcChart.in_folder,
+                teamId: srcChart.organization_id,
+                folderId: srcChart.in_folder,
                 external_data: srcChart.external_data,
 
                 forked_from: srcChart.id,
@@ -62,7 +62,6 @@ module.exports = (server, options) => {
 
                 last_edit_step: 3
             };
-
             if (isAdmin) {
                 newChart.organization_id = null;
                 newChart.in_folder = null;
