@@ -30,6 +30,7 @@ test('Should be possible to search in multiple fields', async t => {
         payload: {
             title: 'title-search',
             metadata: {
+                axes: [],
                 describe: {
                     intro: 'intro-search',
                     byline: 'byline-search',

@@ -104,9 +104,12 @@ module.exports = {
                             .max(4)
                             .description('Current position in chart editor workflow'),
                         metadata: Joi.object({
-                            axes: Joi.object().description(
-                                'Mapping of dataset columns to visualization "axes"'
-                            ),
+                            axes: Joi.alternatives().try(
+                                Joi.object().description(
+                                    'Mapping of dataset columns to visualization "axes"'
+                                ),
+                                Joi.array().length(0)
+                            ), // empty array can happen due to PHP's array->object confusion
                             data: Joi.object({
                                 transpose: Joi.boolean()
                             }).unknown(true),
@@ -131,7 +134,8 @@ module.exports = {
                                 )
                             }).unknown(true),
                             publish: Joi.object(),
-                            custom: Joi.object()
+                            custom: Joi.object(),
+                            authorId: Joi.number().optional()
                         })
                             .description(
                                 'Metadata that saves all visualization specific settings and options.'
@@ -248,7 +252,7 @@ async function getAllCharts(request, h) {
 async function createChartHandler(request, h) {
     const { url, auth, payload, server } = request;
     const { session } = auth.credentials;
-    const user = auth.artifacts;
+    const isAdmin = server.methods.isAdmin(request);
 
     const newChart = {
         title: '',
@@ -259,10 +263,15 @@ async function createChartHandler(request, h) {
         metadata: payload && payload.metadata ? payload.metadata : { data: {} }
     };
 
+    let user = auth.artifacts;
+    if (isAdmin && payload.authorId) {
+        user = await User.findByPk(payload.authorId);
+    }
+
     const chart = await createChart({ server, user, payload: newChart, session });
 
     // log chart/edit
-    await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
+    await request.server.methods.logAction(auth.artifacts.id, `chart/edit`, chart.id);
 
     return h
         .response({ ...(await prepareChart(chart)), url: `${url.pathname}/${chart.id}` })
