@@ -148,6 +148,7 @@ module.exports = {
         require('./export')(server, options);
         require('./publish')(server, options);
         require('./copy')(server, options);
+        require('./fork')(server, options);
     }
 };
 
@@ -263,6 +264,10 @@ async function editChart(request, h) {
 
     if ('authorId' in payload && !isAdmin) {
         delete payload.authorId;
+    }
+
+    if ('isFork' in payload && !isAdmin) {
+        delete payload.isFork;
     }
 
     const newData = assignWithEmptyObjects(await prepareChart(chart), payload);

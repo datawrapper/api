@@ -5,7 +5,7 @@ const os = require('os');
 const pug = require('pug');
 const { Team } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
-const dwChart = require('esm')(module)('@datawrapper/chart-core/lib/dw/chart').default;
+const dwChart = require('@datawrapper/chart-core/dist/dw-2.0.cjs.js').dw.chart;
 const get = require('lodash/get');
 const {
     stringify,

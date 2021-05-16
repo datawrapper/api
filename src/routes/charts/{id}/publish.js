@@ -14,6 +14,7 @@ const set = require('lodash/set');
 const { prepareChart } = require('../../../utils/index.js');
 const { Op } = require('@datawrapper/orm').db;
 const { getScope } = require('@datawrapper/service-utils/l10n');
+const { getEmbedCodes } = require('./utils');
 
 module.exports = (server, options) => {
     // POST /v3/charts/{id}/publish
@@ -257,6 +258,7 @@ async function publishChartStatus(request, h) {
 
 async function publishData(request, h) {
     const { query, params, server, auth, headers } = request;
+    const { events, event, visualizations } = server.app;
 
     let chart;
 
@@ -341,8 +343,8 @@ async function publishData(request, h) {
     });
     data.styles = styleRes.result;
 
-    const htmlBodyResults = await server.app.events.emit(
-        server.app.event.CHART_AFTER_BODY_HTML,
+    const htmlBodyResults = await events.emit(
+        event.CHART_AFTER_BODY_HTML,
         {
             chart,
             data,
@@ -352,8 +354,8 @@ async function publishData(request, h) {
     );
     data.chartAfterBodyHTML = htmlBodyResults.join('\n');
 
-    const htmlHeadResults = await server.app.events.emit(
-        server.app.event.CHART_AFTER_HEAD_HTML,
+    const htmlHeadResults = await events.emit(
+        event.CHART_AFTER_HEAD_HTML,
         {
             chart,
             data,
@@ -378,7 +380,7 @@ async function publishData(request, h) {
         )
     ).filter(el => typeof el === 'object');
 
-    data.externalDataUrl = await server.app.events.emit(server.app.event.EXTERNAL_DATA_URL, null, {
+    data.externalDataUrl = await events.emit(event.EXTERNAL_DATA_URL, null, {
         filter: 'first'
     });
 
@@ -392,8 +394,8 @@ async function publishData(request, h) {
         });
     }
 
-    const chartBlocks = await server.app.events.emit(
-        server.app.event.CHART_BLOCKS,
+    const chartBlocks = await events.emit(
+        event.CHART_BLOCKS,
         {
             chart,
             user,
@@ -402,6 +404,31 @@ async function publishData(request, h) {
         { filter: 'success' }
     );
     data.blocks = chartBlocks.filter(d => d);
+
+    if (query.publish === 'true') {
+        /* when publishing, we set the embed codes in the metadata now already,
+         * so that the chart footer embed links are up to date */
+        const publicUrl = await events.emit(
+            event.GET_NEXT_PUBLIC_URL,
+            { chart },
+            { filter: 'first' }
+        );
+
+        if (publicUrl) {
+            const embedCodes = {};
+            const res = await getEmbedCodes({
+                chart,
+                visualizations,
+                user,
+                publicUrl,
+                publicVersion: chart.public_version + 1
+            });
+            res.forEach(embed => {
+                embedCodes[`embed-method-${embed.id}`] = embed.code;
+            });
+            set(data.chart, 'metadata.publish.embed-codes', embedCodes);
+        }
+    }
 
     return data;
 }

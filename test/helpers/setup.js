@@ -4,6 +4,7 @@ const { promisify } = require('util');
 const path = require('path');
 const nanoid = require('nanoid');
 const { init } = require('../../src/server');
+const { addScope } = require('@datawrapper/service-utils/l10n');
 
 const appendFile = promisify(fs.appendFile);
 
@@ -44,6 +45,18 @@ async function setup(options) {
         'product:read',
         'visualization:read'
     ];
+
+    // register fake d3-bars type
+    server.methods.registerVisualization('d3-bars', [
+        {
+            id: 'd3-bars'
+        }
+    ]);
+
+    // add fake 'chart' scope
+    addScope('chart', {
+        'en-US': {}
+    });
 
     async function getUser(role = 'editor', pwd = PASSWORD_HASH) {
         const credentials = getCredentials();

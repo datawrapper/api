@@ -16,8 +16,8 @@ const {
 const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 const registerVisualizations = require('@datawrapper/service-utils/registerVisualizations');
-const { generateToken, loadChart } = require('./utils');
-const { addScope } = require('@datawrapper/service-utils/l10n');
+const { generateToken, loadChart, copyChartAssets } = require('./utils');
+const { addScope, translate } = require('@datawrapper/service-utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
 const pkg = require('../package.json');
@@ -245,6 +245,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             ? [...server.app.scopes, ...server.app.adminScopes]
             : Array.from(server.app.scopes);
     });
+    server.method('translate', translate);
 
     const { validateThemeData } = schemas.initialize({
         getSchema: config.api.schemaBaseUrl
@@ -253,6 +254,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     });
     server.method('validateThemeData', validateThemeData);
     server.method('loadChart', loadChart);
+    server.method('copyChartAssets', copyChartAssets(server));
 
     if (DW_DEV_MODE) {
         server.register([require('@hapi/inert'), require('@hapi/vision')]);
@@ -341,6 +343,11 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 
             await fs.remove(outDir);
 
+            return `${scheme}://${general.chart_domain}/${publicId}`;
+        });
+
+        events.on(event.GET_NEXT_PUBLIC_URL, async function ({ chart }) {
+            const publicId = await chart.getPublicId();
             return `${scheme}://${general.chart_domain}/${publicId}`;
         });
     }
