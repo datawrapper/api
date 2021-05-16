@@ -94,6 +94,7 @@ test('Users can create charts with settings set', async t => {
             title: 'My new visualization',
             type: 'd3-bars',
             metadata: {
+                axes: [],
                 describe: {
                     intro: 'A description',
                     byline: ''

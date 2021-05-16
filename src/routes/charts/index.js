@@ -105,9 +105,12 @@ module.exports = {
                             .max(4)
                             .description('Current position in chart editor workflow'),
                         metadata: Joi.object({
-                            axes: Joi.object().description(
-                                'Mapping of dataset columns to visualization "axes"'
-                            ),
+                            axes: Joi.alternatives().try(
+                                Joi.object().description(
+                                    'Mapping of dataset columns to visualization "axes"'
+                                ),
+                                Joi.array().length(0)
+                            ), // empty array can happen due to PHP's array->object confusion
                             data: Joi.object({
                                 transpose: Joi.boolean()
                             }).unknown(true),
