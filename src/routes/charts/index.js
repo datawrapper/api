@@ -139,7 +139,8 @@ module.exports = {
                                     .allow('')
                             }).unknown(true),
                             publish: Joi.object(),
-                            custom: Joi.object()
+                            custom: Joi.object(),
+                            authorId: Joi.number().optional()
                         })
                             .description(
                                 'Metadata that saves all visualization specific settings and options.'
@@ -256,7 +257,7 @@ async function getAllCharts(request, h) {
 async function createChartHandler(request, h) {
     const { url, auth, payload, server } = request;
     const { session } = auth.credentials;
-    const user = auth.artifacts;
+    const isAdmin = server.methods.isAdmin(request);
 
     const newChart = {
         title: '',
@@ -267,10 +268,15 @@ async function createChartHandler(request, h) {
         metadata: payload && payload.metadata ? payload.metadata : { data: {} }
     };
 
+    let user = auth.artifacts;
+    if (isAdmin && payload.authorId) {
+        user = await User.findByPk(payload.authorId);
+    }
+
     const chart = await createChart({ server, user, payload: newChart, session });
 
     // log chart/edit
-    await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
+    await request.server.methods.logAction(auth.artifacts.id, `chart/edit`, chart.id);
 
     return h
         .response({ ...(await prepareChart(chart)), url: `${url.pathname}/${chart.id}` })
