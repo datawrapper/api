@@ -139,8 +139,7 @@ module.exports = {
                                     .allow('')
                             }).unknown(true),
                             publish: Joi.object(),
-                            custom: Joi.object(),
-                            authorId: Joi.number().optional()
+                            custom: Joi.object()
                         })
                             .description(
                                 'Metadata that saves all visualization specific settings and options.'
@@ -257,7 +256,7 @@ async function getAllCharts(request, h) {
 async function createChartHandler(request, h) {
     const { url, auth, payload, server } = request;
     const { session } = auth.credentials;
-    const isAdmin = server.methods.isAdmin(request);
+    const user = auth.artifacts;
 
     const newChart = {
         title: '',
@@ -267,11 +266,6 @@ async function createChartHandler(request, h) {
         teamId: payload ? payload.organizationId : undefined,
         metadata: payload && payload.metadata ? payload.metadata : { data: {} }
     };
-
-    let user = auth.artifacts;
-    if (isAdmin && payload.authorId) {
-        user = await User.findByPk(payload.authorId);
-    }
 
     const chart = await createChart({ server, user, payload: newChart, session });
 
