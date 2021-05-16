@@ -74,7 +74,8 @@ module.exports = {
                             .example('My cool chart')
                             .description(
                                 'Title of your visualization. This will be the visualization headline.'
-                            ),
+                            )
+                            .allow(''),
                         theme: Joi.string()
                             .example('datawrapper')
                             .description('Chart theme to use.'),
@@ -111,24 +112,28 @@ module.exports = {
                                 transpose: Joi.boolean()
                             }).unknown(true),
                             describe: Joi.object({
-                                intro: Joi.string().description('The visualization description'),
-                                byline: Joi.string().description(
-                                    'Byline as shown in the visualization footer'
-                                ),
-                                'source-name': Joi.string().description(
-                                    'Source as shown in visualization footer'
-                                ),
-                                'source-url': Joi.string().description(
-                                    'Source URL as shown in visualization footer'
-                                ),
-                                'aria-description': Joi.string().description(
-                                    'Alternative description of visualization shown in screen readers (instead of the visualization)'
-                                )
+                                intro: Joi.string()
+                                    .description('The visualization description')
+                                    .allow(''),
+                                byline: Joi.string()
+                                    .description('Byline as shown in the visualization footer')
+                                    .allow(''),
+                                'source-name': Joi.string()
+                                    .description('Source as shown in visualization footer')
+                                    .allow(''),
+                                'source-url': Joi.string()
+                                    .description('Source URL as shown in visualization footer')
+                                    .allow(''),
+                                'aria-description': Joi.string()
+                                    .description(
+                                        'Alternative description of visualization shown in screen readers (instead of the visualization)'
+                                    )
+                                    .allow('')
                             }).unknown(true),
                             annotate: Joi.object({
-                                notes: Joi.string().description(
-                                    'Notes as shown underneath visualization'
-                                )
+                                notes: Joi.string()
+                                    .description('Notes as shown underneath visualization')
+                                    .allow('')
                             }).unknown(true),
                             publish: Joi.object(),
                             custom: Joi.object()
