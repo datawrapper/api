@@ -62,6 +62,7 @@ module.exports = (server, options) => {
 
                 last_edit_step: 3
             };
+
             if (isAdmin) {
                 newChart.organization_id = null;
                 newChart.in_folder = null;
