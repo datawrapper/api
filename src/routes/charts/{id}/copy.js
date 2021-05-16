@@ -64,8 +64,8 @@ module.exports = (server, options) => {
             };
 
             if (isAdmin) {
-                newChart.organization_id = null;
-                newChart.in_folder = null;
+                newChart.teamId = null;
+                newChart.folerId = null;
             }
 
             const chart = await createChart({ server, user, payload: newChart, session });
