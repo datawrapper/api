@@ -204,7 +204,10 @@ async function writeTranslationsIfGitClean(file, translations) {
             cwd: repoPath,
             shell: true
         });
-        if (!gitStatus.includes('Your branch is up to date with')) {
+        if (
+            !gitStatus.includes('Your branch is up to date with') &&
+            !gitStatus.includes('Your branch is ahead of')
+        ) {
             process.stdout.write(chalk`
 {red ${repoName} is not clean, please run git pull before updating translations.}`);
             return;
