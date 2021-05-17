@@ -247,7 +247,7 @@ async function commitNewTranslations() {
         } catch (answer) {
             if (answer && answer.toLowerCase() === 'y') {
                 // commit changes
-                const cmd = `git commit ${files.join(' ')} -m "l10n: update translations"`;
+                const cmd = `git commit -m "l10n: update translations" -- ${files.join(' ')}`;
                 const { stderr } = await exec(cmd, { cwd: repoPath, shell: true });
                 if (stderr) process.stderr.write(stderr);
                 else {
