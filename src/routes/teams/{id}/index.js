@@ -175,13 +175,8 @@ async function editTeam(request, h) {
 
     if (!team) return Boom.notFound();
 
-    // allow plugins to reject team settings
-    const error = (
-        await events.emit(event.TEAM_EDIT, { payload: data, team, user: auth.artifacts })
-    ).find(r => r.status === 'error' && Boom.isBoom(r.error));
-    if (error) {
-        throw error.error;
-    }
+    // allow plugins to filter team settings
+    await events.emit(event.TEAM_SETTINGS_FILTER, { payload: data, team, user: auth.artifacts });
 
     team = await team.update(convertKeys(data, decamelize));
 
