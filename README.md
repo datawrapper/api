@@ -212,3 +212,23 @@ Some plugins register visualizations and provide static assets like JS and CSS t
 > **Note**: The process of updating only static files is not ideal and could cause inconsistent states in the API server. In practice this should not be a problem. 
 >
 > With our implementation of zero downtime API reloads, thanks to PM2, we should be able to programmatically trigger full plugin updates in the future. So far our special case for visualizations solves the problem.
+
+### Updating translations
+
+You can update the translations in `api` (and other services and plugins) by running
+
+```bash
+npm run update-translations
+```
+
+The script will only write translations to repositories which are up to date or ahead of their counterpart on Github. You can bypass this check by adding the `--no-git-check` flag:
+
+```bash
+npm run update-translations -- --no-git-check
+```
+
+If you only want to update translations for a certain part of Datawrapper you can use the `--prefix` flag:
+
+```bash
+npm run update-translations -- --prefix=plugins/d3-bars
+```
