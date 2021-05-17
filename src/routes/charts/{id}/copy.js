@@ -1,51 +1,14 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { prepareChart } = require('../../../utils/index.js');
-const { translate } = require('../../../utils/l10n.js');
-const { Chart, User, ChartPublic, Session } = require('@datawrapper/orm/models');
-const set = require('lodash/set');
+const { translate } = require('@datawrapper/service-utils/l10n');
+const findChartId = require('@datawrapper/service-utils/findChartId');
+const { User } = require('@datawrapper/orm/models');
 const clone = require('lodash/clone');
+const createChart = require('@datawrapper/service-utils/createChart');
 
 module.exports = (server, options) => {
     const { event, events } = server.app;
-
-    async function findChartId() {
-        const id = server.methods.generateToken(5);
-        return (await Chart.findByPk(id)) ? findChartId() : id;
-    }
-
-    async function copyChartAssets(srcChart, chart, copyPublic = false) {
-        const assets = ['.csv', '.map.json', '.minimap.json', '.highlight.json'];
-
-        for (const filename of assets) {
-            try {
-                const stream = await events.emit(
-                    event.GET_CHART_ASSET,
-                    {
-                        chart: srcChart,
-                        filename:
-                            srcChart.id +
-                            (filename === '.csv' && copyPublic ? '.public.csv' : filename)
-                    },
-                    { filter: 'first' }
-                );
-
-                let data = '';
-
-                for await (const chunk of stream) {
-                    data += chunk;
-                }
-
-                await events.emit(event.PUT_CHART_ASSET, {
-                    chart,
-                    filename: chart.id + filename,
-                    data
-                });
-            } catch (ex) {
-                continue;
-            }
-        }
-    }
 
     // POST /v3/charts/{id}/copy
     server.route({
@@ -64,8 +27,9 @@ module.exports = (server, options) => {
                 })
             }
         },
-        handler: async (request, h) => {
+        async handler(request, h) {
             const { server, params, auth, headers } = request;
+            const { session } = auth.credentials;
             const srcChart = await server.methods.loadChart(params.id);
             const isAdmin = server.methods.isAdmin(request);
             const user = await User.findByPk(auth.artifacts.id);
@@ -80,7 +44,7 @@ module.exports = (server, options) => {
             }
 
             const newChart = {
-                id: await findChartId(),
+                id: await findChartId(server),
                 type: srcChart.type,
                 title: `${srcChart.title} (${translate('copy', {
                     scope: 'core',
@@ -89,8 +53,8 @@ module.exports = (server, options) => {
                 metadata: clone(srcChart.metadata),
                 theme: srcChart.theme,
                 language: srcChart.language,
-                organization_id: srcChart.organization_id,
-                in_folder: srcChart.in_folder,
+                teamId: srcChart.organization_id,
+                folderId: srcChart.in_folder,
                 external_data: srcChart.external_data,
 
                 forked_from: srcChart.id,
@@ -100,13 +64,12 @@ module.exports = (server, options) => {
             };
 
             if (isAdmin) {
-                newChart.organization_id = null;
-                newChart.in_folder = null;
+                newChart.teamId = null;
+                newChart.folderId = null;
             }
 
-            const chart = await Chart.create(newChart);
-
-            await copyChartAssets(srcChart, chart);
+            const chart = await createChart({ server, user, payload: newChart, session });
+            await server.methods.copyChartAssets(srcChart, chart);
 
             try {
                 // refresh external data
@@ -117,83 +80,12 @@ module.exports = (server, options) => {
                     headers
                 });
             } catch (ex) {}
+
+            // log chart/copy
+            await request.server.methods.logAction(user.id, `chart/copy`, chart.id);
 
             await events.emit(event.CHART_COPY, { sourceChart: srcChart, destChart: chart });
-            await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
-            return h.response({ ...(await prepareChart(chart)) }).code(201);
-        }
-    });
-
-    // POST /v3/charts/{id}/fork
-    server.route({
-        method: 'POST',
-        path: '/fork',
-        options: {
-            tags: ['api'],
-            description: 'Fork a chart',
-            notes: 'Requires scope `chart:write`.',
-            auth: {
-                access: { scope: ['chart:write'] }
-            },
-            validate: {
-                params: Joi.object({
-                    id: Joi.string().length(5).required()
-                })
-            }
-        },
-        handler: async (request, h) => {
-            const { server, params, auth, headers } = request;
-            const user = auth.artifacts;
-            const srcChart = await server.methods.loadChart(params.id);
-
-            if (!srcChart.forkable) {
-                return Boom.unauthorized();
-            }
-
-            const publicChart = await ChartPublic.findByPk(srcChart.id);
-
-            if (!publicChart) {
-                return Boom.notFound();
-            }
-
-            const newMeta = clone(publicChart.metadata);
-            set(newMeta, 'describe.byline', '');
-
-            const newChart = {
-                id: await findChartId(),
-                type: publicChart.type,
-                title: publicChart.title,
-                metadata: newMeta,
-                external_data: publicChart.external_data,
-                forked_from: publicChart.id,
-                is_fork: true,
-                theme: 'default',
-                last_edit_step: 3
-            };
-
-            if (user.role === 'guest') {
-                newChart.guest_session = auth.credentials.session;
-            } else {
-                const session = await Session.findByPk(auth.credentials.session);
-                const activeTeam = await user.getActiveTeam(session);
-                newChart.organization_id = activeTeam ? activeTeam.id : null;
-                newChart.author_id = user.id;
-            }
-
-            const chart = await Chart.create(newChart);
-            await copyChartAssets(srcChart, chart, true);
-
-            try {
-                // refresh external data
-                await server.inject({
-                    url: `/v3/charts/${chart.id}/data/refresh`,
-                    method: 'POST',
-                    auth,
-                    headers
-                });
-            } catch (ex) {}
-
-            await events.emit(event.CHART_FORK, { sourceChart: srcChart, destChart: chart });
+            await server.methods.logAction(user.id, `chart/edit`, chart.id);
             return h.response({ ...(await prepareChart(chart)) }).code(201);
         }
     });

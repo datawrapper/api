@@ -1,11 +1,11 @@
 const Joi = require('@hapi/joi');
-const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
 const { decamelizeKeys, decamelize } = require('humps');
 const set = require('lodash/set');
-const { Chart, User, Folder } = require('@datawrapper/orm/models');
+const { Chart, User } = require('@datawrapper/orm/models');
 const { prepareChart } = require('../../utils/index.js');
 const { listResponse, chartResponse } = require('../../schemas/response');
+const createChart = require('@datawrapper/service-utils/createChart');
 
 module.exports = {
     name: 'routes/charts',
@@ -63,7 +63,7 @@ module.exports = {
             path: '/',
             options: {
                 tags: ['api'],
-                description: 'Create new chart',
+                description: 'Create new visualization',
                 notes: 'Requires scope `chart:write`.',
                 auth: {
                     access: { scope: ['chart:write'] }
@@ -72,31 +72,84 @@ module.exports = {
                     payload: Joi.object({
                         title: Joi.string()
                             .example('My cool chart')
-                            .description('Title of your chart. This will be the chart headline.'),
+                            .description(
+                                'Title of your visualization. This will be the visualization headline.'
+                            )
+                            .allow(''),
                         theme: Joi.string()
                             .example('datawrapper')
                             .description('Chart theme to use.'),
                         type: Joi.string()
                             .example('d3-lines')
                             .description(
-                                'Type of the chart, like line chart, bar chart, ... Type keys can be found [here].'
+                                'Type of the visualization, like line chart, bar chart, ... Type keys can be found [here].'
                             ),
+                        forkable: Joi.boolean().description(
+                            'Set to true if you want to allow other users to fork this visualization'
+                        ),
+                        organizationId: Joi.string().description(
+                            'ID of the team (formerly known as organization) that the visualization should be created in.  The authenticated user must have access to this team.'
+                        ),
+                        folderId: Joi.number()
+                            .integer()
+                            .description(
+                                'ID of the folder that the visualization should be created in. The authenticated user must have access to this folder.'
+                            ),
+                        externalData: Joi.string().description('URL of external dataset'),
+                        language: Joi.string()
+                            .regex(/^[a-z]{2}([_-][A-Z]{2})?$/)
+                            .description('Visualization locale (e.g. en-US)'),
+                        lastEditStep: Joi.number()
+                            .integer()
+                            .min(1)
+                            .max(4)
+                            .description('Current position in chart editor workflow'),
                         metadata: Joi.object({
+                            axes: Joi.alternatives().try(
+                                Joi.object().description(
+                                    'Mapping of dataset columns to visualization "axes"'
+                                ),
+                                Joi.array().length(0)
+                            ), // empty array can happen due to PHP's array->object confusion
                             data: Joi.object({
                                 transpose: Joi.boolean()
-                            }).unknown(true)
+                            }).unknown(true),
+                            describe: Joi.object({
+                                intro: Joi.string()
+                                    .description('The visualization description')
+                                    .allow(''),
+                                byline: Joi.string()
+                                    .description('Byline as shown in the visualization footer')
+                                    .allow(''),
+                                'source-name': Joi.string()
+                                    .description('Source as shown in visualization footer')
+                                    .allow(''),
+                                'source-url': Joi.string()
+                                    .description('Source URL as shown in visualization footer')
+                                    .allow(''),
+                                'aria-description': Joi.string()
+                                    .description(
+                                        'Alternative description of visualization shown in screen readers (instead of the visualization)'
+                                    )
+                                    .allow('')
+                            }).unknown(true),
+                            annotate: Joi.object({
+                                notes: Joi.string()
+                                    .description('Notes as shown underneath visualization')
+                                    .allow('')
+                            }).unknown(true),
+                            publish: Joi.object(),
+                            custom: Joi.object()
                         })
                             .description(
-                                'Metadata that saves all chart specific settings and options.'
+                                'Metadata that saves all visualization specific settings and options.'
                             )
                             .unknown(true)
-                    })
-                        .unknown(true)
-                        .allow(null)
+                    }).allow(null)
                 },
                 response: chartResponse
             },
-            handler: createChart
+            handler: createChartHandler
         });
 
         server.register(require('./{id}'), {
@@ -200,66 +253,24 @@ async function getAllCharts(request, h) {
     return chartList;
 }
 
-async function createChart(request, h) {
+async function createChartHandler(request, h) {
     const { url, auth, payload, server } = request;
+    const { session } = auth.credentials;
     const user = auth.artifacts;
-    const isAdmin = server.methods.isAdmin(request);
 
-    async function findChartId() {
-        const id = server.methods.generateToken(5);
-        return (await Chart.findByPk(id)) ? findChartId() : id;
-    }
-
-    if (
-        payload &&
-        payload.organizationId &&
-        !isAdmin &&
-        !(await user.hasTeam(payload.organizationId))
-    ) {
-        return Boom.unauthorized('User is not allowed to create a chart in that team.');
-    }
-
-    if (payload && payload.type) {
-        // validate chart type
-        if (!server.app.visualizations.has(payload.type)) {
-            return Boom.badRequest('Invalid chart type');
-        }
-    }
-
-    if (payload && payload.folderId) {
-        // check if folder belongs to user to team
-        const folder = await Folder.findOne({ where: { id: payload.folderId } });
-
-        if (
-            !folder ||
-            (!isAdmin &&
-                folder.user_id !== auth.artifacts.id &&
-                !(await user.hasTeam(folder.org_id)))
-        ) {
-            payload.folderId = undefined;
-            request.logger.info('Invalid folder id. User does not have access to this folder');
-        } else {
-            payload.inFolder = payload.folderId;
-            payload.folderId = undefined;
-            payload.organizationId = folder.org_id ? folder.org_id : null;
-        }
-    }
-
-    const id = await findChartId();
-    const chart = await Chart.create({
+    const newChart = {
         title: '',
-        theme: 'default',
         type: 'd3-bars',
-        language: user.language,
         ...decamelizeKeys(payload),
-        metadata: payload && payload.metadata ? payload.metadata : { data: {} },
-        author_id: user.id,
-        guest_session: user.role === 'guest' ? auth.credentials.session : undefined,
-        id
-    });
+        folderId: payload ? payload.folderId : undefined,
+        teamId: payload ? payload.organizationId : undefined,
+        metadata: payload && payload.metadata ? payload.metadata : { data: {} }
+    };
+
+    const chart = await createChart({ server, user, payload: newChart, session });
 
     // log chart/edit
-    await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
+    await request.server.methods.logAction(auth.artifacts.id, `chart/edit`, chart.id);
 
     return h
         .response({ ...(await prepareChart(chart)), url: `${url.pathname}/${chart.id}` })

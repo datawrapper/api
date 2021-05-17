@@ -39,26 +39,37 @@ async function main() {
         }
     });
 
-    const [actions, , , tokens, sessions, themes] = await Promise.all([
-        models.Action.destroy({ where: { id: { [Op.not]: null } } }),
-        models.Chart.destroy({ where: { author_id: { [Op.in]: list.user } } }),
-        models.UserTeam.destroy({ where: { organization_id: { [Op.in]: list.team } } }),
-        models.AccessToken.destroy({ where: { token: { [Op.in]: list.token } } }),
-        models.Session.destroy({ where: { session_id: { [Op.in]: list.session } } }),
-        models.Theme.destroy({ where: { id: { [Op.in]: list.theme } } }),
-        models.UserData.destroy({ where: { user_id: { [Op.in]: list.user } } })
-    ]);
+    try {
+        // remove all public charts
+        await models.ChartPublic.destroy({ where: { author_id: { [Op.in]: list.user } } });
+        // first remove charts that are forked
+        await models.Chart.destroy({
+            where: { forked_from: { [Op.not]: null }, author_id: { [Op.in]: list.user } }
+        });
 
-    log(chalk.magenta(`🧹 Cleaned ${actions} actions`));
-    log(chalk.magenta(`🧹 Cleaned ${sessions} sessions`));
-    log(chalk.magenta(`🧹 Cleaned ${tokens} tokens`));
-    log(chalk.magenta(`🧹 Cleaned ${themes} themes`));
+        const [actions, , , tokens, sessions, themes] = await Promise.all([
+            models.Action.destroy({ where: { id: { [Op.not]: null } } }),
+            models.Chart.destroy({ where: { author_id: { [Op.in]: list.user } } }),
+            models.UserTeam.destroy({ where: { organization_id: { [Op.in]: list.team } } }),
+            models.AccessToken.destroy({ where: { token: { [Op.in]: list.token } } }),
+            models.Session.destroy({ where: { session_id: { [Op.in]: list.session } } }),
+            models.Theme.destroy({ where: { id: { [Op.in]: list.theme } } }),
+            models.UserData.destroy({ where: { user_id: { [Op.in]: list.user } } })
+        ]);
 
-    const teams = await models.Team.destroy({ where: { id: { [Op.in]: list.team } } });
-    log(chalk.magenta(`🧹 Cleaned ${teams} teams`));
+        log(chalk.magenta(`🧹 Cleaned ${actions} actions`));
+        log(chalk.magenta(`🧹 Cleaned ${sessions} sessions`));
+        log(chalk.magenta(`🧹 Cleaned ${tokens} tokens`));
+        log(chalk.magenta(`🧹 Cleaned ${themes} themes`));
 
-    const users = await models.User.destroy({ where: { id: { [Op.in]: list.user } } });
-    log(chalk.magenta(`🧹 Cleaned ${users} users`));
+        const teams = await models.Team.destroy({ where: { id: { [Op.in]: list.team } } });
+        log(chalk.magenta(`🧹 Cleaned ${teams} teams`));
+
+        const users = await models.User.destroy({ where: { id: { [Op.in]: list.user } } });
+        log(chalk.magenta(`🧹 Cleaned ${users} users`));
+    } catch (e) {
+        console.error(e);
+    }
 
     fs.unlinkSync(cleanupFile);
     process.exit(0);

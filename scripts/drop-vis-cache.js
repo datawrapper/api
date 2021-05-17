@@ -48,7 +48,7 @@ process.stdout.write(chalk`
 
 stream.on('data', keys => {
     const filteredKeys = keys.filter(key => {
-        key = key.split('__').pop();
+        key = key.split('__')[1];
         return visualizations.includes(key);
     });
 
