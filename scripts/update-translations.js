@@ -175,7 +175,7 @@ async function go() {
 }
 
 const gitFetchCache = new Set();
-const gitStatusCache = new Set();
+const gitStatusCache = new Map();
 const gitNewChanges = new Map();
 
 async function writeTranslationsIfGitClean(file, translations) {
@@ -204,16 +204,17 @@ async function writeTranslationsIfGitClean(file, translations) {
             cwd: repoPath,
             shell: true
         });
-        if (
-            !gitStatus.includes('Your branch is up to date with') &&
-            !gitStatus.includes('Your branch is ahead of')
-        ) {
-            process.stdout.write(chalk`
-{red ${repoName} is not clean, please run git pull before updating translations.}`);
-            return;
-        }
-        gitStatusCache.add(repoPath);
+        gitStatusCache.set(repoPath, gitStatus);
     }
+    if (
+        !gitStatusCache.get(repoPath).includes('Your branch is up to date with') &&
+        !gitStatusCache.get(repoPath).includes('Your branch is ahead of')
+    ) {
+        process.stdout.write(chalk`
+{red ${repoName} is not clean, please run git pull before updating translations.}`);
+        return;
+    }
+
     await writeFile(file, JSON.stringify(translations, null, 2));
     if (!gitNewChanges.has(repoPath)) {
         gitNewChanges.set(repoPath, []);
