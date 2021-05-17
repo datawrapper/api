@@ -2,6 +2,7 @@
 
 const got = require('got');
 const fs = require('fs');
+const { writeFile, readFile } = require('fs/promises');
 const path = require('path');
 const { requireConfig } = require('@datawrapper/service-utils/findConfig');
 const chalk = require('chalk');
@@ -10,6 +11,16 @@ require('dotenv').config({
 });
 const config = requireConfig();
 const get = require('lodash/get');
+const isEqual = require('lodash/isEqual');
+const { promisify } = require('util');
+const exec = promisify(require('child_process').exec);
+const readline = require('readline');
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+const question = promisify(rl.question).bind(rl);
 
 if (!get(config, 'general.lokalise') || !get(config, 'general.lokalise.token')) {
     return console.error('Please configure lokalise in your config.js!');
@@ -65,17 +76,14 @@ async function downloadCoreTranslations() {
 
     for (const locale in locales) {
         const file = `${path.resolve(__dirname, '../../datawrapper/locale')}/${locale}.json`;
-        fs.writeFileSync(file, JSON.stringify(locales[locale], null, 2));
+        await writeTranslationsIfGitClean(file, locales[locale]);
 
         const apiFile = `${path.resolve(__dirname, '../locale')}/${locale}.json`;
-        fs.writeFileSync(apiFile, JSON.stringify(locales[locale], null, 2));
+        await writeTranslationsIfGitClean(apiFile, locales[locale]);
 
         const frontendFile = `${path.resolve(__dirname, '../../frontend/locale')}/${locale}.json`;
-        fs.writeFileSync(frontendFile, JSON.stringify(locales[locale], null, 2));
+        await writeTranslationsIfGitClean(frontendFile, locales[locale]);
     }
-
-    process.stdout.write(chalk`
-{green Updated translations for core & API.}`);
 }
 
 async function downloadPluginTranslations() {
@@ -100,18 +108,14 @@ async function downloadPluginTranslations() {
         const pluginLocaleDir = `${path.resolve(__dirname, `../../../plugins/${plugin}/locale`)}`;
 
         if (!fs.existsSync(pluginLocaleDir)) {
-            process.stdout.write(chalk`
-{red Could not update translations for plugin ${plugin}.}`);
+            // process.stdout.write(chalk`{red Could not update translations for plugin ${plugin}.}`);
             continue;
         }
 
         for (const locale in plugins[plugin]) {
             const file = `${pluginLocaleDir}/${locale}.json`;
-            fs.writeFileSync(file, JSON.stringify(plugins[plugin][locale], null, 2));
+            await writeTranslationsIfGitClean(file, plugins[plugin][locale]);
         }
-
-        process.stdout.write(chalk`
-{green Updated translations for plugin ${plugin}.}`);
     }
 }
 
@@ -154,16 +158,12 @@ async function downloadVisualizationTranslations() {
         const pluginLocaleDir = `${path.resolve(__dirname, `../../../plugins/${plugin}/locale`)}`;
 
         if (!fs.existsSync(pluginLocaleDir)) {
-            process.stdout.write(chalk`
-{red Could not update visualization translations for plugin ${plugin}.}`);
+            // process.stdout.write(chalk`{red Could not update visualization translations for plugin ${plugin}.}`);
             continue;
         }
 
         const file = `${pluginLocaleDir}/chart-translations.json`;
-        fs.writeFileSync(file, JSON.stringify(plugins[plugin], null, 2));
-
-        process.stdout.write(chalk`
-{green Updated visualization translations for plugin ${plugin}.}`);
+        await writeTranslationsIfGitClean(file, plugins[plugin]);
     }
 }
 
@@ -171,6 +171,77 @@ async function go() {
     await downloadCoreTranslations();
     await downloadPluginTranslations();
     await downloadVisualizationTranslations();
+    await commitNewTranslations();
+}
+
+const gitFetchCache = new Set();
+const gitStatusCache = new Set();
+const gitNewChanges = new Map();
+
+async function writeTranslationsIfGitClean(file, translations) {
+    // read existing translations and compare
+    if (fs.existsSync(file)) {
+        const curTranslations = JSON.parse(await readFile(file, 'utf-8'));
+        if (isEqual(curTranslations, translations)) {
+            // no changes
+            return;
+        }
+    }
+    const repoPath = path.dirname(path.join(file, '../'));
+    const repoName = path.basename(repoPath);
+
+    // fetch latest origin
+    if (!gitFetchCache.has(repoPath)) {
+        process.stdout.write(chalk`
+{white New translations found for ${repoName}.}`);
+        // run git fetch
+        await exec('git fetch origin', { cwd: repoPath, shell: true });
+        gitFetchCache.add(repoPath);
+    }
+    // check that git status is empty (= clean repo)
+    if (!gitStatusCache.has(repoPath)) {
+        const { stdout: gitStatus } = await await exec('git status', {
+            cwd: repoPath,
+            shell: true
+        });
+        if (!gitStatus.includes('Your branch is up to date with')) {
+            process.stdout.write(chalk`
+{red ${repoName} is not clean, please run git pull before updating translations.}`);
+            return;
+        }
+        gitStatusCache.add(repoPath);
+    }
+    await writeFile(file, JSON.stringify(translations, null, 2));
+    if (!gitNewChanges.has(repoPath)) {
+        gitNewChanges.set(repoPath, []);
+        process.stdout.write(chalk`
+{green Updated translations for ${repoName}.}`);
+    }
+    gitNewChanges.get(repoPath).push(path.relative(repoPath, file));
+}
+
+async function commitNewTranslations() {
+    process.stdout.write('\n');
+    for (const [repoPath, files] of gitNewChanges.entries()) {
+        const repoName = path.basename(repoPath);
+        process.stdout.write(chalk`
+{white There are ${files.length} updated translation files in ${repoName}.}\n`);
+        try {
+            await question('  Do you want to commit them now? [y/N]  ');
+        } catch (answer) {
+            if (answer && answer.toLowerCase() === 'y') {
+                // commit changes
+                const cmd = `git commit ${files.join(' ')} -m "l10n: update translations"`;
+                const { stderr } = await exec(cmd, { cwd: repoPath, shell: true });
+                if (stderr) process.stderr.write(stderr);
+                else {
+                    process.stdout.write(chalk`{green ok}`);
+                }
+            }
+            // rejected
+        }
+    }
+    rl.close();
 }
 
 go();
