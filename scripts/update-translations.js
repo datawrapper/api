@@ -28,6 +28,9 @@ if (!get(config, 'general.lokalise') || !get(config, 'general.lokalise.token')) 
 
 const cfg = get(config, 'general.lokalise');
 
+const NO_GIT_CHECK = process.argv.includes('--no-git-check');
+const PREFIX = (process.argv.find(d => d.startsWith('--prefix=')) || '=').split('=')[1] || false;
+
 // lokalise locales to datawrapper locales
 const localeMap = {
     en: 'en_US',
@@ -179,6 +182,10 @@ const gitStatusCache = new Map();
 const gitNewChanges = new Map();
 
 async function writeTranslationsIfGitClean(file, translations) {
+    if (PREFIX && !file.startsWith(PREFIX)) {
+        // ignore fle
+        return;
+    }
     // read existing translations and compare
     if (fs.existsSync(file)) {
         const curTranslations = JSON.parse(await readFile(file, 'utf-8'));
@@ -190,38 +197,43 @@ async function writeTranslationsIfGitClean(file, translations) {
     const repoPath = path.dirname(path.join(file, '../'));
     const repoName = path.basename(repoPath);
 
-    // fetch latest origin
-    if (!gitFetchCache.has(repoPath)) {
-        process.stdout.write(chalk`
+    if (!NO_GIT_CHECK) {
+        // fetch latest origin
+        if (!gitFetchCache.has(repoPath)) {
+            process.stdout.write(chalk`
 {white New translations found for ${repoName}.}`);
-        // run git fetch
-        await exec('git fetch origin', { cwd: repoPath, shell: true });
-        gitFetchCache.add(repoPath);
-    }
-    // check that git status is empty (= clean repo)
-    if (!gitStatusCache.has(repoPath)) {
-        const { stdout: gitStatus } = await await exec('git status', {
-            cwd: repoPath,
-            shell: true
-        });
-        gitStatusCache.set(repoPath, gitStatus);
-    }
-    if (
-        !gitStatusCache.get(repoPath).includes('Your branch is up to date with') &&
-        !gitStatusCache.get(repoPath).includes('Your branch is ahead of')
-    ) {
-        process.stdout.write(chalk`
+            // run git fetch
+            await exec('git fetch origin', { cwd: repoPath, shell: true });
+            gitFetchCache.add(repoPath);
+        }
+        // check that git status is empty (= clean repo)
+        if (!gitStatusCache.has(repoPath)) {
+            const { stdout: gitStatus } = await await exec('git status', {
+                cwd: repoPath,
+                shell: true
+            });
+            gitStatusCache.set(repoPath, gitStatus);
+        }
+        if (
+            !gitStatusCache.get(repoPath).includes('Your branch is up to date with') &&
+            !gitStatusCache.get(repoPath).includes('Your branch is ahead of')
+        ) {
+            process.stdout.write(chalk`
 {red ${repoName} is not clean, please run git pull before updating translations.}`);
-        return;
+            return;
+        }
     }
 
     await writeFile(file, JSON.stringify(translations, null, 2));
-    if (!gitNewChanges.has(repoPath)) {
-        gitNewChanges.set(repoPath, []);
-        process.stdout.write(chalk`
-{green Updated translations for ${repoName}.}`);
+
+    if (!NO_GIT_CHECK) {
+        if (!gitNewChanges.has(repoPath)) {
+            gitNewChanges.set(repoPath, []);
+            process.stdout.write(chalk`
+    {green Updated translations for ${repoName}.}`);
+        }
+        gitNewChanges.get(repoPath).push(path.relative(repoPath, file));
     }
-    gitNewChanges.get(repoPath).push(path.relative(repoPath, file));
 }
 
 async function commitNewTranslations() {
