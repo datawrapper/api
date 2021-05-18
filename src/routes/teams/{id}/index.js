@@ -1,6 +1,7 @@
 const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 const { decamelize, camelize } = require('humps');
+const assign = require('assign-deep');
 const {
     Chart,
     Team,
@@ -177,6 +178,9 @@ async function editTeam(request, h) {
 
     // allow plugins to filter team settings
     await events.emit(event.TEAM_SETTINGS_FILTER, { payload: data, team, user: auth.artifacts });
+
+    // merge with existing data
+    data.settings = assign(team.settings, data.settings);
 
     team = await team.update(convertKeys(data, decamelize));
 
