@@ -246,9 +246,12 @@ async function commitNewTranslations() {
             await question('  Do you want to commit them now? [y/N]  ');
         } catch (answer) {
             if (answer && answer.toLowerCase() === 'y') {
+                // make sure all translation files are in version control
+                const addCmd = `git add -- ${files.join(' ')}`;
+                await exec(addCmd, { cwd: repoPath, shell: true });
                 // commit changes
-                const cmd = `git commit -m "l10n: update translations" -- ${files.join(' ')}`;
-                const { stderr } = await exec(cmd, { cwd: repoPath, shell: true });
+                const commitCmd = `git commit -m "l10n: update translations" -- ${files.join(' ')}`;
+                const { stderr } = await exec(commitCmd, { cwd: repoPath, shell: true });
                 if (stderr) process.stderr.write(stderr);
                 else {
                     process.stdout.write(chalk`{green ok}`);
