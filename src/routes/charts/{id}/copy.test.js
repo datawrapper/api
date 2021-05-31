@@ -72,9 +72,11 @@ test('User can copy chart, attributes match', async t => {
     t.is(allMetadata.result.externalData, attributes.externalData);
 
     // compare attributes
-    for (var attr in expectedAttributes) {
+    for (var attr in attributes) {
         if (attr === 'title') {
             t.is(copiedChart.result[attr], `${expectedAttributes[attr]} (Copy)`);
+        } else if (attr === 'metadata') {
+            t.is(copiedChart.result.metadata.visualize.basemap, 'us-counties');
         } else {
             t.deepEqual(copiedChart.result[attr], expectedAttributes[attr]);
         }
