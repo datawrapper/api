@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { prepareChart } = require('../../../utils/index.js');
 const { translate } = require('@datawrapper/service-utils/l10n');

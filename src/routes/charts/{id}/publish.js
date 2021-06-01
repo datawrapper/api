@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { createResponseConfig } = require('../../../schemas/response');
 const { Chart, Action, ChartPublic, ChartAccessToken, User } = require('@datawrapper/orm/models');

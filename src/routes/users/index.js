@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { decamelize, camelizeKeys } = require('humps');
 const set = require('lodash/set');

@@ -1,5 +1,5 @@
 const Boom = require('@hapi/boom');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const get = require('lodash/get');
 
 const { createResponseConfig, noContentResponse } = require('../../schemas/response.js');
