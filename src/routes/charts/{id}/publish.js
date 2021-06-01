@@ -142,7 +142,7 @@ async function publishChart(request, h) {
             { filter: 'first' }
         );
     } catch (error) {
-        server.logger().error(error);
+        server.logger.error(error);
         eventError = error;
     }
 

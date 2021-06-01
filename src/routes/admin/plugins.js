@@ -163,7 +163,7 @@ function register(server, options) {
         for (const vis of visualizations) {
             for (const { id } of themes) {
                 const promise = styleCache.drop(`${id}__${vis}`).catch(() => {
-                    server.logger().info(`Unable to drop cache key [${id}__${vis}]`);
+                    server.logger.info(`Unable to drop cache key [${id}__${vis}]`);
                 });
                 droppedCacheKeys.push(`${id}__${vis}`);
                 dropOperationPromises.push(promise);
