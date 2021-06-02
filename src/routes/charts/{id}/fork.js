@@ -57,6 +57,10 @@ module.exports = (server, options) => {
                 set(newMeta, 'describe.byline', '');
             }
 
+            // forks shouldn't inherit reuse settings of the source chart
+            set(newMeta, 'publish.show-in-river', false);
+            set(newMeta, 'publish.blocks.edit-in-datawrapper', false);
+
             const newChart = {
                 type: publicChart.type,
                 title: publicChart.title,
