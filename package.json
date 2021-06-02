@@ -51,6 +51,9 @@
             "visualization*/src/*",
             "visualization*/static/*",
             "visualization*/tests/*",
+            "export-*/src/*",
+            "export-*/static/*",
+            "export-*/tests/*",
             "external-data/src/*",
             "external-data/static/*",
             "simple-maps/src/*",
@@ -71,7 +74,7 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/chart-core": "^8.34.0",
+        "@datawrapper/chart-core": "^8.35.4",
         "@datawrapper/locales": "^1.2.4",
         "@datawrapper/orm": "^3.22.4",
         "@datawrapper/schemas": "^1.11.0",
