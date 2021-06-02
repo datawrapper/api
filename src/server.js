@@ -233,6 +233,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.app.exportFormats = new Set();
     server.app.scopes = new Set();
     server.app.adminScopes = new Set();
+    server.app.Joi = Joi;
 
     server.method('getModel', name => ORM.db.models[name]);
     server.method('config', key => (key ? get(config, key) : config));
