@@ -1,6 +1,6 @@
 const Joi = require('joi');
 const Boom = require('@hapi/boom');
-const nanoid = require('nanoid');
+const { nanoid } = require('nanoid');
 const { Team, UserTeam } = require('@datawrapper/orm/models');
 
 const { listResponse, teamResponse } = require('../../schemas/response.js');
