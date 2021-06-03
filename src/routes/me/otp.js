@@ -1,5 +1,5 @@
 const Boom = require('@hapi/boom');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const otpProviders = require('../../auth/otp');
 
 const { noContentResponse } = require('../../schemas/response');

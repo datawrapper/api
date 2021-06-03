@@ -1,7 +1,7 @@
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
 const Crumb = require('@hapi/crumb');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
@@ -190,7 +190,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         }
     ]);
 
-    server.logger().info(
+    server.logger.info(
         {
             VERSION: version,
             CONFIG_FILE: configPath,
@@ -284,11 +284,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         registeredEvents.includes(event.PUT_CHART_ASSET);
 
     if (localChartAssetRoot === undefined && !hasRegisteredDataPlugins) {
-        server
-            .logger()
-            .error(
-                '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
-            );
+        server.logger.error(
+            '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
+        );
         process.exit(1);
     }
 
@@ -316,11 +314,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     const hasRegisteredPublishPlugin = registeredEvents.includes(event.PUBLISH_CHART);
 
     if (general.localChartPublishRoot === undefined && !hasRegisteredPublishPlugin) {
-        server
-            .logger()
-            .error(
-                '[Config] You need to configure `general.localChartPublishRoot` or install a plugin that implements chart publication.'
-            );
+        server.logger.error(
+            '[Config] You need to configure `general.localChartPublishRoot` or install a plugin that implements chart publication.'
+        );
         process.exit(1);
     }
 
@@ -370,7 +366,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 }
 
 process.on('unhandledRejection', err => {
-    server.logger().error(err);
+    server.logger.error(err);
     process.exit(1);
 });
 
@@ -385,7 +381,7 @@ async function start() {
     await configure();
 
     if (process.argv.includes('--check') || process.argv.includes('-c')) {
-        server.logger().info("\n\n[Check successful] The server shouldn't crash on startup");
+        server.logger.info("\n\n[Check successful] The server shouldn't crash on startup");
         process.exit(0);
     }
 
@@ -393,15 +389,15 @@ async function start() {
 
     setTimeout(() => {
         if (process.send) {
-            server.logger().info('sending READY signal to pm2');
+            server.logger.info('sending READY signal to pm2');
             process.send('ready');
         }
     }, 100);
 
     process.on('SIGINT', async function () {
-        server.logger().info('received SIGINT signal, closing all connections...');
+        server.logger.info('received SIGINT signal, closing all connections...');
         await server.stop();
-        server.logger().info('server has stopped');
+        server.logger.info('server has stopped');
         process.exit(0);
     });
 

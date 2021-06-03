@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { noContentResponse } = require('../../../schemas/response');
 const checkUrl = require('@datawrapper/service-utils/checkUrl');

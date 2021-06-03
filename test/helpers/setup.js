@@ -2,7 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const { promisify } = require('util');
 const path = require('path');
-const nanoid = require('nanoid');
+const { nanoid } = require('nanoid');
 const { init } = require('../../src/server');
 const { addScope } = require('@datawrapper/service-utils/l10n');
 

@@ -43,10 +43,10 @@ module.exports = {
         if (plugins.length) {
             for (const [{ plugin, options, error, name }, pluginOptions] of plugins) {
                 if (error) {
-                    server.logger().warn(`[Plugin] ${name}`, logError(root, name, error));
+                    server.logger.warn(`[Plugin] ${name}`, logError(root, name, error));
                 } else {
                     const version = get(plugin, ['pkg', 'version'], plugin.version);
-                    server.logger().info(`[Plugin] ${name}@${version}`);
+                    server.logger.info(`[Plugin] ${name}@${version}`);
                     // try to load locales
                     try {
                         const localePath = path.join(root, name, 'locale');

@@ -1,6 +1,6 @@
 const { setUserData, unsetUserData } = require('@datawrapper/orm/utils/userData');
 const Boom = require('@hapi/boom');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 
 const { createResponseConfig } = require('../../../schemas/response');
 

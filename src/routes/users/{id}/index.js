@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { decamelizeKeys, camelizeKeys } = require('humps');
 const set = require('lodash/set');
@@ -171,14 +171,8 @@ async function getUser(request, h) {
 
 async function editUser(request, h) {
     const { auth, params, payload, server } = request;
-    const {
-        generateToken,
-        isAdmin,
-        userIsDeleted,
-        hashPassword,
-        comparePassword,
-        config
-    } = server.methods;
+    const { generateToken, isAdmin, userIsDeleted, hashPassword, comparePassword, config } =
+        server.methods;
     const userId = params.id;
 
     await userIsDeleted(userId);

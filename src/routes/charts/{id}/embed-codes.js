@@ -1,5 +1,5 @@
 const Boom = require('@hapi/boom');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const { translate } = require('@datawrapper/service-utils/l10n');
 const { getEmbedCodes } = require('./utils');
 

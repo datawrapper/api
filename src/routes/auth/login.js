@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { User, AccessToken } = require('@datawrapper/orm/models');
 const { db } = require('@datawrapper/orm');
@@ -41,8 +41,7 @@ module.exports = async (server, options) => {
             tags: ['api'],
             auth: false,
             description: 'Login using login token',
-            notes:
-                'Login using a one-time login token and redirect to the URL associated with the token. For use in CMS integrations.',
+            notes: 'Login using a one-time login token and redirect to the URL associated with the token. For use in CMS integrations.',
             validate: {
                 params: Joi.object({
                     token: Joi.string().required().description('A valid login token.')
