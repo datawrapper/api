@@ -288,7 +288,7 @@ test('Users can get only published charts', async t => {
         }
     });
     const chartId = resChart.result.id;
-    const { user, session } = await t.context.getUser();
+    const { session } = await t.context.getUser();
 
     const resUnpublishedChart = await t.context.server.inject({
         method: 'GET',
