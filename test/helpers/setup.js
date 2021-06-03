@@ -49,7 +49,10 @@ async function setup(options) {
     // register fake d3-bars type
     server.methods.registerVisualization('d3-bars', [
         {
-            id: 'd3-bars'
+            id: 'd3-bars',
+            dependencies: {},
+            less: path.join(__dirname, '../data/chart.less'),
+            script: path.join(__dirname, '../data/chart.js')
         }
     ]);
 
