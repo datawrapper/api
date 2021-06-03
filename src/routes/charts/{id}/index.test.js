@@ -255,3 +255,42 @@ test('PUT request replace metadata', async t => {
     t.is(chart.result.metadata.annotate.notes, 'note-2');
     t.is(chart.result.metadata.visualize, undefined);
 });
+
+test('Users can get only published charts', async t => {
+    const resChart = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        auth: t.context.auth,
+        headers: t.context.headers
+    });
+    const chartId = resChart.result.id;
+    const { user, session } = await t.context.getUser();
+
+    const resUnpublishedChart = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/charts/${chartId}`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}; crumb=abc`
+        }
+    });
+
+    t.is(resUnpublishedChart.statusCode, 401);
+
+    await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/charts/${chartId}/publish`,
+        auth: t.context.auth,
+        headers: t.context.headers
+    });
+
+    const resPublishedChart = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/charts/${chartId}`,
+        headers: {
+            cookie: `DW-SESSION=${session.id}; crumb=abc`
+        }
+    });
+
+    t.is(resPublishedChart.statusCode, 200);
+    t.is(resPublishedChart.result.id, resChart.result.id);
+});
