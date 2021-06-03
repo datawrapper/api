@@ -12,7 +12,7 @@ function uniq(arr) {
 }
 
 test.beforeEach(t => {
-    t.context.events = new ApiEventEmitter({ logger: mockLogger, eventList });
+    t.context.events = new ApiEventEmitter({ logger: mockLogger(), eventList });
 });
 
 test('events is instance of Node EventEmitter', t => {
