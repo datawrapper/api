@@ -167,7 +167,7 @@ async function getChart(request, h) {
         set(options, ['include'], [{ model: User, attributes: ['name', 'email'] }]);
     }
 
-    let chart = await Chart.findOne(options);
+    const chart = await Chart.findOne(options);
 
     if (!chart) {
         return Boom.notFound();
@@ -177,7 +177,7 @@ async function getChart(request, h) {
 
     if (query.published || !isEditable) {
         if (chart.published_at) {
-            chart = await ChartPublic.findOne({
+            await ChartPublic.findOne({
                 where: {
                     id: params.id
                 }
