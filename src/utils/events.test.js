@@ -3,9 +3,9 @@ const EventEmitter = require('events');
 const { ApiEventEmitter, eventList } = require('./events');
 const { noop } = require('./index');
 
-function mockLogger() {
-    return { error: noop };
-}
+const mockLogger = {
+    error: noop
+};
 
 function uniq(arr) {
     return Array.from(new Set(arr));
