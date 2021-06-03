@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const { Op } = require('@datawrapper/orm').db;
 const set = require('lodash/set');
 const { camelizeKeys, decamelize } = require('humps');

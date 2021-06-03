@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
 const { User, Team, UserTeam } = require('@datawrapper/orm/models');
