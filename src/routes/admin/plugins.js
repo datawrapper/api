@@ -76,7 +76,7 @@ function register(server, options) {
     async function updatePlugin(request, h) {
         const { server, payload } = request;
         const { general, plugins } = server.methods.config();
-        const log = server.logger();
+        const log = server.logger;
 
         const name = getNormalizedName(payload.name);
 

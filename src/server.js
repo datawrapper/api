@@ -285,11 +285,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         registeredEvents.includes(event.PUT_CHART_ASSET);
 
     if (localChartAssetRoot === undefined && !hasRegisteredDataPlugins) {
-        server
-            .logger()
-            .error(
-                '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
-            );
+        server.logger.error(
+            '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
+        );
         process.exit(1);
     }
 
@@ -317,11 +315,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     const hasRegisteredPublishPlugin = registeredEvents.includes(event.PUBLISH_CHART);
 
     if (general.localChartPublishRoot === undefined && !hasRegisteredPublishPlugin) {
-        server
-            .logger()
-            .error(
-                '[Config] You need to configure `general.localChartPublishRoot` or install a plugin that implements chart publication.'
-            );
+        server.logger.error(
+            '[Config] You need to configure `general.localChartPublishRoot` or install a plugin that implements chart publication.'
+        );
         process.exit(1);
     }
 
