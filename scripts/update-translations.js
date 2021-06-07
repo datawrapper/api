@@ -153,18 +153,11 @@ async function downloadVisualizationTranslations() {
                     typeof plugins[plugin][locale][key] === 'undefined' ||
                     plugins[plugin][locale][key].trim() === ''
                 ) {
-                    const alternatives = Object.keys(plugins[plugin]).filter(d => {
-                        return (
-                            d !== locale &&
-                            d.split('-')[0] === locale.split('-')[0] &&
-                            plugins[plugin][d][key]
-                        );
-                    });
-                    if (alternatives.length) {
-                        plugins[plugin][locale][key] = plugins[plugin][alternatives[0]][key];
-                    } else {
-                        plugins[plugin][locale][key] = plugins[plugin]['en-US'][key];
-                    }
+                    const language = locale.split('-')[0];
+                    const alternative = Object.keys(plugins[plugin]).find(
+                        d => d !== locale && d.split('-')[0] === language && plugins[plugin][d][key]
+                    );
+                    plugins[plugin][locale][key] = plugins[plugin][alternative || 'en-US'][key];
                 }
             }
         }
