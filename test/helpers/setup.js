@@ -103,7 +103,15 @@ async function setup(options) {
     async function getTeamWithUser(role = 'owner') {
         const teamPromise = models.Team.create({
             id: `test-${nanoid(5)}`,
-            name: 'Test Team'
+            name: 'Test Team',
+            settings: {
+                default: {
+                    locale: 'en-US'
+                },
+                flags: {
+                    pdf: false
+                }
+            }
         });
 
         const [team, userData] = await Promise.all([teamPromise, getUser()]);

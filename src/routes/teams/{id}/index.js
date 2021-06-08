@@ -179,18 +179,29 @@ async function editTeam(request, h) {
     // allow plugins to filter team settings
     await events.emit(event.TEAM_SETTINGS_FILTER, { payload: data, team, user: auth.artifacts });
 
-    // merge with existing data
-    data.settings = assign(team.settings, data.settings);
-
-    team = await team.update(convertKeys(data, decamelize));
-
-    data = team.dataValues;
-
     if (typeof data.settings === 'string') {
         data.settings = JSON.parse(data.settings);
     }
 
+    console.log('ts', team.dataValues)
+    console.log('d', data)
+
+    // merge with existing data
+    data.settings = assign(team.dataValues.settings, data.settings);
+
+    console.log(convertKeys(data, decamelize))
+
+    team = await team.update(convertKeys(data, decamelize), {fields: ['name', 'settings', 'disabled', 'defaultTheme']});
+
+    await team.save({ fields: ['name', 'settings', 'disabled', 'defaultTheme'] });
+
+    await team.reload();
+
+    data = team.dataValues;
+
     data.updatedAt = new Date().toISOString();
+
+
     return convertKeys(data, camelize);
 }
 
