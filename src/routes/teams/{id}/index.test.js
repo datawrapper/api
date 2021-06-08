@@ -29,16 +29,14 @@ test.before(async t => {
     const { events, event } = server.app;
     events.on(event.TEAM_SETTINGS_FILTER, async ({ team, payload, user }) => {
         // check if the team supports certain settings
-        const prohibitedKeys = [
-            'settings.flags'
-        ];
+        const prohibitedKeys = ['settings.flags'];
         prohibitedKeys.forEach(key => {
             if (get(payload, key)) {
                 const keys = key.split('.');
                 const last = keys.pop();
                 delete get(payload, keys.join('.'))[last];
             }
-        })
+        });
     });
 });
 
@@ -272,7 +270,7 @@ test('admin can edit team allowed settings', async t => {
     t.is(team2.result.settings.flags.pdf, false);
 });
 
-test('admins can\'t edit team restricted team settings', async t => {
+test("admins can't edit team restricted team settings", async t => {
     const { user } = await t.context.data.addUser('admin');
 
     const team1 = await t.context.server.inject({
