@@ -252,53 +252,41 @@ async function publishData(request, h) {
     const { query, params, server, auth, headers } = request;
     const { events, event, visualizations } = server.app;
 
-    let chart;
-
-    if (query.published) {
-        const ogChart = await Chart.findOne({
-            where: { id: params.id, deleted: { [Op.not]: true } },
-            attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
-        });
-
-        chart = await ChartPublic.findOne({
-            where: { id: params.id }
-        });
-
-        if (!chart) throw Boom.notFound();
-
-        chart.dataValues.theme = ogChart.theme;
-    } else {
-        chart = await Chart.findOne({
-            where: { id: params.id, deleted: { [Op.not]: true } },
-            attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
-        });
-    }
+    const chart = await Chart.findOne({
+        where: { id: params.id, deleted: { [Op.not]: true } },
+        attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
+    });
 
     if (!chart) throw Boom.notFound();
 
     let user = auth.artifacts;
 
-    let hasAccess =
-        query.published || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
-
-    if (!hasAccess && query.ott) {
-        const count = await ChartAccessToken.count({
-            where: {
-                chart_id: params.id,
-                token: query.ott
-            },
-            limit: 1
-        });
-
-        hasAccess = !!count;
-
-        if (hasAccess && chart.author_id) {
-            user = await User.findByPk(chart.author_id);
+    if (query.published) {
+        if (!(await chart.setDataValuesFromPublicChart())) {
+            throw Boom.notFound();
         }
-    }
+    } else {
+        const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
+        if (!isEditable) {
+            if (!query.ott) {
+                throw Boom.unauthorized();
+            }
 
-    if (!hasAccess) {
-        throw Boom.unauthorized();
+            const count = await ChartAccessToken.count({
+                where: {
+                    chart_id: params.id,
+                    token: query.ott
+                },
+                limit: 1
+            });
+            if (!count) {
+                throw Boom.unauthorized();
+            }
+
+            if (chart.author_id) {
+                user = await User.findByPk(chart.author_id);
+            }
+        }
     }
 
     // the csv dataset

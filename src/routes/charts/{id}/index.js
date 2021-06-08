@@ -1,7 +1,7 @@
 const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
-const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
+const { Chart, User, Folder } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const assignWithEmptyObjects = require('../../../utils/assignWithEmptyObjects');
 const { decamelizeKeys } = require('humps');
@@ -176,11 +176,9 @@ async function getChart(request, h) {
 
     if (query.published || !isEditable) {
         if (chart.published_at) {
-            await ChartPublic.findOne({
-                where: {
-                    id: params.id
-                }
-            });
+            if (!(await chart.setDataValuesFromPublicChart())) {
+                throw Boom.notFound();
+            }
         } else {
             return Boom.unauthorized();
         }
