@@ -150,7 +150,25 @@ test('Users cannot create a chart with an invalid token', async t => {
     t.is(chart.statusCode, 401);
 });
 
-test('Users cannot create chart in a team they dont have access to', async t => {
+test('Users cannot create chart in a team they dont have access to (token auth)', async t => {
+    const { token } = await t.context.getUser();
+    const { team } = await t.context.getTeamWithUser('member');
+
+    const chart = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/charts',
+        headers: {
+            Authorization: `Bearer ${token}`
+        },
+        payload: {
+            organizationId: team.id
+        }
+    });
+
+    t.is(chart.statusCode, 403);
+});
+
+test('Users cannot create chart in a team they dont have access to (session auth)', async t => {
     const { session } = await t.context.getUser();
     const { team } = await t.context.getTeamWithUser('member');
 
