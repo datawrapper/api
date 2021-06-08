@@ -2,9 +2,8 @@ const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { createResponseConfig } = require('../../../schemas/response');
 const { Chart, Action, ChartPublic, ChartAccessToken, User } = require('@datawrapper/orm/models');
-const get = require('lodash/get');
 const set = require('lodash/set');
-const { prepareChart } = require('../../../utils/index.js');
+const { getAdditionalMetadata, prepareChart } = require('../../../utils/index.js');
 const { Op } = require('@datawrapper/orm').db;
 const { getScope } = require('@datawrapper/service-utils/l10n');
 const { getEmbedCodes } = require('./utils');
@@ -394,50 +393,6 @@ async function publishData(request, h) {
                 embedCodes[`embed-method-${embed.id}`] = embed.code;
             });
             set(data.chart, 'metadata.publish.embed-codes', embedCodes);
-        }
-    }
-
-    return data;
-}
-
-async function getAdditionalMetadata(chart, { server }) {
-    const data = {};
-    let additionalMetadata = await server.app.events.emit(
-        server.app.event.ADDITIONAL_CHART_DATA,
-        {
-            chartId: chart.id,
-            forkedFromId: chart.forked_from
-        },
-        { filter: 'success' }
-    );
-
-    additionalMetadata = Object.assign({}, ...additionalMetadata);
-
-    if (chart.forked_from && chart.is_fork) {
-        const forkedFromChart = await Chart.findByPk(chart.forked_from, {
-            attributes: ['metadata']
-        });
-        const basedOnBylineText = get(forkedFromChart, 'metadata.describe.byline', null);
-
-        if (basedOnBylineText) {
-            let basedOnUrl = get(additionalMetadata, 'river.source_url', null);
-
-            if (!basedOnUrl) {
-                let results = await server.app.events.emit(
-                    server.app.event.GET_CHART_DISPLAY_URL,
-                    {
-                        chart
-                    },
-                    { filter: 'success' }
-                );
-
-                results = Object.assign({}, ...results);
-                basedOnUrl = results.url;
-            }
-
-            data.basedOnByline = basedOnUrl
-                ? `<a href='${basedOnUrl}' target='_blank' rel='noopener'>${basedOnBylineText}</a>`
-                : basedOnBylineText;
         }
     }
 
