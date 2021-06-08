@@ -2,11 +2,10 @@ const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
 const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
-const get = require('lodash/get');
 const set = require('lodash/set');
 const assignWithEmptyObjects = require('../../../utils/assignWithEmptyObjects');
 const { decamelizeKeys } = require('humps');
-const { prepareChart } = require('../../../utils/index.js');
+const { getAdditionalMetadata, prepareChart } = require('../../../utils/index.js');
 const { noContentResponse, chartResponse } = require('../../../schemas/response');
 
 module.exports = {
@@ -324,48 +323,4 @@ async function deleteChart(request, h) {
     });
 
     return h.response().code(204);
-}
-
-async function getAdditionalMetadata(chart, { server }) {
-    const data = {};
-    let additionalMetadata = await server.app.events.emit(
-        server.app.event.ADDITIONAL_CHART_DATA,
-        {
-            chartId: chart.id,
-            forkedFromId: chart.forked_from
-        },
-        { filter: 'success' }
-    );
-
-    additionalMetadata = Object.assign({}, ...additionalMetadata);
-
-    if (chart.forked_from && chart.is_fork) {
-        const forkedFromChart = await Chart.findByPk(chart.forked_from, {
-            attributes: ['metadata']
-        });
-        const basedOnBylineText = get(forkedFromChart, 'metadata.describe.byline', null);
-
-        if (basedOnBylineText) {
-            let basedOnUrl = get(additionalMetadata, 'river.source_url', null);
-
-            if (!basedOnUrl) {
-                let results = await server.app.events.emit(
-                    server.app.event.GET_CHART_DISPLAY_URL,
-                    {
-                        chart
-                    },
-                    { filter: 'success' }
-                );
-
-                results = Object.assign({}, ...results);
-                basedOnUrl = results.url;
-            }
-
-            data.basedOnByline = basedOnUrl
-                ? `<a href='${basedOnUrl}' target='_blank' rel='noopener'>${basedOnBylineText}</a>`
-                : basedOnBylineText;
-        }
-    }
-
-    return data;
 }
