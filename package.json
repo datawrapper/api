@@ -79,7 +79,7 @@
         "@datawrapper/locales": "^1.2.4",
         "@datawrapper/orm": "^3.22.4",
         "@datawrapper/schemas": "^1.12.0",
-        "@datawrapper/service-utils": "^1.0.1",
+        "@datawrapper/service-utils": "^1.0.2",
         "@hapi/boom": "^9.1.2",
         "@hapi/catbox-memory": "^5.0.1",
         "@hapi/catbox-redis": "^6.0.2",
