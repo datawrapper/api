@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { decamelize, camelize } = require('humps');
+const assign = require('assign-deep');
 const {
     Chart,
     Team,
@@ -154,6 +155,7 @@ async function getTeam(request, h) {
 
 async function editTeam(request, h) {
     const { auth, payload, params, server } = request;
+    const { event, events } = server.app;
 
     if (!server.methods.isAdmin(request)) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
@@ -173,6 +175,12 @@ async function editTeam(request, h) {
     let team = await Team.findByPk(params.id);
 
     if (!team) return Boom.notFound();
+
+    // allow plugins to filter team settings
+    await events.emit(event.TEAM_SETTINGS_FILTER, { payload: data, team, user: auth.artifacts });
+
+    // merge with existing data
+    data.settings = assign(team.settings, data.settings);
 
     team = await team.update(convertKeys(data, decamelize));
 
