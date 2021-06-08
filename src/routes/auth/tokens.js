@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const {
     listResponse,
@@ -20,8 +20,7 @@ module.exports = async (server, options) => {
                 access: { scope: ['auth:read'] }
             },
             description: 'List API tokens',
-            notes:
-                'Response will not include full tokens for security reasons. Requires scope `auth:read`.',
+            notes: 'Response will not include full tokens for security reasons. Requires scope `auth:read`.',
             validate: {
                 query: Joi.object({
                     limit: Joi.number()
@@ -108,8 +107,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Edit API token',
-            notes:
-                'Edit an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.  Requires scope `auth:write`.',
+            notes: 'Edit an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.  Requires scope `auth:write`.',
             auth: {
                 access: { scope: ['auth:write'] }
             },
@@ -159,8 +157,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Delete API token',
-            notes:
-                'Delete (=revoke) an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.  Requires scope `auth:write`.',
+            notes: 'Delete (=revoke) an API access token. Check [/v3/auth/tokens](ref:authtokens) to get the IDs of your available tokens.  Requires scope `auth:write`.',
             auth: {
                 access: { scope: ['auth:write'] }
             },

@@ -1,9 +1,12 @@
-const postcss = require('postcss');
-
-module.exports = postcss.plugin('postcss-plugin-remove-declaration', keyword => {
-    return root => {
-        root.walkDecls(decl => {
-            if (decl.value.includes(keyword)) decl.remove();
-        });
+module.exports = keyword => {
+    return {
+        postcssPlugin: 'postcss-plugin-remove-declaration',
+        Once(root) {
+            root.walkDecls(decl => {
+                if (decl.value.includes(keyword)) decl.remove();
+            });
+        }
     };
-});
+};
+
+module.exports.postcss = true;

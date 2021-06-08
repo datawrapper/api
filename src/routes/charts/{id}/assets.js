@@ -1,6 +1,6 @@
 const path = require('path');
 const mime = require('mime');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { noContentResponse } = require('../../../schemas/response');
 const { ChartAccessToken } = require('@datawrapper/orm/models');

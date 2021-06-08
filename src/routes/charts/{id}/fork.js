@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { prepareChart } = require('../../../utils/index.js');
 const createChart = require('@datawrapper/service-utils/createChart');
@@ -56,6 +56,10 @@ module.exports = (server, options) => {
                 // as "Based on" attribution, so we need to empty the new byline
                 set(newMeta, 'describe.byline', '');
             }
+
+            // forks shouldn't inherit reuse settings of the source chart
+            set(newMeta, 'publish.show-in-river', false);
+            set(newMeta, 'publish.blocks.edit-in-datawrapper', false);
 
             const newChart = {
                 type: publicChart.type,

@@ -1,5 +1,5 @@
 const test = require('ava');
-const nanoid = require('nanoid');
+const { nanoid } = require('nanoid');
 const { setup } = require('../../../test/helpers/setup');
 
 test.before(async t => {

@@ -1,4 +1,4 @@
-const generate = require('nanoid/generate');
+const { customAlphabet } = require('nanoid');
 const { camelizeKeys } = require('humps');
 const Boom = require('@hapi/boom');
 const path = require('path');
@@ -90,7 +90,7 @@ utils.cookieTTL = days => {
 };
 
 utils.generateToken = (length = 25) => {
-    return generate(alphabet, length);
+    return customAlphabet(alphabet, length)();
 };
 
 utils.noop = () => {};
