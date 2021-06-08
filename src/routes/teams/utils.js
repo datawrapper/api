@@ -108,9 +108,7 @@ function canChangeMemberStatus({ memberRole, userRole }) {
 function convertKeys(input, method) {
     const output = {};
     for (const k in input) {
-        if (input[k] !== undefined) {
-            output[method(k)] = input[k];
-        }
+        output[method(k)] = input[k];
     }
     return output;
 }
