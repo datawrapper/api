@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { decamelize, camelize } = require('humps');
+const assign = require('assign-deep');
 const {
     Chart,
     Team,
@@ -154,6 +155,7 @@ async function getTeam(request, h) {
 
 async function editTeam(request, h) {
     const { auth, payload, params, server } = request;
+    const { event, events } = server.app;
 
     if (!server.methods.isAdmin(request)) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
@@ -170,19 +172,33 @@ async function editTeam(request, h) {
         defaultTheme: payload.defaultTheme
     };
 
-    let team = await Team.findByPk(params.id);
+    const team = await Team.findByPk(params.id);
 
     if (!team) return Boom.notFound();
 
-    team = await team.update(convertKeys(data, decamelize));
-
-    data = team.dataValues;
+    // allow plugins to filter team settings
+    await events.emit(event.TEAM_SETTINGS_FILTER, { payload: data, team, user: auth.artifacts });
 
     if (typeof data.settings === 'string') {
         data.settings = JSON.parse(data.settings);
     }
 
+    // merge with existing data
+    data.settings = assign(team.dataValues.settings, data.settings);
+
+    await Team.update(convertKeys(data, decamelize), {
+        where: {
+            id: team.id
+        },
+        limit: 1
+    });
+
+    await team.reload();
+
+    data = team.dataValues;
+
     data.updatedAt = new Date().toISOString();
+
     return convertKeys(data, camelize);
 }
 

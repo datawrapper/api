@@ -255,7 +255,7 @@ async function getAllCharts(request, h) {
 
 async function createChartHandler(request, h) {
     const { url, auth, payload, server } = request;
-    const { session } = auth.credentials;
+    const { session, token } = auth.credentials;
     const user = auth.artifacts;
 
     const newChart = {
@@ -266,8 +266,7 @@ async function createChartHandler(request, h) {
         teamId: payload ? payload.organizationId : undefined,
         metadata: payload && payload.metadata ? payload.metadata : { data: {} }
     };
-
-    const chart = await createChart({ server, user, payload: newChart, session });
+    const chart = await createChart({ server, user, payload: newChart, session, token });
 
     // log chart/edit
     await request.server.methods.logAction(auth.artifacts.id, `chart/edit`, chart.id);

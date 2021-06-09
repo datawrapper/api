@@ -103,11 +103,19 @@ async function setup(options) {
     async function getTeamWithUser(role = 'owner') {
         const teamPromise = models.Team.create({
             id: `test-${nanoid(5)}`,
-            name: 'Test Team'
+            name: 'Test Team',
+            settings: {
+                default: {
+                    locale: 'en-US'
+                },
+                flags: {
+                    pdf: false
+                }
+            }
         });
 
         const [team, userData] = await Promise.all([teamPromise, getUser()]);
-        const { user, session } = userData;
+        const { user, session, token } = userData;
 
         await models.UserTeam.create({
             user_id: user.id,
@@ -134,7 +142,7 @@ async function setup(options) {
 
         session.scope = allScopes;
 
-        return { team, user, session, addUser };
+        return { team, user, session, token, addUser };
     }
 
     async function createTheme(themeData) {
