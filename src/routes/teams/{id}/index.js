@@ -172,25 +172,33 @@ async function editTeam(request, h) {
         defaultTheme: payload.defaultTheme
     };
 
-    let team = await Team.findByPk(params.id);
+    const team = await Team.findByPk(params.id);
 
     if (!team) return Boom.notFound();
 
     // allow plugins to filter team settings
     await events.emit(event.TEAM_SETTINGS_FILTER, { payload: data, team, user: auth.artifacts });
 
-    // merge with existing data
-    data.settings = assign(team.settings, data.settings);
-
-    team = await team.update(convertKeys(data, decamelize));
-
-    data = team.dataValues;
-
     if (typeof data.settings === 'string') {
         data.settings = JSON.parse(data.settings);
     }
 
+    // merge with existing data
+    data.settings = assign(team.dataValues.settings, data.settings);
+
+    await Team.update(convertKeys(data, decamelize), {
+        where: {
+            id: team.id
+        },
+        limit: 1
+    });
+
+    await team.reload();
+
+    data = team.dataValues;
+
     data.updatedAt = new Date().toISOString();
+
     return convertKeys(data, camelize);
 }
 
