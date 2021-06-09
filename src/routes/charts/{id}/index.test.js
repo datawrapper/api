@@ -261,7 +261,10 @@ test('Users can get only published charts', async t => {
         method: 'POST',
         url: '/v3/charts',
         auth: t.context.auth,
-        headers: t.context.headers
+        headers: t.context.headers,
+        payload: {
+            title: 'Published version'
+        }
     });
     const chartId = resChart.result.id;
     const { user, session } = await t.context.getUser();
@@ -282,6 +285,15 @@ test('Users can get only published charts', async t => {
         auth: t.context.auth,
         headers: t.context.headers
     });
+    await t.context.server.inject({
+        method: 'PUT',
+        url: `/v3/charts/${chartId}`,
+        auth: t.context.auth,
+        headers: t.context.headers,
+        payload: {
+            title: 'New version'
+        }
+    });
 
     const resPublishedChart = await t.context.server.inject({
         method: 'GET',
@@ -293,4 +305,5 @@ test('Users can get only published charts', async t => {
 
     t.is(resPublishedChart.statusCode, 200);
     t.is(resPublishedChart.result.id, resChart.result.id);
+    t.is(resPublishedChart.result.title, 'Published version');
 });
