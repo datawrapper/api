@@ -176,7 +176,7 @@ async function getChart(request, h) {
 
     if (query.published || !isEditable) {
         if (chart.published_at) {
-            if (!(await chart.setDataValuesFromPublicChart())) {
+            if (!(await chart.setAttributesFromPublicChart())) {
                 throw Boom.notFound();
             }
         } else {
