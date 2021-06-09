@@ -262,7 +262,7 @@ async function publishData(request, h) {
     let user = auth.artifacts;
 
     if (query.published) {
-        if (!(await chart.setDataValuesFromPublicChart())) {
+        if (!(await chart.setAttributesFromPublicChart())) {
             throw Boom.notFound();
         }
     } else {
