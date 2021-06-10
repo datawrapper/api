@@ -43,7 +43,8 @@ module.exports = {
         if (plugins.length) {
             for (const [{ plugin, options, error, name }, pluginOptions] of plugins) {
                 if (error) {
-                    server.logger.warn(`[Plugin] ${name}`, logError(root, name, error));
+                    server.logger.warn(`[Plugin] ${name}\n\n${logError(root, name, error)}`);
+                    server.logger.warn(error);
                 } else {
                     const version = get(plugin, ['pkg', 'version'], plugin.version);
                     server.logger.info(`[Plugin] ${name}@${version}`);
