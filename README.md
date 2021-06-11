@@ -107,38 +107,38 @@ Documentation about schemas and available keys can be found in [`datawrapper/sch
 
 Server methods are a way to provide common utilities throughout the API server. Everywhere you have access to the `server` object (like in request handlers) these methods are available. ([hapi documentation](https://hapi.dev/api/?v=19.1.1#-servermethods))
 
-* `server.methods.config`  
+* `server.methods.config`
     Provides access to the servers `config.js` properties like `api` or `orm`.
-* `server.methods.comparePassword`  
+* `server.methods.comparePassword`
     Check validity of a password against a password hash.
-* `server.methods.createChartWebsite`  
+* `server.methods.createChartWebsite`
     Used by publish route and zip export to create a folder with all assets for a standalone Datawrapper chart.
-* `server.methods.generateToken`  
+* `server.methods.generateToken`
     Generates a unique token/ID with a specified length.
-* `server.methods.getModel`  
+* `server.methods.getModel`
     Provides access to all registered ORM models (useful for quick access in plugins).
-* `server.methods.hashPassword`  
+* `server.methods.hashPassword`
     Hashes a cleartext password with the [`bcrypt`](https://en.wikipedia.org/wiki/Bcrypt) algorithm.
-* `server.methods.isAdmin`  
+* `server.methods.isAdmin`
     Checks if  a request was initiated by a Datawrapper admin.
-* `server.methods.logAction`  
+* `server.methods.logAction`
     Logs an action to the `action` database table.
-* `server.methods.registerVisualization`  
+* `server.methods.registerVisualization`
     Registers a new visualization type usually handled by plugins like `plugin-d3-lines`.
-* `server.methods.validateThemeData`  
+* `server.methods.validateThemeData`
     Validate a theme against a schema.
 
 ## Server Application Data
 
 Server application data is server specific data that can be accessed everywhere the `server` object is available. ([hapi documentation](https://hapi.dev/api/?v=19.1.1#-serverapp))
 
-* `server.app.event`  
+* `server.app.event`
     List of events the server can emit.
-* `server.app.events`   
+* `server.app.events`
     Event emitter to trigger server events.
-* `server.app.visualizations`  
+* `server.app.visualizations`
     A map of registered visualizations like `d3-lines`.
-* `server.app.exportFormats`  
+* `server.app.exportFormats`
     A set of export formats the server can process (eg. PDF, png, zip)
 
 ## Plugins
@@ -166,7 +166,7 @@ module.exports = {
     version: '1.0.0',
     register: (server, options) => {
         console.log('hello from my-plugin!')
-        console.log(`the api key is "${options.config.apiKey}"`) 
+        console.log(`the api key is "${options.config.apiKey}"`)
         // -> the api key is "agamotto"
     }
 }
@@ -209,7 +209,7 @@ The easiest way to fully update is by connecting to the server with ssh and navi
 
 Some plugins register visualizations and provide static assets like JS and CSS to render charts. If only the static assets change, a full server restart is not necessary. In this case, the API provides admin endpoints to update the static files of a plugin. By calling `POST /v3/admin/plugins/update` with the name and branch of the plugin `{ "name": "d3-lines", "branch": "master" }`, the API will download the new static files and replace them. Now the new files are served and used for chart previews and publishing. The following folders inside a plugins directory will get replaced: `less/, locale/, static/`.
 
-> **Note**: The process of updating only static files is not ideal and could cause inconsistent states in the API server. In practice this should not be a problem. 
+> **Note**: The process of updating only static files is not ideal and could cause inconsistent states in the API server. In practice this should not be a problem.
 >
 > With our implementation of zero downtime API reloads, thanks to PM2, we should be able to programmatically trigger full plugin updates in the future. So far our special case for visualizations solves the problem.
 
@@ -231,4 +231,33 @@ If you only want to update translations for a certain part of Datawrapper you ca
 
 ```bash
 npm run update-translations -- --prefix=plugins/d3-bars
+```
+
+### Development
+
+#### Unit tests
+
+To run the unit tests, run:
+
+``` shell
+make test
+```
+
+or to run only some tests:
+
+``` shell
+make test m='chart has*'
+```
+
+This will start a Docker container with a testing database, create tables in it, and run the unit
+tests in another container.
+
+The database container will keep running after the tests finish, so you can run `make test`
+repeatedly and it will save some time by reusing the database and its tables.
+
+When you're done developing the unit tests, or when you change database schema, you can stop the
+database Docker container and delete the database using:
+
+``` shell
+make test-teardown
 ```
