@@ -1,7 +1,8 @@
 const Joi = require('joi');
 const Boom = require('@hapi/boom');
+const ReadonlyChart = require('@datawrapper/orm/models/ReadonlyChart');
 const { Op } = require('@datawrapper/orm').db;
-const { Chart, User, Folder } = require('@datawrapper/orm/models');
+const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const assignWithEmptyObjects = require('../../../utils/assignWithEmptyObjects');
 const { decamelizeKeys } = require('humps');
@@ -174,31 +175,36 @@ async function getChart(request, h) {
 
     const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
 
+    let readonlyChart;
     if (query.published || !isEditable) {
         if (chart.published_at) {
-            if (!(await chart.setAttributesFromPublicChart())) {
+            const publicChart = await ChartPublic.findByPk(chart.id);
+            if (!publicChart) {
                 throw Boom.notFound();
             }
+            readonlyChart = await ReadonlyChart.fromPublicChart(chart, publicChart);
         } else {
             return Boom.unauthorized();
         }
+    } else {
+        readonlyChart = await ReadonlyChart.fromChart(chart);
     }
 
-    const additionalData = await getAdditionalMetadata(chart, { server });
+    const additionalData = await getAdditionalMetadata(readonlyChart, { server });
 
     if (server.methods.config('general').imageDomain) {
         additionalData.thumbnails = {
             full: `//${server.methods.config('general').imageDomain}/${
-                chart.id
-            }/${chart.getThumbnailHash()}/full.png`,
+                readonlyChart.id
+            }/${readonlyChart.getThumbnailHash()}/full.png`,
             plain: `//${server.methods.config('general').imageDomain}/${
-                chart.id
-            }/${chart.getThumbnailHash()}/plain.png`
+                readonlyChart.id
+            }/${readonlyChart.getThumbnailHash()}/plain.png`
         };
     }
 
     return {
-        ...(await prepareChart(chart, additionalData)),
+        ...(await prepareChart(readonlyChart, additionalData)),
         url: `${url.pathname}`
     };
 }
