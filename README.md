@@ -261,3 +261,13 @@ database Docker container and delete the database using:
 ``` shell
 make test-teardown
 ```
+
+##### Linking npm packages into unit tests
+
+If you'd like to run the unit tests with a linked npm package, mount it as a readonly Docker volume.
+See the commented out code in the Makefile target `test-run`. Don't forget to add backslash to the
+end of the line after you uncomment it. Example:
+
+``` makefile
+-v "$$(pwd)/../../libs/orm:/app/node_modules/@datawrapper/orm:ro" \
+```
