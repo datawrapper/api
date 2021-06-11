@@ -1,7 +1,8 @@
 module.exports = {
     general: {
         localChartAssetRoot: '/tmp/data',
-        localChartPublishRoot: '/tmp/charts'
+        localChartPublishRoot: '/tmp/charts',
+        imageDomain: 'charts.datawrapper.local/preview'
     },
     frontend: {
         domain: 'localhost',
