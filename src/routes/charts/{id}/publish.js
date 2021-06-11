@@ -1,12 +1,13 @@
-const Joi = require('joi');
 const Boom = require('@hapi/boom');
-const { createResponseConfig } = require('../../../schemas/response');
-const { Chart, Action, ChartPublic, ChartAccessToken, User } = require('@datawrapper/orm/models');
+const Joi = require('joi');
+const ReadonlyChart = require('@datawrapper/orm/models/ReadonlyChart');
 const set = require('lodash/set');
-const { getAdditionalMetadata, prepareChart } = require('../../../utils/index.js');
+const { Action, Chart, ChartAccessToken, ChartPublic, User } = require('@datawrapper/orm/models');
 const { Op } = require('@datawrapper/orm').db;
-const { getScope } = require('@datawrapper/service-utils/l10n');
+const { createResponseConfig } = require('../../../schemas/response');
+const { getAdditionalMetadata, prepareChart } = require('../../../utils/index.js');
 const { getEmbedCodes } = require('./utils');
+const { getScope } = require('@datawrapper/service-utils/l10n');
 
 module.exports = (server, options) => {
     // POST /v3/charts/{id}/publish
@@ -261,10 +262,13 @@ async function publishData(request, h) {
 
     let user = auth.artifacts;
 
+    let readonlyChart;
     if (query.published) {
-        if (!(await chart.setAttributesFromPublicChart())) {
+        const publicChart = await ChartPublic.findByPk(chart.id);
+        if (!publicChart) {
             throw Boom.notFound();
         }
+        readonlyChart = await ReadonlyChart.fromPublicChart(chart, publicChart);
     } else {
         const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
         if (!isEditable) {
@@ -287,6 +291,7 @@ async function publishData(request, h) {
                 user = await User.findByPk(chart.author_id);
             }
         }
+        readonlyChart = await ReadonlyChart.fromChart(chart);
     }
 
     // the csv dataset
@@ -298,14 +303,14 @@ async function publishData(request, h) {
         headers
     });
 
-    const additionalData = await getAdditionalMetadata(chart, { server });
+    const additionalData = await getAdditionalMetadata(readonlyChart, { server });
 
-    const data = { data: res.result, chart: await prepareChart(chart, additionalData) };
+    const data = { data: res.result, chart: await prepareChart(readonlyChart, additionalData) };
 
     const htmlBodyResults = await events.emit(
         event.CHART_AFTER_BODY_HTML,
         {
-            chart,
+            chart: readonlyChart,
             data,
             publish: query.publish === 'true'
         },
@@ -316,7 +321,7 @@ async function publishData(request, h) {
     const htmlHeadResults = await events.emit(
         event.CHART_AFTER_HEAD_HTML,
         {
-            chart,
+            chart: readonlyChart,
             data,
             publish: query.publish === 'true'
         },
@@ -325,14 +330,14 @@ async function publishData(request, h) {
     data.chartAfterHeadHTML = htmlHeadResults.join('\n');
 
     // chart locales
-    data.locales = getScope('chart', chart.language || 'en-US');
+    data.locales = getScope('chart', readonlyChart.language || 'en-US');
 
     data.externalDataUrl = await events.emit(event.EXTERNAL_DATA_URL, null, {
         filter: 'first'
     });
 
     await events.emit(event.CHART_PUBLISH_DATA, {
-        chart,
+        chart: readonlyChart,
         auth,
         ott: query.ott,
         data
@@ -351,7 +356,7 @@ async function publishData(request, h) {
     const chartBlocks = await events.emit(
         event.CHART_BLOCKS,
         {
-            chart,
+            chart: readonlyChart,
             user,
             data
         },
@@ -364,14 +369,14 @@ async function publishData(request, h) {
          * so that the chart footer embed links are up to date */
         const publicUrl = await events.emit(
             event.GET_NEXT_PUBLIC_URL,
-            { chart },
+            { chart: readonlyChart },
             { filter: 'first' }
         );
 
         if (publicUrl) {
             const embedCodes = {};
             const res = await getEmbedCodes({
-                chart,
+                chart: readonlyChart,
                 visualizations,
                 user,
                 publicUrl,
