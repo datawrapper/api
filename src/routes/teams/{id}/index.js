@@ -88,7 +88,7 @@ module.exports = {
             handler: editTeam
         });
 
-        // PATCH /v3/teams/{id}
+        // PUT /v3/teams/{id}
         server.route({
             method: 'PUT',
             path: `/`,
