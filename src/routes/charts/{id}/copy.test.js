@@ -2,7 +2,12 @@ const test = require('ava');
 const { setup } = require('../../../../test/helpers/setup');
 
 test.before(async t => {
-    const { server, getUser, getTeamWithUser } = await setup({ usePlugins: false });
+    const { server, createTheme, getUser, getTeamWithUser } = await setup({ usePlugins: false });
+    await createTheme({
+        id: 'default',
+        data: {},
+        assets: {}
+    });
 
     t.context.server = server;
     t.context.getUser = getUser;
@@ -19,7 +24,7 @@ test('User can copy chart, attributes match', async t => {
 
     const attributes = {
         title: 'This is my chart',
-        theme: 'datawrapper-data',
+        theme: 'default',
         language: 'en-IE',
         externalData: 'https://static.dwcdn.net/data/12345.csv',
         metadata: {

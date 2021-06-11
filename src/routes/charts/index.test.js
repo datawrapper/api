@@ -2,7 +2,12 @@ const test = require('ava');
 const { setup } = require('../../../test/helpers/setup');
 
 test.before(async t => {
-    const { server, getUser, getTeamWithUser } = await setup({ usePlugins: false });
+    const { server, createTheme, getUser, getTeamWithUser } = await setup({ usePlugins: false });
+    await createTheme({
+        id: 'default',
+        data: {},
+        assets: {}
+    });
     const data = await getUser('admin');
 
     t.context.server = server;
