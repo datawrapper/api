@@ -88,6 +88,32 @@ module.exports = {
             handler: editTeam
         });
 
+        // PATCH /v3/teams/{id}
+        server.route({
+            method: 'PUT',
+            path: `/`,
+            options: {
+                tags: ['api'],
+                description: 'Update a team',
+                notes: `Requires scope \`team:write\`.`,
+                auth: {
+                    access: { scope: ['team:write'] }
+                },
+                validate: {
+                    params: Joi.object({
+                        id: Joi.string().required().description('Team ID')
+                    }),
+                    payload: Joi.object({
+                        name: Joi.string().example('New Revengers'),
+                        defaultTheme: Joi.string().example('light'),
+                        settings: Joi.object({}).unknown(true)
+                    })
+                },
+                response: teamResponse
+            },
+            handler: editTeam
+        });
+
         require('./invites')(server, options);
         require('./members')(server, options);
         require('./products')(server, options);
@@ -154,7 +180,7 @@ async function getTeam(request, h) {
 }
 
 async function editTeam(request, h) {
-    const { auth, payload, params, server } = request;
+    const { auth, payload, params, server, method } = request;
     const { event, events } = server.app;
 
     if (!server.methods.isAdmin(request)) {
@@ -183,8 +209,10 @@ async function editTeam(request, h) {
         data.settings = JSON.parse(data.settings);
     }
 
-    // merge with existing data
-    data.settings = assign(team.dataValues.settings, data.settings);
+    if (method === 'patch') {
+        // merge with existing data
+        data.settings = assign(team.dataValues.settings, data.settings);
+    }
 
     await Team.update(convertKeys(data, decamelize), {
         where: {
