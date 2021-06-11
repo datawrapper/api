@@ -3,8 +3,14 @@ const test = require('ava');
 const { setup } = require('../../../test/helpers/setup');
 
 test.before(async t => {
-    const { server, models, getUser, getCredentials, addToCleanup, getTeamWithUser } = await setup({
-        usePlugins: false
+    const { server, models, createTheme, getUser, getCredentials, addToCleanup, getTeamWithUser } =
+        await setup({
+            usePlugins: false
+        });
+    await createTheme({
+        id: 'default',
+        data: {},
+        assets: {}
     });
 
     t.context.server = server;

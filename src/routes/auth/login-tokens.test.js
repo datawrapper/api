@@ -14,7 +14,14 @@ function parseSetCookie(string) {
 }
 
 test.before(async t => {
-    const { server, models, getUser, addToCleanup } = await setup({ usePlugins: false });
+    const { server, models, createTheme, getUser, addToCleanup } = await setup({
+        usePlugins: false
+    });
+    await createTheme({
+        id: 'default',
+        data: {},
+        assets: {}
+    });
     const data = await getUser();
 
     t.context.server = server;
