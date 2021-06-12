@@ -1,6 +1,7 @@
 const test = require('ava');
 const { setup } = require('../../../../test/helpers/setup');
 const get = require('lodash/get');
+const set = require('lodash/set');
 
 test.before(async t => {
     const { server, getTeamWithUser, getUser, models, addToCleanup } = await setup({
@@ -29,14 +30,18 @@ test.before(async t => {
     const { events, event } = server.app;
     events.on(event.TEAM_SETTINGS_FILTER, async ({ team, payload, user }) => {
         // check if the team supports certain settings
-        const prohibitedKeys = ['settings.flags'];
+        const prohibitedKeys = ['settings.flags', 'settings.css'];
+        const readOnlySettings = {};
         prohibitedKeys.forEach(key => {
-            if (get(payload, key)) {
+            if (get(payload, key, null) !== null) {
                 const keys = key.split('.');
                 const last = keys.pop();
+                const readOnlySetting = get(team.dataValues, key);
+                set(readOnlySettings, key, readOnlySetting);
                 delete get(payload, keys.join('.'))[last];
             }
         });
+        return readOnlySettings;
     });
 });
 
@@ -307,5 +312,85 @@ test("admins can't edit team restricted team settings", async t => {
     });
 
     t.is(team2.statusCode, 200);
+    t.is(team2.result.settings.flags.pdf, false);
+});
+
+test('restricted team settings are preserved in PUT request', async t => {
+    const { getTeamWithUser } = t.context;
+    const { user, team } = await getTeamWithUser();
+
+    async function getTeamSettings() {
+        return await t.context.server.inject({
+            method: 'GET',
+            url: `/v3/teams/${team.id}`,
+            auth: {
+                strategy: 'simple',
+                credentials: { session: '', scope: ['team:write'] },
+                artifacts: user
+            },
+            headers: t.context.headers
+        });
+    }
+
+    // initial settings
+    const team0 = await getTeamSettings();
+
+    t.is(team0.statusCode, 200);
+
+    const team1 = await t.context.server.inject({
+        method: 'PUT',
+        url: `/v3/teams/${team.id}`,
+        auth: {
+            strategy: 'simple',
+            credentials: { session: '', scope: ['team:write'] },
+            artifacts: user
+        },
+        headers: t.context.headers,
+        payload: {
+            settings: {
+                default: {
+                    locale: 'de-DE'
+                },
+                flags: {
+                    pdf: true
+                },
+                css: '',
+                embed: {
+                    custom_embed: {
+                        text: 'Copy and paste this ID into your CMS',
+                        title: 'Chart ID',
+                        template: '%chart_id%'
+                    },
+                    preferred_embed: 'responsive'
+                }
+            }
+        }
+    });
+
+    t.is(team1.statusCode, 200);
+
+    // was able to edit settings.embed
+    t.is(team1.result.settings.embed.custom_embed.text, 'Copy and paste this ID into your CMS');
+    t.is(team1.result.settings.embed.custom_embed.title, 'Chart ID');
+
+    // was able to edit settings.default.local
+    t.is(team1.result.settings.default.locale, 'de-DE');
+
+    // was not able to edit settings.css
+    t.is(team1.result.settings.css, team0.result.settings.css);
+
+    // was not able to edit settings.flags
+    t.is(team1.result.settings.flags.pdf, false);
+
+    t.truthy(team1.result.updatedAt);
+
+    const team2 = await getTeamSettings();
+
+    // all changes preserved
+    t.is(team2.statusCode, 200);
+    t.is(team2.result.settings.embed.custom_embed.text, 'Copy and paste this ID into your CMS');
+    t.is(team2.result.settings.embed.custom_embed.title, 'Chart ID');
+    t.is(team2.result.settings.default.locale, 'de-DE');
+    t.is(team2.result.settings.css, team0.result.settings.css);
     t.is(team2.result.settings.flags.pdf, false);
 });

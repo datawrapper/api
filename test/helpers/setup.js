@@ -110,6 +110,15 @@ async function setup(options) {
                 },
                 flags: {
                     pdf: false
+                },
+                css: 'body {background:red;}',
+                embed: {
+                    custom_embed: {
+                        text: '',
+                        title: 'Chart ID',
+                        template: '%chart_id%'
+                    },
+                    preferred_embed: 'responsive'
                 }
             }
         });

@@ -182,8 +182,8 @@ async function getTeam(request, h) {
 async function editTeam(request, h) {
     const { auth, payload, params, server, method } = request;
     const { event, events } = server.app;
-
-    if (!server.methods.isAdmin(request)) {
+    const isAdmin = server.methods.isAdmin(request);
+    if (!isAdmin) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
         if (memberRole === ROLE_MEMBER) {
@@ -203,7 +203,16 @@ async function editTeam(request, h) {
     if (!team) return Boom.notFound();
 
     // allow plugins to filter team settings
-    await events.emit(event.TEAM_SETTINGS_FILTER, { payload: data, team, user: auth.artifacts });
+    const readOnlySettings = await events.emit(
+        event.TEAM_SETTINGS_FILTER,
+        {
+            payload: data,
+            team,
+            user: auth.artifacts,
+            isAdmin
+        },
+        { filter: 'first' }
+    );
 
     if (typeof data.settings === 'string') {
         data.settings = JSON.parse(data.settings);
@@ -212,6 +221,11 @@ async function editTeam(request, h) {
     if (method === 'patch') {
         // merge with existing data
         data.settings = assign(team.dataValues.settings, data.settings);
+    }
+
+    if (method === 'put') {
+        // retain any data not editable by user
+        data.settings = assign(readOnlySettings.settings, data.settings);
     }
 
     await Team.update(convertKeys(data, decamelize), {
