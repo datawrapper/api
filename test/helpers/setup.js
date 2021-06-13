@@ -109,6 +109,8 @@ async function setup(options) {
                     locale: 'en-US'
                 },
                 flags: {
+                    embed: true,
+                    byline: true,
                     pdf: false
                 },
                 css: 'body {background:red;}',

@@ -30,7 +30,11 @@ test.before(async t => {
     const { events, event } = server.app;
     events.on(event.TEAM_SETTINGS_FILTER, async ({ team, payload, user }) => {
         // check if the team supports certain settings
-        const prohibitedKeys = ['settings.flags', 'settings.css'];
+        const prohibitedKeys = [
+            'settings.flags',
+            'settings.css',
+            'settings.default.metadata.visualize'
+        ];
         const readOnlySettings = {};
         prohibitedKeys.forEach(key => {
             if (get(payload, key, null) !== null) {
@@ -319,23 +323,7 @@ test('restricted team settings are preserved in PUT request', async t => {
     const { getTeamWithUser } = t.context;
     const { user, team } = await getTeamWithUser();
 
-    async function getTeamSettings() {
-        return await t.context.server.inject({
-            method: 'GET',
-            url: `/v3/teams/${team.id}`,
-            auth: {
-                strategy: 'simple',
-                credentials: { session: '', scope: ['team:write'] },
-                artifacts: user
-            },
-            headers: t.context.headers
-        });
-    }
-
-    // initial settings
-    const team0 = await getTeamSettings();
-
-    t.is(team0.statusCode, 200);
+    const { settings } = team.dataValues;
 
     const team1 = await t.context.server.inject({
         method: 'PUT',
@@ -349,10 +337,20 @@ test('restricted team settings are preserved in PUT request', async t => {
         payload: {
             settings: {
                 default: {
-                    locale: 'de-DE'
+                    locale: 'de-DE',
+                    metadata: {
+                        publish: {
+                            'embed-width': 500,
+                            'embed-height': 300
+                        },
+                        visualize: {
+                            'x-grid': false
+                        }
+                    }
                 },
                 flags: {
-                    pdf: true
+                    pdf: true,
+                    nonexistentflag: true
                 },
                 css: '',
                 embed: {
@@ -367,30 +365,46 @@ test('restricted team settings are preserved in PUT request', async t => {
         }
     });
 
-    t.is(team1.statusCode, 200);
+    function testTeamSettings(team) {
+        t.is(team.statusCode, 200);
 
-    // was able to edit settings.embed
-    t.is(team1.result.settings.embed.custom_embed.text, 'Copy and paste this ID into your CMS');
-    t.is(team1.result.settings.embed.custom_embed.title, 'Chart ID');
+        // was able to edit settings.embed
+        t.is(team.result.settings.embed.custom_embed.text, 'Copy and paste this ID into your CMS');
+        t.is(team.result.settings.embed.custom_embed.title, 'Chart ID');
 
-    // was able to edit settings.default.local
-    t.is(team1.result.settings.default.locale, 'de-DE');
+        // was able to edit settings.default.local
+        t.is(team.result.settings.default.locale, 'de-DE');
 
-    // was not able to edit settings.css
-    t.is(team1.result.settings.css, team0.result.settings.css);
+        // protected settings.css preserved
+        t.is(team.result.settings.css, settings.css);
 
-    // was not able to edit settings.flags
-    t.is(team1.result.settings.flags.pdf, false);
+        // protected settings.flags preserved
+        t.deepEqual(team.result.settings.flags, settings.flags);
 
+        // metadata.publish saved, metadata.visualize dropped
+        t.deepEqual(team.result.settings.default.metadata, {
+            publish: {
+                'embed-width': 500,
+                'embed-height': 300
+            }
+        });
+    }
+
+    // check response
+    testTeamSettings(team1);
     t.truthy(team1.result.updatedAt);
 
-    const team2 = await getTeamSettings();
+    const team2 = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/teams/${team.id}`,
+        auth: {
+            strategy: 'simple',
+            credentials: { session: '', scope: ['team:write'] },
+            artifacts: user
+        },
+        headers: t.context.headers
+    });
 
-    // all changes preserved
-    t.is(team2.statusCode, 200);
-    t.is(team2.result.settings.embed.custom_embed.text, 'Copy and paste this ID into your CMS');
-    t.is(team2.result.settings.embed.custom_embed.title, 'Chart ID');
-    t.is(team2.result.settings.default.locale, 'de-DE');
-    t.is(team2.result.settings.css, team0.result.settings.css);
-    t.is(team2.result.settings.flags.pdf, false);
+    // all expected changes persist
+    testTeamSettings(team2);
 });
