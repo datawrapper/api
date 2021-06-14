@@ -325,45 +325,51 @@ test('restricted team settings are preserved in PUT request', async t => {
 
     const { settings } = team.dataValues;
 
-    const team1 = await t.context.server.inject({
-        method: 'PUT',
-        url: `/v3/teams/${team.id}`,
-        auth: {
-            strategy: 'simple',
-            credentials: { session: '', scope: ['team:write'] },
-            artifacts: user
-        },
-        headers: t.context.headers,
-        payload: {
-            settings: {
-                default: {
-                    locale: 'de-DE',
-                    metadata: {
-                        publish: {
-                            'embed-width': 500,
-                            'embed-height': 300
-                        },
-                        visualize: {
-                            'x-grid': false
-                        }
-                    }
-                },
-                flags: {
-                    pdf: true,
-                    nonexistentflag: true
-                },
-                css: '',
-                embed: {
-                    custom_embed: {
-                        text: 'Copy and paste this ID into your CMS',
-                        title: 'Chart ID',
-                        template: '%chart_id%'
+    const requestPayload = {
+        settings: {
+            default: {
+                locale: 'de-DE',
+                metadata: {
+                    publish: {
+                        'embed-width': 500,
+                        'embed-height': 300
                     },
-                    preferred_embed: 'responsive'
+                    visualize: {
+                        'x-grid': false
+                    }
                 }
+            },
+            flags: {
+                pdf: true,
+                nonexistentflag: true
+            },
+            css: '',
+            embed: {
+                custom_embed: {
+                    text: 'Copy and paste this ID into your CMS',
+                    title: 'Chart ID',
+                    template: '%chart_id%'
+                },
+                preferred_embed: 'responsive'
             }
         }
-    });
+    };
+
+    async function updateTeamSettings(payload) {
+        return await t.context.server.inject({
+            method: 'PUT',
+            url: `/v3/teams/${team.id}`,
+            auth: {
+                strategy: 'simple',
+                credentials: { session: '', scope: ['team:write'] },
+                artifacts: user
+            },
+            headers: t.context.headers,
+            payload
+        });
+    }
+
+    const team1 = await updateTeamSettings(requestPayload);
 
     function testTeamSettings(team) {
         t.is(team.statusCode, 200);
@@ -407,4 +413,12 @@ test('restricted team settings are preserved in PUT request', async t => {
 
     // all expected changes persist
     testTeamSettings(team2);
+
+    // PUT request can also delete nested items from the team settings
+    delete requestPayload.settings.default.metadata.publish['embed-width'];
+    delete requestPayload.settings.default.metadata.publish['embed-height'];
+    const team3 = await updateTeamSettings(requestPayload);
+    t.deepEqual(team3.result.settings.default.metadata, {
+        publish: {}
+    });
 });
