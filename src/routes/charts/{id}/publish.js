@@ -7,7 +7,11 @@ const set = require('lodash/set');
 const { prepareChart } = require('../../../utils/index.js');
 const { Op } = require('@datawrapper/orm').db;
 const { getScope } = require('@datawrapper/service-utils/l10n');
+const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 const { getEmbedCodes } = require('./utils');
+
+const configPath = findConfigPath();
+const config = require(configPath);
 
 module.exports = (server, options) => {
     // POST /v3/charts/{id}/publish
@@ -204,8 +208,8 @@ async function publishChart(request, h) {
     // log action that chart has been published
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
 
-    // refresh external data
-    if (!headers.origin) {
+    // refresh external data if request isn't coming from the app
+    if (headers.origin !== `http${config.frontend.https ? 's' : ''}://${config.frontend.domain}`) {
         try {
             await server.inject({
                 url: `/v3/charts/${chart.id}/data/refresh`,
