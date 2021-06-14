@@ -204,6 +204,18 @@ async function publishChart(request, h) {
     // log action that chart has been published
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
 
+    // refresh external data
+    if (!headers.origin) {
+        try {
+            await server.inject({
+                url: `/v3/charts/${chart.id}/data/refresh`,
+                method: 'POST',
+                auth,
+                headers
+            });
+        } catch (ex) {}
+    }
+
     // for image publishing and things that we want to (optionally)
     // make the user wait for and/or inform about in publish UI
     await server.app.events.emit(server.app.event.CHART_PUBLISHED, {
