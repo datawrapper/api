@@ -1,6 +1,8 @@
 const test = require('ava');
 const { setup } = require('../../../../test/helpers/setup');
 const get = require('lodash/get');
+const has = require('lodash/has');
+const set = require('lodash/set');
 
 test.before(async t => {
     const { server, getTeamWithUser, getUser, models, addToCleanup } = await setup({
@@ -29,14 +31,22 @@ test.before(async t => {
     const { events, event } = server.app;
     events.on(event.TEAM_SETTINGS_FILTER, async ({ team, payload, user }) => {
         // check if the team supports certain settings
-        const prohibitedKeys = ['settings.flags'];
+        const prohibitedKeys = [
+            'settings.flags',
+            'settings.css',
+            'settings.default.metadata.visualize'
+        ];
+        const readOnlySettings = {};
         prohibitedKeys.forEach(key => {
-            if (get(payload, key)) {
+            if (has(payload, key)) {
                 const keys = key.split('.');
                 const last = keys.pop();
+                const readOnlySetting = get(team.dataValues, key);
+                set(readOnlySettings, key, readOnlySetting);
                 delete get(payload, keys.join('.'))[last];
             }
         });
+        return readOnlySettings;
     });
 });
 
@@ -308,4 +318,110 @@ test("admins can't edit team restricted team settings", async t => {
 
     t.is(team2.statusCode, 200);
     t.is(team2.result.settings.flags.pdf, false);
+});
+
+test('restricted team settings are preserved in PUT request', async t => {
+    const { getTeamWithUser } = t.context;
+    const { user, team } = await getTeamWithUser();
+
+    const { settings } = team.dataValues;
+
+    const requestPayload = {
+        settings: {
+            default: {
+                locale: 'de-DE',
+                metadata: {
+                    publish: {
+                        'embed-width': 500,
+                        'embed-height': 300
+                    },
+                    visualize: {
+                        'x-grid': false
+                    }
+                }
+            },
+            flags: {
+                pdf: true,
+                nonexistentflag: true
+            },
+            css: '',
+            embed: {
+                custom_embed: {
+                    text: 'Copy and paste this ID into your CMS',
+                    title: 'Chart ID',
+                    template: '%chart_id%'
+                },
+                preferred_embed: 'responsive'
+            }
+        }
+    };
+
+    async function updateTeamSettings(payload) {
+        return await t.context.server.inject({
+            method: 'PUT',
+            url: `/v3/teams/${team.id}`,
+            auth: {
+                strategy: 'simple',
+                credentials: { session: '', scope: ['team:write'] },
+                artifacts: user
+            },
+            headers: t.context.headers,
+            payload
+        });
+    }
+
+    const team1 = await updateTeamSettings(requestPayload);
+
+    function testTeamSettings(team) {
+        t.is(team.statusCode, 200);
+
+        // was able to edit settings.embed
+        t.is(team.result.settings.embed.custom_embed.text, 'Copy and paste this ID into your CMS');
+        t.is(team.result.settings.embed.custom_embed.title, 'Chart ID');
+
+        // was able to edit settings.default.local
+        t.is(team.result.settings.default.locale, 'de-DE');
+
+        // protected settings.css preserved
+        t.is(team.result.settings.css, settings.css);
+
+        // protected settings.flags preserved
+        t.deepEqual(team.result.settings.flags, settings.flags);
+
+        // metadata.publish saved, metadata.visualize dropped
+        t.deepEqual(team.result.settings.default.metadata, {
+            publish: {
+                'embed-width': 500,
+                'embed-height': 300
+            }
+        });
+    }
+
+    // check response
+    testTeamSettings(team1);
+    t.truthy(team1.result.updatedAt);
+
+    const team2 = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/teams/${team.id}`,
+        auth: {
+            strategy: 'simple',
+            credentials: { session: '', scope: ['team:write'] },
+            artifacts: user
+        },
+        headers: t.context.headers
+    });
+
+    // all expected changes persist
+    testTeamSettings(team2);
+
+    // PUT request can also delete nested items from the team settings
+    delete requestPayload.settings.default.metadata.publish['embed-width'];
+    delete requestPayload.settings.default.metadata.publish['embed-height'];
+
+    const team3 = await updateTeamSettings(requestPayload);
+
+    t.deepEqual(team3.result.settings.default.metadata, {
+        publish: {}
+    });
 });
