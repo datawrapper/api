@@ -1,6 +1,7 @@
 const test = require('ava');
 const { setup } = require('../../../../test/helpers/setup');
 const get = require('lodash/get');
+const has = require('lodash/has');
 const set = require('lodash/set');
 
 test.before(async t => {
@@ -37,7 +38,7 @@ test.before(async t => {
         ];
         const readOnlySettings = {};
         prohibitedKeys.forEach(key => {
-            if (get(payload, key, null) !== null) {
+            if (has(payload, key)) {
                 const keys = key.split('.');
                 const last = keys.pop();
                 const readOnlySetting = get(team.dataValues, key);
@@ -417,7 +418,9 @@ test('restricted team settings are preserved in PUT request', async t => {
     // PUT request can also delete nested items from the team settings
     delete requestPayload.settings.default.metadata.publish['embed-width'];
     delete requestPayload.settings.default.metadata.publish['embed-height'];
+
     const team3 = await updateTeamSettings(requestPayload);
+
     t.deepEqual(team3.result.settings.default.metadata, {
         publish: {}
     });
