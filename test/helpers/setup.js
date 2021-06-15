@@ -164,6 +164,7 @@ async function destroyTeam(team) {
 async function destroyUser(user) {
     const {
         AccessToken,
+        Action,
         Chart,
         ChartPublic,
         Session,
@@ -172,6 +173,7 @@ async function destroyUser(user) {
         UserTeam
     } = require('@datawrapper/orm/models');
     await AccessToken.destroy({ where: { user_id: user.id }, force: true });
+    await Action.destroy({ where: { user_id: user.id }, force: true });
     await Session.destroy({ where: { user_id: user.id }, force: true });
     await ChartPublic.destroy({ where: { author_id: user.id }, force: true });
     await Chart.destroy({ where: { author_id: user.id }, force: true });
