@@ -1,43 +1,45 @@
 const test = require('ava');
-
-const { setup } = require('../../test/helpers/setup');
+const { createTheme, createUser, destroy, setup } = require('../../test/helpers/setup');
 
 test.before(async t => {
-    const { server, createTheme, getUser } = await setup({ usePlugins: false });
-    t.context.server = server;
-    const { user, session } = await getUser();
-
+    t.context.server = await setup({ usePlugins: false });
+    t.context.userObj = await createUser(t.context.server);
     t.context.auth = {
         strategy: 'session',
-        credentials: session,
-        artifacts: user
+        credentials: t.context.userObj.session,
+        artifacts: t.context.userObj.user
     };
+    t.context.themes = await Promise.all([
+        await createTheme({
+            title: 'Test Theme',
+            id: 'my-theme-1',
+            data: { test: 'test', deep: { key: [1, 2, 3] } },
+            less: 'h1 { z-index: 1 }',
+            assets: {}
+        }),
+        await createTheme({
+            title: 'Test Theme 2',
+            id: 'my-theme-2',
+            data: { test: 'test', deep: { key: [3, 4, 5] } },
+            extend: 'my-theme-1',
+            less: 'h1 { z-index: 2 }',
+            assets: { key1: 1, key2: { deep: true } }
+        }),
+        await createTheme({
+            title: 'Test Theme 3',
+            id: 'my-theme-3',
+            data: { test: 'test3' },
+            extend: 'my-theme-2',
+            less: 'h1 { z-index: 3 }',
+            assets: { key1: 1, key2: { blue: false } }
+        })
+    ]);
+});
 
-    t.context.theme = await createTheme({
-        title: 'Test Theme',
-        id: 'my-theme-1',
-        data: { test: 'test', deep: { key: [1, 2, 3] } },
-        less: 'h1 { z-index: 1 }',
-        assets: {}
-    });
-
-    t.context.secondTheme = await createTheme({
-        title: 'Test Theme 2',
-        id: 'my-theme-2',
-        data: { test: 'test', deep: { key: [3, 4, 5] } },
-        extend: 'my-theme-1',
-        less: 'h1 { z-index: 2 }',
-        assets: { key1: 1, key2: { deep: true } }
-    });
-
-    t.context.thirdTheme = await createTheme({
-        title: 'Test Theme 3',
-        id: 'my-theme-3',
-        data: { test: 'test3' },
-        extend: 'my-theme-2',
-        less: 'h1 { z-index: 3 }',
-        assets: { key1: 1, key2: { blue: false } }
-    });
+test.after.always(async t => {
+    if (t.context.themes) {
+        await destroy(...t.context.themes);
+    }
 });
 
 test('Should be possible to get theme data', async t => {

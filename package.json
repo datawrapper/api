@@ -27,8 +27,6 @@
         "test:coverage": "DW_CONFIG_PATH=${DW_CONFIG_PATH-tests/config.local.js} nyc --reporter=html --reporter=text ava --verbose",
         "test:update-snapshots": "DW_CONFIG_PATH=${DW_CONFIG_PATH-test/config.local.js} ava --update-snapshots",
         "update-translations": "node scripts/update-translations.js",
-        "clean:db": "DW_CONFIG_PATH=test/config.local.js node test/helpers/teardown.js",
-        "clean:db:ci": "DW_CONFIG_PATH=test/config.ci.js node test/helpers/teardown.js",
         "dev": "NODE_ENV=development nodemon src/index.js",
         "api": "node src/index.js",
         "start": "node src/index.js",
@@ -77,7 +75,7 @@
     "dependencies": {
         "@datawrapper/chart-core": "^8.35.6",
         "@datawrapper/locales": "^1.2.4",
-        "@datawrapper/orm": "^3.23.0",
+        "@datawrapper/orm": "^3.24.0",
         "@datawrapper/schemas": "^1.12.0",
         "@datawrapper/service-utils": "^1.0.2",
         "@hapi/boom": "^9.1.2",

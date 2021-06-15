@@ -1,6 +1,5 @@
 const test = require('ava');
-
-const { setup } = require('../../../test/helpers/setup');
+const { createUser, destroy, setup } = require('../../../test/helpers/setup');
 
 function parseSetCookie(string) {
     const cookie = {};
@@ -14,29 +13,22 @@ function parseSetCookie(string) {
 }
 
 test.before(async t => {
-    const { server, models, createTheme, getUser, addToCleanup } = await setup({
-        usePlugins: false
-    });
-    await createTheme({
-        id: 'default',
-        data: {},
-        assets: {}
-    });
-    const data = await getUser();
-
-    t.context.server = server;
-    t.context.addToCleanup = addToCleanup;
-    t.context.models = models;
+    t.context.server = await setup({ usePlugins: false });
+    t.context.userObj = await createUser(t.context.server);
     t.context.auth = {
         strategy: 'session',
-        credentials: data.session,
-        artifacts: data.user
+        credentials: t.context.userObj.session,
+        artifacts: t.context.userObj.user
     };
     t.context.headers = {
         cookie: 'crumb=abc',
         'X-CSRF-Token': 'abc',
         referer: 'http://localhost'
     };
+});
+
+test.after.always(async t => {
+    await destroy(...Object.values(t.context.userObj));
 });
 
 test('Login token can be created and used once', async t => {
@@ -174,8 +166,7 @@ test('Login token with chart ID can be created and forwards correctly', async t 
 });
 
 test('Login token expires after five minutes', async t => {
-    const { auth, headers, models } = t.context;
-    const { AccessToken } = models;
+    const { auth, headers } = t.context;
 
     const res = await t.context.server.inject({
         method: 'POST',
@@ -187,6 +178,7 @@ test('Login token expires after five minutes', async t => {
     t.is(res.statusCode, 201);
     t.is(typeof res.result.token, 'string');
 
+    const { AccessToken } = require('@datawrapper/orm/models');
     await AccessToken.update(
         {
             createdAt: new Date().getTime() - 6 * 60 * 1000 // 6m ago

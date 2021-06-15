@@ -25,7 +25,6 @@ test-run:  ## Run command specified by the variable 'cmd' in the testing node co
 	$(docker_compose) run --rm \
 		-e "DW_CONFIG_PATH=$(DW_CONFIG_PATH)" \
 		-e "NODE_ENV=test" \
-		 # -v "$$(pwd)/../../libs/orm:/app/node_modules/@datawrapper/orm:ro"
 		node $(cmd)
 
 .PHONY: test-shell

@@ -264,10 +264,14 @@ make test-teardown
 
 ##### Linking npm packages into unit tests
 
-If you'd like to run the unit tests with a linked npm package, mount it as a readonly Docker volume.
-See the commented out code in the Makefile target `test-run`. Don't forget to add backslash to the
-end of the line after you uncomment it. Example:
+If you'd like to run the unit tests with a linked npm package, mount it as a readonly Docker volume,
+add a volume to the docker compose call in the Makefile target `test-run` like this:
 
 ``` makefile
--v "$$(pwd)/../../libs/orm:/app/node_modules/@datawrapper/orm:ro" \
+test-run:  ## Run command specified by the variable 'cmd' in the testing node container
+	$(docker_compose) run --rm \
+		-e "DW_CONFIG_PATH=$(DW_CONFIG_PATH)" \
+		-e "NODE_ENV=test" \
+        -v "$$(pwd)/../../libs/orm:/app/node_modules/@datawrapper/orm:ro" \
+		node $(cmd)
 ```
