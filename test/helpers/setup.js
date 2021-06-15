@@ -151,8 +151,9 @@ async function createTeamWithUser(server, role = 'owner') {
 }
 
 async function destroyTeam(team) {
-    const { TeamProduct } = require('@datawrapper/orm/models');
+    const { TeamProduct, UserTeam } = require('@datawrapper/orm/models');
     await TeamProduct.destroy({ where: { organization_id: team.id }, force: true });
+    await UserTeam.destroy({ where: { organization_id: team.id }, force: true });
     await team.destroy({ force: true });
 }
 
