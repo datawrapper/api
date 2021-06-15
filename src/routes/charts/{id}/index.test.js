@@ -288,43 +288,51 @@ test('Users can get only published charts', async t => {
         }
     });
     const chartId = resChart.result.id;
-    const { session } = await t.context.getUser();
+    let userObj;
+    try {
+        userObj = await createUser(t.context.server);
+        const { session } = userObj;
 
-    const resUnpublishedChart = await t.context.server.inject({
-        method: 'GET',
-        url: `/v3/charts/${chartId}`,
-        headers: {
-            cookie: `DW-SESSION=${session.id}; crumb=abc`
+        const resUnpublishedChart = await t.context.server.inject({
+            method: 'GET',
+            url: `/v3/charts/${chartId}`,
+            headers: {
+                cookie: `DW-SESSION=${session.id}; crumb=abc`
+            }
+        });
+
+        t.is(resUnpublishedChart.statusCode, 401);
+
+        await t.context.server.inject({
+            method: 'POST',
+            url: `/v3/charts/${chartId}/publish`,
+            auth: t.context.auth,
+            headers: t.context.headers
+        });
+        await t.context.server.inject({
+            method: 'PUT',
+            url: `/v3/charts/${chartId}`,
+            auth: t.context.auth,
+            headers: t.context.headers,
+            payload: {
+                title: 'New version'
+            }
+        });
+
+        const resPublishedChart = await t.context.server.inject({
+            method: 'GET',
+            url: `/v3/charts/${chartId}`,
+            headers: {
+                cookie: `DW-SESSION=${session.id}; crumb=abc`
+            }
+        });
+
+        t.is(resPublishedChart.statusCode, 200);
+        t.is(resPublishedChart.result.id, resChart.result.id);
+        t.is(resPublishedChart.result.title, 'Published version');
+    } finally {
+        if (userObj) {
+            await destroy(...Object.values(userObj));
         }
-    });
-
-    t.is(resUnpublishedChart.statusCode, 401);
-
-    await t.context.server.inject({
-        method: 'POST',
-        url: `/v3/charts/${chartId}/publish`,
-        auth: t.context.auth,
-        headers: t.context.headers
-    });
-    await t.context.server.inject({
-        method: 'PUT',
-        url: `/v3/charts/${chartId}`,
-        auth: t.context.auth,
-        headers: t.context.headers,
-        payload: {
-            title: 'New version'
-        }
-    });
-
-    const resPublishedChart = await t.context.server.inject({
-        method: 'GET',
-        url: `/v3/charts/${chartId}`,
-        headers: {
-            cookie: `DW-SESSION=${session.id}; crumb=abc`
-        }
-    });
-
-    t.is(resPublishedChart.statusCode, 200);
-    t.is(resPublishedChart.result.id, resChart.result.id);
-    t.is(resPublishedChart.result.title, 'Published version');
+    }
 });

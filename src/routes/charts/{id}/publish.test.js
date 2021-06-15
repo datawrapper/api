@@ -1,17 +1,13 @@
 const test = require('ava');
-const { setup } = require('../../../../test/helpers/setup');
+const { createUser, destroy, setup } = require('../../../../test/helpers/setup');
 
 test.before(async t => {
-    const { server, getUser } = await setup({ usePlugins: false });
-    const data = await getUser('admin');
-
-    t.context.server = server;
-    t.context.data = data;
-    t.context.getUser = getUser;
+    t.context.server = await setup({ usePlugins: false });
+    t.context.userObj = await createUser(t.context.server, 'admin');
     t.context.auth = {
         strategy: 'session',
-        credentials: data.session,
-        artifacts: data.user
+        credentials: t.context.userObj.session,
+        artifacts: t.context.userObj.user
     };
     t.context.headers = {
         cookie: 'crumb=abc',
@@ -63,6 +59,10 @@ test.before(async t => {
     });
 });
 
+test.after.always(async t => {
+    await destroy(...Object.values(t.context.userObj), t.context.publicChart, t.context.chart);
+});
+
 test('GET /charts/{id}/publish/data returns the latest data of an unpublished chart', async t => {
     const { chart } = t.context;
     const res = await t.context.server.inject({
@@ -112,15 +112,23 @@ test('GET /charts/{id}/publish/data returns 404 for unpublished chart when publi
 
 test('GET /charts/{id}/publish/data returns 401 for unpublished chart when requested as another user', async t => {
     const { chart } = t.context;
-    const { session } = await t.context.getUser();
-    const res = await t.context.server.inject({
-        method: 'GET',
-        url: `/v3/charts/${chart.id}/publish/data`,
-        headers: {
-            cookie: `DW-SESSION=${session.id}; crumb=abc`
+    let userObj;
+    try {
+        userObj = await createUser(t.context.server);
+        const { session } = userObj;
+        const res = await t.context.server.inject({
+            method: 'GET',
+            url: `/v3/charts/${chart.id}/publish/data`,
+            headers: {
+                cookie: `DW-SESSION=${session.id}; crumb=abc`
+            }
+        });
+        t.is(res.statusCode, 401);
+    } finally {
+        if (userObj) {
+            await destroy(...Object.values(userObj));
         }
-    });
-    t.is(res.statusCode, 401);
+    }
 });
 
 test('GET /charts/{id}/publish/data returns the data when requested as another user with ott', async t => {
@@ -131,24 +139,32 @@ test('GET /charts/{id}/publish/data returns the data when requested as another u
         chart_id: chart.id,
         token
     });
-    const { session } = await t.context.getUser();
+    let userObj;
+    try {
+        userObj = await createUser(t.context.server);
+        const { session } = userObj;
 
-    const resWrong = await t.context.server.inject({
-        method: 'GET',
-        url: `/v3/charts/${chart.id}/publish/data?ott=spam`,
-        headers: {
-            cookie: `DW-SESSION=${session.id}; crumb=abc`
-        }
-    });
-    t.is(resWrong.statusCode, 401);
+        const resWrong = await t.context.server.inject({
+            method: 'GET',
+            url: `/v3/charts/${chart.id}/publish/data?ott=spam`,
+            headers: {
+                cookie: `DW-SESSION=${session.id}; crumb=abc`
+            }
+        });
+        t.is(resWrong.statusCode, 401);
 
-    const res = await t.context.server.inject({
-        method: 'GET',
-        url: `/v3/charts/${chart.id}/publish/data?ott=${token}`,
-        headers: {
-            cookie: `DW-SESSION=${session.id}; crumb=abc`
+        const res = await t.context.server.inject({
+            method: 'GET',
+            url: `/v3/charts/${chart.id}/publish/data?ott=${token}`,
+            headers: {
+                cookie: `DW-SESSION=${session.id}; crumb=abc`
+            }
+        });
+        t.is(res.statusCode, 200);
+        t.is(res.result.chart.metadata.foo, 'Unpublished chart');
+    } finally {
+        if (userObj) {
+            await destroy(...Object.values(userObj));
         }
-    });
-    t.is(res.statusCode, 200);
-    t.is(res.result.chart.metadata.foo, 'Unpublished chart');
+    }
 });
