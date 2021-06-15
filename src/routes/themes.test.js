@@ -1,5 +1,5 @@
 const test = require('ava');
-const { createTheme, createUser, destroy, setup } = require('../../test/helpers/setup');
+const { createUser, destroy, setup } = require('../../test/helpers/setup');
 
 test.before(async t => {
     t.context.server = await setup({ usePlugins: false });
@@ -9,29 +9,36 @@ test.before(async t => {
         credentials: t.context.userObj.session,
         artifacts: t.context.userObj.user
     };
+    const { Theme } = require('@datawrapper/orm/models');
     t.context.themes = await Promise.all([
-        await createTheme({
-            title: 'Test Theme',
-            id: 'my-theme-1',
-            data: { test: 'test', deep: { key: [1, 2, 3] } },
-            less: 'h1 { z-index: 1 }',
-            assets: {}
+        await Theme.findOrCreate({
+            where: { id: 'my-theme-1' },
+            defaults: {
+                title: 'Test Theme',
+                data: { test: 'test', deep: { key: [1, 2, 3] } },
+                less: 'h1 { z-index: 1 }',
+                assets: {}
+            }
         }),
-        await createTheme({
-            title: 'Test Theme 2',
-            id: 'my-theme-2',
-            data: { test: 'test', deep: { key: [3, 4, 5] } },
-            extend: 'my-theme-1',
-            less: 'h1 { z-index: 2 }',
-            assets: { key1: 1, key2: { deep: true } }
+        await Theme.findOrCreate({
+            where: { id: 'my-theme-2' },
+            defaults: {
+                title: 'Test Theme 2',
+                data: { test: 'test', deep: { key: [3, 4, 5] } },
+                extend: 'my-theme-1',
+                less: 'h1 { z-index: 2 }',
+                assets: { key1: 1, key2: { deep: true } }
+            }
         }),
-        await createTheme({
-            title: 'Test Theme 3',
-            id: 'my-theme-3',
-            data: { test: 'test3' },
-            extend: 'my-theme-2',
-            less: 'h1 { z-index: 3 }',
-            assets: { key1: 1, key2: { blue: false } }
+        await Theme.findOrCreate({
+            where: { id: 'my-theme-3' },
+            defaults: {
+                title: 'Test Theme 3',
+                data: { test: 'test3' },
+                extend: 'my-theme-2',
+                less: 'h1 { z-index: 3 }',
+                assets: { key1: 1, key2: { blue: false } }
+            }
         })
     ]);
 });

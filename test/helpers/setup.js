@@ -150,11 +150,6 @@ async function createTeamWithUser(server, role = 'owner') {
     return { team, user, session, token, addUser };
 }
 
-function createTheme(props) {
-    const { Theme } = require('@datawrapper/orm/models');
-    return Theme.create(props);
-}
-
 async function destroyTeam(team) {
     const { TeamProduct } = require('@datawrapper/orm/models');
     await TeamProduct.destroy({ where: { organization_id: team.id }, force: true });
@@ -203,7 +198,6 @@ async function destroy(...instances) {
 
 module.exports = {
     createTeamWithUser,
-    createTheme,
     createUser,
     destroy,
     getCredentials,
