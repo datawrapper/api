@@ -9,6 +9,45 @@ const {
     setup
 } = require('../../../../test/helpers/setup');
 
+async function updateTeamSettings(server, headers, user, team, payload) {
+    return await server.inject({
+        method: 'PUT',
+        url: `/v3/teams/${team.id}`,
+        auth: {
+            strategy: 'simple',
+            credentials: { session: '', scope: ['team:write'] },
+            artifacts: user
+        },
+        headers: headers,
+        payload
+    });
+}
+
+function testTeamSettings(t, team, settings) {
+    t.is(team.statusCode, 200);
+
+    // was able to edit settings.embed
+    t.is(team.result.settings.embed.custom_embed.text, 'Copy and paste this ID into your CMS');
+    t.is(team.result.settings.embed.custom_embed.title, 'Chart ID');
+
+    // was able to edit settings.default.local
+    t.is(team.result.settings.default.locale, 'de-DE');
+
+    // protected settings.css preserved
+    t.is(team.result.settings.css, settings.css);
+
+    // protected settings.flags preserved
+    t.deepEqual(team.result.settings.flags, settings.flags);
+
+    // metadata.publish saved, metadata.visualize dropped
+    t.deepEqual(team.result.settings.default.metadata, {
+        publish: {
+            'embed-width': 500,
+            'embed-height': 300
+        }
+    });
+}
+
 test.before(async t => {
     t.context.server = await setup({ usePlugins: false });
     t.context.teamObj = await createTeamWithUser(t.context.server);
@@ -431,52 +470,16 @@ test('restricted team settings are preserved in PUT request', async t => {
             }
         };
 
-        async function updateTeamSettings(payload) {
-            return await t.context.server.inject({
-                method: 'PUT',
-                url: `/v3/teams/${team.id}`,
-                auth: {
-                    strategy: 'simple',
-                    credentials: { session: '', scope: ['team:write'] },
-                    artifacts: user
-                },
-                headers: t.context.headers,
-                payload
-            });
-        }
-
-        const team1 = await updateTeamSettings(requestPayload);
-
-        function testTeamSettings(team) {
-            t.is(team.statusCode, 200);
-
-            // was able to edit settings.embed
-            t.is(
-                team.result.settings.embed.custom_embed.text,
-                'Copy and paste this ID into your CMS'
-            );
-            t.is(team.result.settings.embed.custom_embed.title, 'Chart ID');
-
-            // was able to edit settings.default.local
-            t.is(team.result.settings.default.locale, 'de-DE');
-
-            // protected settings.css preserved
-            t.is(team.result.settings.css, settings.css);
-
-            // protected settings.flags preserved
-            t.deepEqual(team.result.settings.flags, settings.flags);
-
-            // metadata.publish saved, metadata.visualize dropped
-            t.deepEqual(team.result.settings.default.metadata, {
-                publish: {
-                    'embed-width': 500,
-                    'embed-height': 300
-                }
-            });
-        }
+        const team1 = await updateTeamSettings(
+            t.context.server,
+            t.context.headers,
+            user,
+            team,
+            requestPayload
+        );
 
         // check response
-        testTeamSettings(team1);
+        testTeamSettings(t, team1, settings);
         t.truthy(team1.result.updatedAt);
 
         const team2 = await t.context.server.inject({
@@ -491,13 +494,19 @@ test('restricted team settings are preserved in PUT request', async t => {
         });
 
         // all expected changes persist
-        testTeamSettings(team2);
+        testTeamSettings(t, team2, settings);
 
         // PUT request can also delete nested items from the team settings
         delete requestPayload.settings.default.metadata.publish['embed-width'];
         delete requestPayload.settings.default.metadata.publish['embed-height'];
 
-        const team3 = await updateTeamSettings(requestPayload);
+        const team3 = await updateTeamSettings(
+            t.context.server,
+            t.context.headers,
+            user,
+            team,
+            requestPayload
+        );
 
         t.deepEqual(team3.result.settings.default.metadata, {
             publish: {}
