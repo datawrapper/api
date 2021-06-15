@@ -150,8 +150,19 @@ async function createTeamWithUser(server, role = 'owner') {
     return { team, user, session, token, addUser };
 }
 
+async function destroyChart(chart) {
+    const { Chart, ChartPublic } = require('@datawrapper/orm/models');
+    await ChartPublic.destroy({ where: { id: chart.id }, force: true });
+    await Chart.destroy({ where: { forked_from: chart.id }, force: true });
+    await chart.destroy({ force: true });
+}
+
 async function destroyTeam(team) {
-    const { TeamProduct, UserTeam } = require('@datawrapper/orm/models');
+    const { Chart, TeamProduct, UserTeam } = require('@datawrapper/orm/models');
+    const charts = await Chart.findAll({ where: { organization_id: team.id } });
+    for (const chart of charts) {
+        await destroyChart(chart);
+    }
     await TeamProduct.destroy({ where: { organization_id: team.id }, force: true });
     await UserTeam.destroy({ where: { organization_id: team.id }, force: true });
     await team.destroy({ force: true });
@@ -162,7 +173,6 @@ async function destroyUser(user) {
         AccessToken,
         Action,
         Chart,
-        ChartPublic,
         Session,
         UserData,
         UserProduct,
@@ -171,8 +181,10 @@ async function destroyUser(user) {
     await AccessToken.destroy({ where: { user_id: user.id }, force: true });
     await Action.destroy({ where: { user_id: user.id }, force: true });
     await Session.destroy({ where: { user_id: user.id }, force: true });
-    await ChartPublic.destroy({ where: { author_id: user.id }, force: true });
-    await Chart.destroy({ where: { author_id: user.id }, force: true });
+    const charts = await Chart.findAll({ where: { author_id: user.id } });
+    for (const chart of charts) {
+        await destroyChart(chart);
+    }
     await UserData.destroy({ where: { user_id: user.id }, force: true });
     await UserProduct.destroy({ where: { user_id: user.id }, force: true });
     await UserTeam.destroy({ where: { user_id: user.id }, force: true });
