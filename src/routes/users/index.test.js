@@ -69,9 +69,11 @@ test('It should be possible to create a user, login and logout', async t => {
         t.is(res.statusCode, 205);
         t.false(res.headers['set-cookie'].join().includes(cookieString));
     } finally {
-        const { User } = require('@datawrapper/orm/models');
-        const user = await User.findByPk(userId);
-        destroy(user);
+        if (userId) {
+            const { User } = require('@datawrapper/orm/models');
+            const user = await User.findByPk(userId);
+            await destroy(user);
+        }
     }
 });
 
@@ -97,8 +99,10 @@ test('New user passwords should be saved as bcrypt hash', async t => {
 
         userId = result.id;
     } finally {
-        const user = await User.findByPk(userId);
-        destroy(user);
+        if (userId) {
+            const user = await User.findByPk(userId);
+            await destroy(user);
+        }
     }
 });
 
@@ -123,8 +127,10 @@ test("New users can't set their role to admin", async t => {
         t.is(user.role, 'pending');
         userId = result.id;
     } finally {
-        const user = await User.findByPk(userId);
-        destroy(user);
+        if (userId) {
+            const user = await User.findByPk(userId);
+            await destroy(user);
+        }
     }
 });
 
@@ -353,7 +359,9 @@ test('It should be possible to resend the activation link up to two times', asyn
 
         t.is(res.statusCode, 429);
     } finally {
-        const user = await User.findByPk(userId);
-        destroy(user);
+        if (userId) {
+            const user = await User.findByPk(userId);
+            await destroy(user);
+        }
     }
 });
