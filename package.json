@@ -75,7 +75,7 @@
     "dependencies": {
         "@datawrapper/chart-core": "^8.35.6",
         "@datawrapper/locales": "^1.2.4",
-        "@datawrapper/orm": "^3.24.0",
+        "@datawrapper/orm": "^3.25.0",
         "@datawrapper/schemas": "^1.12.0",
         "@datawrapper/service-utils": "^1.0.2",
         "@hapi/boom": "^9.1.2",
