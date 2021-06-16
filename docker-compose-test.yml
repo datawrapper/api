@@ -13,7 +13,7 @@ services:
     depends_on:
       - mysql
     volumes:
-      - ".:/app"
+      - ".:/app:ro"
 networks:
   default:
     driver: overlay
