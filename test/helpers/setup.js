@@ -1,4 +1,5 @@
 const path = require('path');
+const { ForeignKeyConstraintError } = require('sequelize');
 const { addScope } = require('@datawrapper/service-utils/l10n');
 const { init } = require('../../src/server');
 const { nanoid } = require('nanoid');
@@ -188,7 +189,15 @@ async function destroyUser(user) {
     await UserData.destroy({ where: { user_id: user.id }, force: true });
     await UserProduct.destroy({ where: { user_id: user.id }, force: true });
     await UserTeam.destroy({ where: { user_id: user.id }, force: true });
-    await user.destroy({ force: true });
+    try {
+        await user.destroy({ force: true });
+    } catch (e) {
+        if (e instanceof ForeignKeyConstraintError) {
+            // TODO Don't just log and ignore this error, but rather figure out how to delete the
+            // associated model instances correctly.
+            console.error(e);
+        }
+    }
 }
 
 async function destroy(...instances) {
