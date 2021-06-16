@@ -199,7 +199,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             const sessionType = request.auth.credentials.data.get('data').type;
             server.logger.info(`SESSION TYPE ${sessionType}`); // TODO Remove this debug logging.
             if (sessionType === 'token') {
-                h.state(CSRF_COOKIE_NAME, request.state.crumb, {
+                h.state(CSRF_COOKIE_NAME, request.state[CSRF_COOKIE_NAME], {
                     ...CSRF_COOKIE_OPTIONS,
                     isSameSite: 'None'
                 });
