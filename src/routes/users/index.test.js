@@ -169,7 +169,6 @@ test('Admin can sort users by creation date - Ascending', async t => {
         }
     });
 
-    t.log(res);
     t.is(res.statusCode, 200);
     const sortedDates = sortBy(res.result.list.map(d => d.createdAt));
     t.deepEqual(
@@ -189,7 +188,6 @@ test('Admin can sort users by creation date - Descending', async t => {
         }
     });
 
-    t.log(res);
     t.is(res.statusCode, 200);
     const sortedDates = sortBy(res.result.list.map(d => d.createdAt));
     sortedDates.reverse();

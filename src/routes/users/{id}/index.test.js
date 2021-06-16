@@ -93,7 +93,7 @@ test('Users endpoints should return products for admins', async t => {
             }
         ]);
     } finally {
-        destroy(userProduct, product);
+        await destroy(userProduct, product);
     }
 });
 

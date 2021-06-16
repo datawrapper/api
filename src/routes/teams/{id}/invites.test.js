@@ -75,6 +75,6 @@ test('owners can invite new users to a team', async t => {
         t.truthy(user.activate_token);
         t.is(team.statusCode, 201);
     } finally {
-        destroy(user);
+        await destroy(user);
     }
 });

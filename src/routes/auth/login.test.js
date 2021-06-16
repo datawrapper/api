@@ -103,9 +103,11 @@ test("Login set's correct cookie", async t => {
 
         t.is(maxAge, 30);
     } finally {
-        const { Session } = require('@datawrapper/orm/models');
-        const session = await Session.findByPk(sessionId);
-        destroy(session);
+        if (sessionId) {
+            const { Session } = require('@datawrapper/orm/models');
+            const session = await Session.findByPk(sessionId);
+            await destroy(session);
+        }
     }
 });
 
@@ -238,6 +240,6 @@ test('Login and logout updates session fields', async t => {
         const session2 = await Session.findByPk(sessionId);
         t.is(session2, null);
     } finally {
-        destroy(session);
+        await destroy(session);
     }
 });
