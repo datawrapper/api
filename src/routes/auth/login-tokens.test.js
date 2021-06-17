@@ -63,6 +63,45 @@ test('Login token can be created and used once', async t => {
     t.is(res3.statusCode, 404);
 });
 
+test('Login token crumb has SameSite: None', async t => {
+    const { auth, headers } = t.context;
+
+    const res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/login-tokens',
+        auth,
+        headers
+    });
+
+    t.is(res.statusCode, 201);
+    t.is(typeof res.result.token, 'string');
+
+    const res2 = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/auth/login/${res.result.token}`
+    });
+
+    const cookie = parseSetCookie(res2.headers['set-cookie'].find(s => s.includes(`DW-SESSION`)));
+
+    t.truthy(res2.result['DW-SESSION']);
+    t.is(res2.statusCode, 302);
+    t.is(cookie.SameSite, 'None');
+
+    const res3 = await t.context.server.inject({
+        method: 'GET',
+        headers: {
+            cookie: `DW-SESSION=${res2.result['DW-SESSION']}`
+        },
+        url: `/v3/me`
+    });
+
+    const crumbCookie = parseSetCookie(res3.headers['set-cookie'].find(s => s.includes(`crumb`)));
+
+    t.truthy(crumbCookie.crumb);
+    t.is(res3.statusCode, 200);
+    t.is(crumbCookie.SameSite, 'None');
+});
+
 test('Login token can be created and deleted', async t => {
     const { auth, headers } = t.context;
 
