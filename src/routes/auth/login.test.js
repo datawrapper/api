@@ -66,7 +66,7 @@ test('Login fails with incorrect credentials', async t => {
     t.is(res.statusCode, 401);
 });
 
-test("Login set's correct cookie", async t => {
+test('Login sets correct cookie', async t => {
     let sessionId;
     try {
         let res = await t.context.server.inject({
@@ -78,7 +78,7 @@ test("Login set's correct cookie", async t => {
             }
         });
 
-        let cookie = parseSetCookie(res.headers['set-cookie'].find(s => s.includes(`DW-SESSION`)));
+        let cookie = parseSetCookie(res.headers['set-cookie'].find(s => s.includes('DW-SESSION')));
         t.log('session', cookie['DW-SESSION']);
         sessionId = cookie['DW-SESSION'];
         let maxAge = cookie['Max-Age'] / 24 / 60 / 60; // convert to seconds
@@ -102,6 +102,46 @@ test("Login set's correct cookie", async t => {
         maxAge = cookie['Max-Age'] / 24 / 60 / 60; // convert to seconds
 
         t.is(maxAge, 30);
+    } finally {
+        if (sessionId) {
+            const { Session } = require('@datawrapper/orm/models');
+            const session = await Session.findByPk(sessionId);
+            await destroy(session);
+        }
+    }
+});
+
+test('Login sets crumb cookie with SameSite: Lax', async t => {
+    let sessionId;
+    try {
+        let res = await t.context.server.inject({
+            method: 'POST',
+            url: '/v3/auth/login',
+            payload: {
+                email: t.context.user.email,
+                password: 'test-password'
+            }
+        });
+
+        const cookie = parseSetCookie(
+            res.headers['set-cookie'].find(s => s.includes('DW-SESSION'))
+        );
+        t.log('session', cookie['DW-SESSION']);
+        sessionId = cookie['DW-SESSION'];
+
+        res = await t.context.server.inject({
+            method: 'GET',
+            url: '/v3/me',
+            headers: {
+                cookie: `DW-SESSION=${sessionId}`
+            }
+        });
+
+        const crumbCookie = parseSetCookie(
+            res.headers['set-cookie'].find(s => s.includes('crumb'))
+        );
+        t.truthy(crumbCookie.crumb);
+        t.is(crumbCookie.SameSite, 'Lax');
     } finally {
         if (sessionId) {
             const { Session } = require('@datawrapper/orm/models');
