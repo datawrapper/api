@@ -1,5 +1,4 @@
 const test = require('ava');
-
 const { findLessVariables, createFontEntries, flatten } = require('./compile-css.js');
 
 test('should create font rule declarations', t => {

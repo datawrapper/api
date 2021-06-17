@@ -1,11 +1,8 @@
-require('dotenv').config({
-    path: require('path').resolve('../../utils/docker/.datawrapper_env')
-});
-
 module.exports = {
     general: {
         localChartAssetRoot: '/tmp/data',
-        localChartPublishRoot: '/tmp/charts'
+        localChartPublishRoot: '/tmp/charts',
+        imageDomain: 'charts.datawrapper.local/preview'
     },
     frontend: {
         domain: 'localhost',
@@ -21,13 +18,15 @@ module.exports = {
     },
     plugins: {},
     orm: {
+        chartIdSalt: 'TEST_SALT',
+        skipTableTest: true,
         db: {
             dialect: 'mysql',
-            host: 'localhost',
-            port: process.env.DW_DATABASE_HOST_PORT,
-            user: process.env.DW_DATABASE_USER,
-            password: process.env.DW_DATABASE_PASS,
-            database: process.env.DW_DATABASE_NAME
+            host: 'mysql',
+            port: 3306,
+            user: 'test',
+            password: 'test',
+            database: 'test'
         }
     }
 };
