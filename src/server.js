@@ -197,7 +197,6 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     server.ext('onPostAuth', (request, h) => {
         if (request.auth.credentials?.data?.get && request._states[CSRF_COOKIE_NAME]) {
             const sessionType = request.auth.credentials.data.get('data').type;
-            server.logger.info(`SESSION TYPE ${sessionType}`); // TODO Remove this debug logging.
             if (sessionType === 'token') {
                 request._states[CSRF_COOKIE_NAME].options.isSameSite = 'None';
             }
