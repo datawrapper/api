@@ -164,6 +164,7 @@
         "trailingComma": "none"
     },
     "ava": {
+        "cache": false,
         "files": [
             "**/*.test.js",
             "!plugins/**/*"
