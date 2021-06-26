@@ -130,7 +130,7 @@ async function exportChart(request, h) {
             })
         ).find(res => res.status === 'success' && res.data);
 
-        if (!result) return Boom.badImplementation();
+        if (!result) return Boom.badRequest();
 
         await request.server.methods.logAction(user.id, `chart/export/${params.format}`, params.id);
 
@@ -151,6 +151,7 @@ async function exportChart(request, h) {
             // this seems to be an orderly error
             return Boom[error.code](error.message);
         }
+
         // this is an unexpected error, so let's log it
         request.logger.error(error);
         return Boom.badImplementation();

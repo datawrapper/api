@@ -1,31 +1,24 @@
 const test = require('ava');
-
-const { setup } = require('../../../../test/helpers/setup');
+const { createUser, destroy, setup } = require('../../../../test/helpers/setup');
 
 test.before(async t => {
-    const { server, models, getUser, getTeamWithUser, getCredentials, addToCleanup } = await setup({
-        usePlugins: false
-    });
-    t.context.server = server;
+    t.context.server = await setup({ usePlugins: false });
+    t.context.userObj = await createUser(t.context.server);
+    t.context.adminObj = await createUser(t.context.server, 'admin');
+});
 
-    t.context.user = await getUser();
-    t.context.admin = await getUser('admin');
-    t.context.models = models;
-
-    t.context.getUser = getUser;
-    t.context.getTeamWithUser = getTeamWithUser;
-    t.context.getCredentials = getCredentials;
-    t.context.addToCleanup = addToCleanup;
+test.after.always(async t => {
+    await destroy(...Object.values(t.context.userObj), ...Object.values(t.context.adminObj));
 });
 
 test('/v3/users/:id/setup creates token, token can later be emptied', async t => {
-    let [admin, { user }] = await Promise.all([t.context.getUser('admin'), t.context.getUser()]);
-
+    let { user } = t.context.userObj;
+    const { session: adminSession } = t.context.adminObj;
     let res = await t.context.server.inject({
         method: 'POST',
         url: `/v3/users/${user.id}/setup`,
         headers: {
-            cookie: `DW-SESSION=${admin.session.id}; crumb=abc`,
+            cookie: `DW-SESSION=${adminSession.id}; crumb=abc`,
             'X-CSRF-Token': 'abc',
             referer: 'http://localhost'
         }
@@ -39,7 +32,7 @@ test('/v3/users/:id/setup creates token, token can later be emptied', async t =>
         method: 'PATCH',
         url: `/v3/users/${user.id}`,
         headers: {
-            cookie: `DW-SESSION=${admin.session.id}; crumb=abc`,
+            cookie: `DW-SESSION=${adminSession.id}; crumb=abc`,
             'X-CSRF-Token': 'abc',
             referer: 'http://localhost'
         },

@@ -5,6 +5,7 @@ const path = require('path');
 const jsesc = require('jsesc');
 const crypto = require('crypto');
 const fs = require('fs-extra');
+const get = require('lodash/get');
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
 const utils = {};
@@ -159,6 +160,52 @@ utils.copyChartAssets = function (server) {
             }
         }
     };
+};
+
+utils.getAdditionalMetadata = async (chart, { server }) => {
+    const data = {};
+    let additionalMetadata = await server.app.events.emit(
+        server.app.event.ADDITIONAL_CHART_DATA,
+        {
+            chartId: chart.id,
+            forkedFromId: chart.forked_from
+        },
+        { filter: 'success' }
+    );
+
+    additionalMetadata = Object.assign({}, ...additionalMetadata);
+
+    if (chart.forked_from && chart.is_fork) {
+        const { Chart } = require('@datawrapper/orm/models');
+
+        const forkedFromChart = await Chart.findByPk(chart.forked_from, {
+            attributes: ['metadata']
+        });
+        const basedOnBylineText = get(forkedFromChart, 'metadata.describe.byline', null);
+
+        if (basedOnBylineText) {
+            let basedOnUrl = get(additionalMetadata, 'river.source_url', null);
+
+            if (!basedOnUrl) {
+                let results = await server.app.events.emit(
+                    server.app.event.GET_CHART_DISPLAY_URL,
+                    {
+                        chart
+                    },
+                    { filter: 'success' }
+                );
+
+                results = Object.assign({}, ...results);
+                basedOnUrl = results.url;
+            }
+
+            data.basedOnByline = basedOnUrl
+                ? `<a href='${basedOnUrl}' target='_blank' rel='noopener'>${basedOnBylineText}</a>`
+                : basedOnBylineText;
+        }
+    }
+
+    return data;
 };
 
 module.exports = utils;

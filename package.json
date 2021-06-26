@@ -22,13 +22,11 @@
     "scripts": {
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
-        "test": "DW_CONFIG_PATH=test/_config.test.js ava --verbose || true",
-        "test:ci": "DW_CONFIG_PATH=test/_config.ci.js ava --verbose",
-        "test:update-snapshots": "DW_CONFIG_PATH=test/_config.test.js ava --update-snapshots",
+        "test": "DW_CONFIG_PATH=${DW_CONFIG_PATH-test/config.local.js} ava --verbose",
+        "test:ci": "DW_CONFIG_PATH=test/config.ci.js ava --verbose",
+        "test:coverage": "DW_CONFIG_PATH=${DW_CONFIG_PATH-tests/config.local.js} nyc --reporter=html --reporter=text ava --verbose",
+        "test:update-snapshots": "DW_CONFIG_PATH=${DW_CONFIG_PATH-test/config.local.js} ava --update-snapshots",
         "update-translations": "node scripts/update-translations.js",
-        "clean:db": "DW_CONFIG_PATH=test/_config.test.js node test/helpers/teardown.js",
-        "clean:db:ci": "DW_CONFIG_PATH=test/_config.ci.js node test/helpers/teardown.js",
-        "posttest": "npm run clean:db",
         "dev": "NODE_ENV=development nodemon src/index.js",
         "api": "node src/index.js",
         "start": "node src/index.js",
@@ -75,11 +73,11 @@
         "url": "git+https://github.com/datawrapper/datawrapper-api.git"
     },
     "dependencies": {
-        "@datawrapper/chart-core": "^8.35.5",
-        "@datawrapper/locales": "^1.2.4",
-        "@datawrapper/orm": "^3.23.0",
+        "@datawrapper/chart-core": "^8.35.8",
+        "@datawrapper/locales": "^1.2.5",
+        "@datawrapper/orm": "^3.25.0",
         "@datawrapper/schemas": "^1.12.0",
-        "@datawrapper/service-utils": "^1.0.2",
+        "@datawrapper/service-utils": "^1.0.4",
         "@hapi/boom": "^9.1.2",
         "@hapi/catbox-memory": "^5.0.1",
         "@hapi/catbox-redis": "^6.0.2",
@@ -124,6 +122,7 @@
         "husky": "^6.0.0",
         "lint-staged": "^11.0.0",
         "nodemon": "~2.0.3",
+        "nyc": "^15.1.0",
         "openapi-schema-validator": "^9.0.3",
         "prettier": "^2.0.5",
         "tap-xunit": "~2.4.1"
@@ -165,6 +164,7 @@
         "trailingComma": "none"
     },
     "ava": {
+        "cache": false,
         "files": [
             "**/*.test.js",
             "!plugins/**/*"

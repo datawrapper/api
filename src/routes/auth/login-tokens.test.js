@@ -1,6 +1,5 @@
 const test = require('ava');
-
-const { setup } = require('../../../test/helpers/setup');
+const { createUser, destroy, setup } = require('../../../test/helpers/setup');
 
 function parseSetCookie(string) {
     const cookie = {};
@@ -14,22 +13,22 @@ function parseSetCookie(string) {
 }
 
 test.before(async t => {
-    const { server, models, getUser, addToCleanup } = await setup({ usePlugins: false });
-    const data = await getUser();
-
-    t.context.server = server;
-    t.context.addToCleanup = addToCleanup;
-    t.context.models = models;
+    t.context.server = await setup({ usePlugins: false });
+    t.context.userObj = await createUser(t.context.server);
     t.context.auth = {
         strategy: 'session',
-        credentials: data.session,
-        artifacts: data.user
+        credentials: t.context.userObj.session,
+        artifacts: t.context.userObj.user
     };
     t.context.headers = {
         cookie: 'crumb=abc',
         'X-CSRF-Token': 'abc',
         referer: 'http://localhost'
     };
+});
+
+test.after.always(async t => {
+    await destroy(...Object.values(t.context.userObj));
 });
 
 test('Login token can be created and used once', async t => {
@@ -62,6 +61,45 @@ test('Login token can be created and used once', async t => {
     });
 
     t.is(res3.statusCode, 404);
+});
+
+test('Login token crumb has SameSite: None', async t => {
+    const { auth, headers } = t.context;
+
+    const res = await t.context.server.inject({
+        method: 'POST',
+        url: '/v3/auth/login-tokens',
+        auth,
+        headers
+    });
+
+    t.is(res.statusCode, 201);
+    t.is(typeof res.result.token, 'string');
+
+    const res2 = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/auth/login/${res.result.token}`
+    });
+
+    const cookie = parseSetCookie(res2.headers['set-cookie'].find(s => s.includes(`DW-SESSION`)));
+
+    t.truthy(res2.result['DW-SESSION']);
+    t.is(res2.statusCode, 302);
+    t.is(cookie.SameSite, 'None');
+
+    const res3 = await t.context.server.inject({
+        method: 'GET',
+        headers: {
+            cookie: `DW-SESSION=${res2.result['DW-SESSION']}`
+        },
+        url: `/v3/me`
+    });
+
+    const crumbCookie = parseSetCookie(res3.headers['set-cookie'].find(s => s.includes(`crumb`)));
+
+    t.truthy(crumbCookie.crumb);
+    t.is(res3.statusCode, 200);
+    t.is(crumbCookie.SameSite, 'None');
 });
 
 test('Login token can be created and deleted', async t => {
@@ -167,8 +205,7 @@ test('Login token with chart ID can be created and forwards correctly', async t 
 });
 
 test('Login token expires after five minutes', async t => {
-    const { auth, headers, models } = t.context;
-    const { AccessToken } = models;
+    const { auth, headers } = t.context;
 
     const res = await t.context.server.inject({
         method: 'POST',
@@ -180,6 +217,7 @@ test('Login token expires after five minutes', async t => {
     t.is(res.statusCode, 201);
     t.is(typeof res.result.token, 'string');
 
+    const { AccessToken } = require('@datawrapper/orm/models');
     await AccessToken.update(
         {
             createdAt: new Date().getTime() - 6 * 60 * 1000 // 6m ago

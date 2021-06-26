@@ -1,13 +1,15 @@
 const test = require('ava');
 const EventEmitter = require('events');
 const OpenAPIValidator = require('openapi-schema-validator').default;
-const { setup } = require('./helpers/setup');
+const { createUser, destroy, setup } = require('./helpers/setup');
 
 test.before(async t => {
-    const { server, getUser } = await setup();
+    t.context.server = await setup();
+    t.context.userObj = await createUser(t.context.server);
+});
 
-    t.context.user = await getUser();
-    t.context.server = server;
+test.after.always(async t => {
+    await destroy(...Object.values(t.context.userObj));
 });
 
 test('Server should be registered', t => {
@@ -35,7 +37,7 @@ test('Events should be available', t => {
 });
 
 test('CSRF check is skipped for requests authenticated with a token', async t => {
-    const { user, token } = t.context.user;
+    const { user, token } = t.context.userObj;
 
     const res = await t.context.server.inject({
         method: 'DELETE',

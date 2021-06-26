@@ -26,6 +26,14 @@ const config = require(configPath);
 
 const DW_DEV_MODE = JSON.parse(process.env.DW_DEV_MODE || 'false');
 
+const CSRF_COOKIE_NAME = 'crumb';
+const CSRF_COOKIE_OPTIONS = {
+    domain: '.' + config.api.domain,
+    isHttpOnly: false,
+    isSameSite: 'Lax',
+    isSecure: config.frontend.https
+};
+
 validateAPI(config.api);
 validateORM(config.orm);
 validateFrontend(config.frontend);
@@ -173,13 +181,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         {
             plugin: Crumb,
             options: {
-                cookieOptions: {
-                    domain: '.' + config.api.domain,
-                    isHttpOnly: false,
-                    isSameSite: 'Lax',
-                    isSecure: config.frontend.https
-                },
-                logUnauthorized: true,
+                key: CSRF_COOKIE_NAME,
+                cookieOptions: CSRF_COOKIE_OPTIONS,
+                logUnauthorized: config.api.logCSRFUnauthorized,
                 restful: true,
                 skip: function (request) {
                     // Allow cross-site requests that are not authenticated with a cookie, because
@@ -189,6 +193,16 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             }
         }
     ]);
+
+    server.ext('onPostAuth', (request, h) => {
+        if (request.auth.credentials?.data?.get && request._states[CSRF_COOKIE_NAME]) {
+            const sessionType = request.auth.credentials.data.get('data').type;
+            if (sessionType === 'token') {
+                request._states[CSRF_COOKIE_NAME].options.isSameSite = 'None';
+            }
+        }
+        return h.continue;
+    });
 
     server.logger.info(
         {

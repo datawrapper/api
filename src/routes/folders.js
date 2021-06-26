@@ -72,9 +72,11 @@ const routes = [
                     arr.push({
                         id: folder.id,
                         name: folder.name,
-                        charts: await Chart.findAll({
-                            where: { in_folder: folder.id, deleted: false }
-                        }).map(cleanChart),
+                        charts: (
+                            await Chart.findAll({
+                                where: { in_folder: folder.id, deleted: false }
+                            })
+                        ).map(cleanChart),
                         folders: await getFolders(by, owner, folder.id)
                     });
                 }
