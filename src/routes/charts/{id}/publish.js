@@ -340,7 +340,8 @@ async function publishData(request, h) {
     const theme = await Theme.findByPk(themeId);
     data.theme = {
         id: theme.id,
-        data: await theme.getMergedData()
+        data: await theme.getMergedData(),
+        fonts: theme.fonts
     };
 
     // the styles
@@ -390,13 +391,6 @@ async function publishData(request, h) {
 
     data.externalDataUrl = await events.emit(event.EXTERNAL_DATA_URL, null, {
         filter: 'first'
-    });
-
-    await events.emit(event.CHART_PUBLISH_DATA, {
-        chart: readonlyChart,
-        auth,
-        ott: query.ott,
-        data
     });
 
     if (query.ott) {
