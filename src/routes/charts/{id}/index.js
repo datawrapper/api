@@ -273,6 +273,11 @@ async function editChart(request, h) {
         delete payload.isFork;
     }
 
+    // prevent publicVersion from being 'reverted back' from true publicVersion
+    if (!isNaN(payload.publicVersion) && payload.publicVersion < chart.public_version) {
+        payload.publicVersion = chart.public_version;
+    }
+
     const newData = assignWithEmptyObjects(await prepareChart(chart), payload);
 
     if (request.method === 'put' && payload.metadata) {
