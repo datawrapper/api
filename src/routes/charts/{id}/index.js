@@ -4,6 +4,7 @@ const ReadonlyChart = require('@datawrapper/orm/models/ReadonlyChart');
 const { Op } = require('@datawrapper/orm').db;
 const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
+const get = require('lodash/get');
 const assignWithEmptyObjects = require('../../../utils/assignWithEmptyObjects');
 const { decamelizeKeys } = require('humps');
 const { getAdditionalMetadata, prepareChart } = require('../../../utils/index.js');
@@ -279,6 +280,11 @@ async function editChart(request, h) {
         payload.publicUrl = chart.public_url;
         payload.publishedAt = chart.published_at;
         payload.lastEditStep = chart.last_edit_step;
+        set(
+            payload,
+            'metadata.publish.embed-codes',
+            get(chart, 'metadata.publish.embed-codes', {})
+        );
     }
 
     const newData = assignWithEmptyObjects(await prepareChart(chart), payload);
