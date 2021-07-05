@@ -22,8 +22,8 @@
     "scripts": {
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
-        "test": "DW_CONFIG_PATH=${DW_CONFIG_PATH-test/config.local.js} ava --verbose",
-        "test:ci": "DW_CONFIG_PATH=test/config.ci.js ava --verbose",
+        "test": "DW_CONFIG_PATH=${DW_CONFIG_PATH-test/config.local.js} ava --verbose -s",
+        "test:ci": "DW_CONFIG_PATH=test/config.ci.js ava --verbose -s",
         "test:coverage": "DW_CONFIG_PATH=${DW_CONFIG_PATH-tests/config.local.js} nyc --reporter=html --reporter=text ava --verbose",
         "test:update-snapshots": "DW_CONFIG_PATH=${DW_CONFIG_PATH-test/config.local.js} ava --update-snapshots",
         "update-translations": "node scripts/update-translations.js",
