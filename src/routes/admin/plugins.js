@@ -109,8 +109,11 @@ function register(server, options) {
         let needsPm2Reload = some(
             [
                 'api.js',
+                'api.cjs',
                 'crons.js',
+                'crons.cjs',
                 'frontend.js',
+                'frontend.cjs',
                 /^src\/api\//,
                 /^src\/crons\//,
                 /^src\/frontend\/$/
