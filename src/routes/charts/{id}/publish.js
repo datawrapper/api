@@ -2,7 +2,14 @@ const Boom = require('@hapi/boom');
 const Joi = require('joi');
 const ReadonlyChart = require('@datawrapper/orm/models/ReadonlyChart');
 const set = require('lodash/set');
-const { Action, Chart, ChartAccessToken, ChartPublic, User } = require('@datawrapper/orm/models');
+const {
+    Action,
+    Chart,
+    ChartAccessToken,
+    ChartPublic,
+    User,
+    Theme
+} = require('@datawrapper/orm/models');
 const { Op } = require('@datawrapper/orm').db;
 const { createResponseConfig } = require('../../../schemas/response');
 const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
@@ -122,7 +129,7 @@ async function publishChart(request, h) {
     /* write public CSV file (used when forking a chart) */
     await events.emit(event.PUT_CHART_ASSET, {
         chart,
-        data,
+        data: data.data,
         filename: `${chart.id}.public.csv`
     });
 
@@ -323,6 +330,28 @@ async function publishData(request, h) {
 
     const data = { data: res.result, chart: await prepareChart(readonlyChart, additionalData) };
 
+    // the vis
+    data.visualization = server.app.visualizations.get(chart.type);
+    const themeId = query.theme || chart.theme;
+
+    data.chart.theme = themeId;
+
+    // the theme
+    const theme = await Theme.findByPk(themeId);
+    data.theme = {
+        id: theme.id,
+        data: await theme.getMergedData(),
+        fonts: theme.fonts
+    };
+
+    // the styles
+    const styleRes = await request.server.inject({
+        url: `/v3/visualizations/${data.visualization.id}/styles.css?theme=${themeId}`,
+        auth,
+        headers
+    });
+    data.styles = styleRes.result;
+
     const htmlBodyResults = await events.emit(
         event.CHART_AFTER_BODY_HTML,
         {
@@ -345,18 +374,23 @@ async function publishData(request, h) {
     );
     data.chartAfterHeadHTML = htmlHeadResults.join('\n');
 
-    // chart locales
-    data.locales = getScope('chart', readonlyChart.language || 'en-US');
+    // chart translations
+    data.translations = getScope('chart', chart.language || 'en-US');
+
+    data.assets = (
+        await server.app.events.emit(
+            server.app.event.CHART_ASSETS,
+            {
+                chart,
+                auth,
+                ott: query.ott
+            },
+            { filter: 'success' }
+        )
+    ).filter(el => typeof el === 'object');
 
     data.externalDataUrl = await events.emit(event.EXTERNAL_DATA_URL, null, {
         filter: 'first'
-    });
-
-    await events.emit(event.CHART_PUBLISH_DATA, {
-        chart: readonlyChart,
-        auth,
-        ott: query.ott,
-        data
     });
 
     if (query.ott) {

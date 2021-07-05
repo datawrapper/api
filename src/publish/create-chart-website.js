@@ -3,13 +3,17 @@ const path = require('path');
 const fs = require('fs-extra');
 const os = require('os');
 const pug = require('pug');
-const { Theme, Team } = require('@datawrapper/orm/models');
+const { Team } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
-const { getDependencies } = require('@datawrapper/chart-core/lib/get-dependencies.js');
 const dwChart = require('@datawrapper/chart-core/dist/dw-2.0.cjs.js').dw.chart;
 const get = require('lodash/get');
-const { stringify, readFileAndHash, copyFileHashed, noop } = require('../utils/index.js');
-const { compileCSS } = require('./compile-css');
+const {
+    stringify,
+    readFileAndHash,
+    copyFileHashed,
+    writeFileHashed,
+    noop
+} = require('../utils/index.js');
 const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
 
 /**
@@ -51,13 +55,11 @@ module.exports = async function createChartWebsite(
         publish = false
     } = {}
 ) {
-    const { visualizations } = server.app;
-
     /**
      * Load chart information
      * (including metadata, data, basemaps, etc.)
      */
-    const { result: publishData } = await server.inject({
+    let { result: publishData } = await server.inject({
         url: `/v3/charts/${chart.id}/publish/data${publish ? '?publish=true' : ''}`,
         auth,
         headers
@@ -67,112 +69,73 @@ module.exports = async function createChartWebsite(
         throw Boom.notFound();
     }
 
-    const { data } = publishData;
-    const chartJSON = publishData.chart;
-    const locale = chart.language || 'en-US';
-
-    delete publishData.data;
-    delete publishData.chart;
-
-    if (!data) {
+    if (!publishData.data) {
         await log('error-data');
         throw Boom.conflict('No chart data available.');
     }
 
-    /**
-     * Load visualization information
-     */
-    const vis = visualizations.get(chart.type);
-    if (!vis) {
-        await log('error-vis-not-supported');
-        throw Boom.notImplemented(`"${chart.type}" is currently not supported.`);
-    }
-
     const team = await Team.findByPk(chart.organization_id);
-    // load vendor locales needed by visualization
-    const locales = {};
-    if (vis.dependencies.dayjs) {
-        locales.dayjs = await loadVendorLocale('dayjs', locale, team);
-    }
-    if (vis.dependencies.numeral) {
-        locales.numeral = await loadVendorLocale('numeral', locale, team);
-    }
+    const chartLocale = publishData.chart.language || 'en-US';
+    const locales = {
+        dayjs: await loadVendorLocale('dayjs', chartLocale, team),
+        numeral: await loadVendorLocale('numeral', chartLocale, team)
+    };
 
     // no need to await this...
     log('preparing');
 
-    /**
-     * Load theme information
-     */
-    let theme = await Theme.findByPk(chart.theme);
-
-    if (!theme) {
-        throw Boom.badRequest('Chart theme does not exist.');
-    }
-
-    const [themeFonts, themeData, themeLess] = await Promise.all([
-        theme.getMergedAssets(),
-        theme.getMergedData(),
-        theme.getMergedLess()
-    ]);
-    theme = theme.toJSON();
-    theme.data = themeData;
-    theme.fonts = themeFonts;
-    theme.less = themeLess;
-
-    /**
-     * Load assets like CSS, Javascript and translations
-     */
-    const [css, { fileName, content }] = await Promise.all([
-        compileCSS({ theme, filePaths: [chartCore.less, vis.less] }),
-        readFileAndHash(vis.script)
-    ]);
-    theme.less = ''; /* reset "theme.less" to not inline it twice into the HTML */
-    vis.locale = publishData.locales;
-    delete publishData.locales;
-
-    /**
-     * Collect data for server side rendering with Svelte and Pug
-     */
-    const props = {
-        data: {
-            visJSON: vis,
-            chartJSON,
-            publishData,
-            chartData: data,
-            isPreview: false,
-            chartLocale: locale,
-            locales,
-            metricPrefix: {} /* NOTE: What about this? */,
-            themeId: theme.id,
-            fontsJSON: theme.fonts,
-            typographyJSON: theme.data.typography,
-            polyfillUri: `../../lib/vendor`
-        },
-        theme,
-        translations: vis.locale
-    };
+    publishData = Object.assign(publishData, {
+        isIframe: true,
+        isPreview: false,
+        locales,
+        polyfillUri: `../../lib/vendor`
+    });
 
     log('rendering');
 
-    const { html, head } = chartCore.svelte.render(props);
+    const { html, head } = chartCore.svelte.render(publishData);
 
-    let dependencies = getDependencies({
-        locale,
-        dependencies: vis.dependencies
-    }).map(file => path.join(chartCore.path.dist, file));
+    let dependencies = ['dw-2.0.min.js'].map(file => path.join(chartCore.path.dist, file));
 
     /* Create a temporary directory */
     const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
 
+    /* Copy assets */
+    const assets = {};
+    const assetsFiles = [];
+    for (const asset of publishData.assets) {
+        const { name, prefix, shared, value } = asset;
+        if (!shared) {
+            assets[name] = {
+                value
+            };
+        } else {
+            const hashed = await writeFileHashed(name, value, outDir);
+            const assetPath = (prefix ? prefix + '/' : '') + hashed;
+
+            assets[name] = {
+                shared: true,
+                url: getAssetLink(`../../lib/${assetPath}`)
+            };
+
+            assetsFiles.push(`lib/${assetPath}`);
+        }
+    }
+    publishData.assets = assets;
+
     /* Copy dependencies into temporary directory and hash them on the way */
-    const dependencyPromises = [dependencies, vis.libraries.map(lib => lib.file)]
+    const dependencyPromises = [
+        dependencies,
+        publishData.visualization.libraries.map(lib => lib.file)
+    ]
         .flat()
         .map(filePath => copyFileHashed(filePath, outDir));
 
     dependencies = (await Promise.all(dependencyPromises)).map(file =>
         path.join('lib/vendor/', file)
     );
+
+    const { fileName, content } = await readFileAndHash(publishData.visualization.script);
 
     const [coreScript] = await Promise.all([
         copyFileHashed(path.join(chartCore.path.dist, 'main.js'), path.join(outDir)),
@@ -211,14 +174,17 @@ module.exports = async function createChartWebsite(
         .map(({ source }) => [source.js.replace('../../', ''), source.css.replace('../../', '')])
         .flat();
 
-    props.data.publishData.blocks = publishedBlocks;
+    publishData.blocks = publishedBlocks;
+
+    const css = publishData.styles;
+    delete publishData.styles;
 
     /**
      * Render the visualizations entry: "index.html"
      */
     const indexHTML = renderHTML({
-        __DW_SVELTE_PROPS__: stringify(props),
-        CHART_LANGUAGE: locale.split(/_|-/)[0],
+        __DW_SVELTE_PROPS__: stringify(publishData),
+        CHART_LANGUAGE: chartLocale.split(/_|-/)[0],
         META_ROBOTS: 'noindex, nofollow',
         CHART_HTML: html,
         CHART_HEAD: head,
@@ -227,11 +193,13 @@ module.exports = async function createChartWebsite(
         CSS: css,
         SCRIPTS: dependencies.map(file => getAssetLink(`../../${file}`)),
         CHART_CLASS: [
-            `vis-height-${get(vis, 'height', 'fit')}`,
-            `theme-${get(theme, 'id')}`,
-            `vis-${get(vis, 'id')}`
+            `vis-height-${get(publishData.visualization, 'height', 'fit')}`,
+            `theme-${get(publishData.theme, 'id')}`,
+            `vis-${get(publishData.visualization, 'id')}`
         ]
     });
+
+    publishData.dependencies = dependencies.map(file => getAssetLink(`../../${file}`));
 
     let polyfillFiles = [];
     if (includePolyfills) {
@@ -248,8 +216,8 @@ module.exports = async function createChartWebsite(
     await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
 
     /* write "data.csv", including changes made in step 2 */
-    const dataset = await dwChart(chartJSON).load(data);
-    const isJSON = get(chartJSON, 'metadata.data.json');
+    const dataset = await dwChart(publishData.chart).load(publishData.data);
+    const isJSON = get(publishData.chart, 'metadata.data.json');
     const dataFile = `data.${isJSON ? 'json' : 'csv'}`;
     await fs.writeFile(
         path.join(outDir, dataFile),
@@ -261,6 +229,7 @@ module.exports = async function createChartWebsite(
         ...dependencies,
         ...polyfillFiles,
         ...blocksFiles,
+        ...assetsFiles,
         path.join('lib/', polyfillScript),
         path.join('lib/', coreScript),
         'index.html',
@@ -271,7 +240,7 @@ module.exports = async function createChartWebsite(
         await fs.remove(outDir);
     }
 
-    return { data, outDir, fileMap, cleanup };
+    return { data: publishData, outDir, fileMap, cleanup };
 };
 
 async function loadVendorLocale(vendor, locale, team) {
