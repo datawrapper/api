@@ -346,7 +346,9 @@ async function publishData(request, h) {
 
     // the styles
     const styleRes = await request.server.inject({
-        url: `/v3/visualizations/${data.visualization.id}/styles.css?theme=${themeId}`,
+        url: `/v3/visualizations/${
+            data.visualization.id
+        }/styles.css?theme=${themeId}&transparent=${!!query.transparent}`,
         auth,
         headers
     });
