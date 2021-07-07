@@ -56,8 +56,7 @@ async function register(server, options) {
         path: '/{id}/styles.css',
         options: {
             auth: {
-                mode: 'try',
-                access: { scope: ['visualization:read'] }
+                mode: 'try'
             },
             validate: {
                 query: Joi.object({
