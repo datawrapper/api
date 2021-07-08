@@ -65,6 +65,24 @@ module.exports = (server, options) => {
         handler: publishData
     });
 
+    // GET /v3/charts/{id}/publish/embed.js
+    server.route({
+        method: 'GET',
+        path: '/publish/embed.js',
+        options: {
+            auth: {
+                strategy: 'admin',
+                access: { scope: ['chart:write'] }
+            },
+            validate: {
+                params: Joi.object({
+                    id: Joi.string().length(5).required()
+                })
+            }
+        },
+        handler: embedJS
+    });
+
     // GET /v3/charts/{id}/publish/status/{version}
     server.route({
         method: 'GET',
@@ -91,6 +109,27 @@ module.exports = (server, options) => {
         handler: publishChartStatus
     });
 };
+
+async function embedJS(request, h) {
+    const { params, auth, headers, server } = request;
+    const { createChartWebsite } = server.methods;
+    const user = auth.artifacts;
+    const chart = await server.methods.loadChart(params.id);
+
+    if (!chart || !(await chart.isPublishableBy(user))) {
+        throw Boom.unauthorized();
+    }
+
+    const embedJS = await createChartWebsite(chart, {
+        auth,
+        headers,
+        server,
+        publish: false,
+        onlyEmbedJS: true
+    });
+
+    return h.response(embedJS).header('Content-Type', 'application/javascript');
+}
 
 async function publishChart(request, h) {
     const { params, auth, headers, server } = request;
