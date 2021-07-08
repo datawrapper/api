@@ -1,6 +1,7 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { decamelize, camelize } = require('humps');
+const assign = require('assign-deep');
 const {
     Chart,
     Team,
@@ -87,6 +88,32 @@ module.exports = {
             handler: editTeam
         });
 
+        // PUT /v3/teams/{id}
+        server.route({
+            method: 'PUT',
+            path: `/`,
+            options: {
+                tags: ['api'],
+                description: 'Update a team',
+                notes: `Requires scope \`team:write\`.`,
+                auth: {
+                    access: { scope: ['team:write'] }
+                },
+                validate: {
+                    params: Joi.object({
+                        id: Joi.string().required().description('Team ID')
+                    }),
+                    payload: Joi.object({
+                        name: Joi.string().example('New Revengers'),
+                        defaultTheme: Joi.string().example('light'),
+                        settings: Joi.object({}).unknown(true)
+                    })
+                },
+                response: teamResponse
+            },
+            handler: editTeam
+        });
+
         require('./invites')(server, options);
         require('./members')(server, options);
         require('./products')(server, options);
@@ -97,12 +124,8 @@ async function getTeam(request, h) {
     const { url, server, auth, params } = request;
 
     const isAdmin = server.methods.isAdmin(request);
-    const hasTeam = !!(await UserTeam.findOne({
-        where: {
-            user_id: auth.artifacts.id,
-            organization_id: params.id
-        }
-    }));
+    const user = auth.artifacts;
+    const hasTeam = await user.hasActivatedTeam(params.id);
 
     if (!hasTeam && !isAdmin) {
         return Boom.unauthorized();
@@ -157,9 +180,10 @@ async function getTeam(request, h) {
 }
 
 async function editTeam(request, h) {
-    const { auth, payload, params, server } = request;
-
-    if (!server.methods.isAdmin(request)) {
+    const { auth, payload, params, server, method } = request;
+    const { event, events } = server.app;
+    const isAdmin = server.methods.isAdmin(request);
+    if (!isAdmin) {
         const memberRole = await getMemberRole(auth.artifacts.id, params.id);
 
         if (memberRole === ROLE_MEMBER) {
@@ -174,19 +198,49 @@ async function editTeam(request, h) {
         defaultTheme: payload.defaultTheme
     };
 
-    let team = await Team.findByPk(params.id);
+    const team = await Team.findByPk(params.id);
 
     if (!team) return Boom.notFound();
 
-    team = await team.update(convertKeys(data, decamelize));
-
-    data = team.dataValues;
+    // allow plugins to filter team settings
+    const readOnlySettings = await events.emit(
+        event.TEAM_SETTINGS_FILTER,
+        {
+            payload: data,
+            team,
+            user: auth.artifacts,
+            isAdmin
+        },
+        { filter: 'first' }
+    );
 
     if (typeof data.settings === 'string') {
         data.settings = JSON.parse(data.settings);
     }
 
+    if (method === 'patch') {
+        // merge with existing data
+        data.settings = assign(team.dataValues.settings, data.settings);
+    }
+
+    if (method === 'put') {
+        // retain any data not editable by user
+        data.settings = assign(readOnlySettings.settings, data.settings);
+    }
+
+    await Team.update(convertKeys(data, decamelize), {
+        where: {
+            id: team.id
+        },
+        limit: 1
+    });
+
+    await team.reload();
+
+    data = team.dataValues;
+
     data.updatedAt = new Date().toISOString();
+
     return convertKeys(data, camelize);
 }
 

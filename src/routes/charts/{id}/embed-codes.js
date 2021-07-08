@@ -1,17 +1,18 @@
-const { getUserData } = require('@datawrapper/orm/utils/userData');
 const Boom = require('@hapi/boom');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
+const { translate } = require('@datawrapper/service-utils/l10n');
+const { getEmbedCodes } = require('./utils');
 const get = require('lodash/get');
+const sanitizeHtml = require('sanitize-html');
+const { createResponseConfig } = require('../../../schemas/response');
+const { getUserData } = require('@datawrapper/orm/utils/userData');
 const path = require('path');
 const fs = require('fs-extra');
-const { translate } = require('../../../utils/l10n');
-const sanitizeHtml = require('sanitize-html');
 const chartCore = require('@datawrapper/chart-core');
-
-const { createResponseConfig } = require('../../../schemas/response');
 
 module.exports = async (server, options) => {
     const embedJS = await fs.readFile(path.join(chartCore.path.dist, 'embed.js'), 'utf-8');
+
     // GET /v3/charts/{id}/embed-codes
     server.route({
         method: 'GET',
@@ -125,7 +126,6 @@ module.exports = async (server, options) => {
                     ...getTemplate(customEmbed.template)
                 });
             }
-            return templates;
 
             function clean(s) {
                 return sanitizeHtml(s, { allowedTags: [] })
@@ -163,6 +163,12 @@ module.exports = async (server, options) => {
                         })
                 };
             }
+
+            return getEmbedCodes({
+                visualizations: server.app.visualizations,
+                chart,
+                user: auth.artifacts
+            });
         }
     });
 

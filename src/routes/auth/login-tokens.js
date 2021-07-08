@@ -1,5 +1,5 @@
 const Boom = require('@hapi/boom');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const { db } = require('@datawrapper/orm');
 const { AccessToken } = require('@datawrapper/orm/models');
 const { Op } = db;
@@ -13,8 +13,7 @@ module.exports = async (server, options) => {
         options: {
             tags: ['api'],
             description: 'Creates a login token',
-            notes:
-                'Creates a new login token to authenticate a user, for use in CMS integrations. Login tokens are valid for five minutes and can only be used once.',
+            notes: 'Creates a new login token to authenticate a user, for use in CMS integrations. Login tokens are valid for five minutes and can only be used once.',
             auth: {
                 access: { scope: ['auth:write'] }
             },

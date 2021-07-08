@@ -3,10 +3,17 @@ const path = require('path');
 const fs = require('fs-extra');
 const os = require('os');
 const pug = require('pug');
+const { Team } = require('@datawrapper/orm/models');
 const chartCore = require('@datawrapper/chart-core');
+const dwChart = require('@datawrapper/chart-core/dist/dw-2.0.cjs.js').dw.chart;
 const get = require('lodash/get');
-const { stringify, readFileAndHash, copyFileHashed, noop } = require('../utils/index.js');
-
+const {
+    stringify,
+    readFileAndHash,
+    copyFileHashed,
+    writeFileHashed,
+    noop
+} = require('../utils/index.js');
 const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
 
 /**
@@ -68,10 +75,11 @@ module.exports = async function createChartWebsite(
         throw Boom.conflict('No chart data available.');
     }
 
+    const team = await Team.findByPk(chart.organization_id);
     const chartLocale = publishData.chart.language || 'en-US';
     const locales = {
-        dayjs: await loadVendorLocale('dayjs', chartLocale),
-        numeral: await loadVendorLocale('numeral', chartLocale)
+        dayjs: await loadVendorLocale('dayjs', chartLocale, team),
+        numeral: await loadVendorLocale('numeral', chartLocale, team)
     };
 
     // no need to await this...
@@ -161,6 +169,29 @@ if (!document.head.attachShadow) {
     /* Create a temporary directory */
     const outDir = await fs.mkdtemp(path.resolve(os.tmpdir(), `dw-chart-${chart.id}-`));
 
+    /* Copy assets */
+    const assets = {};
+    const assetsFiles = [];
+    for (const asset of publishData.assets) {
+        const { name, prefix, shared, value } = asset;
+        if (!shared) {
+            assets[name] = {
+                value
+            };
+        } else {
+            const hashed = await writeFileHashed(name, value, outDir);
+            const assetPath = (prefix ? prefix + '/' : '') + hashed;
+
+            assets[name] = {
+                shared: true,
+                url: getAssetLink(`../../lib/${assetPath}`)
+            };
+
+            assetsFiles.push(`lib/${assetPath}`);
+        }
+    }
+    publishData.assets = assets;
+
     /* Copy dependencies into temporary directory and hash them on the way */
     const dependencyPromises = [
         dependencies,
@@ -213,24 +244,31 @@ if (!document.head.attachShadow) {
         .flat();
 
     publishData.blocks = publishedBlocks;
+
+    const css = publishData.styles;
+    delete publishData.styles;
+
     /**
      * Render the visualizations entry: "index.html"
      */
     const indexHTML = renderHTML({
         __DW_SVELTE_PROPS__: stringify(publishData),
         CHART_LANGUAGE: chartLocale.split(/_|-/)[0],
+        META_ROBOTS: 'noindex, nofollow',
         CHART_HTML: html,
         CHART_HEAD: head,
         POLYFILL_SCRIPT: getAssetLink(`../../lib/${polyfillScript}`),
         CORE_SCRIPT: getAssetLink(`../../lib/${coreScript}`),
         SCRIPTS: dependencies.map(file => getAssetLink(`../../${file}`)),
-        CSS: `${publishData.styles.fonts}\n${publishData.styles.css}`,
+        CSS: `${publishData.styles.fonts}\n${css}`,
         CHART_CLASS: [
             `vis-height-${get(publishData.visualization, 'height', 'fit')}`,
             `theme-${get(publishData.theme, 'id')}`,
             `vis-${get(publishData.visualization, 'id')}`
         ]
     });
+
+    publishData.dependencies = dependencies.map(file => getAssetLink(`../../${file}`));
 
     let polyfillFiles = [];
     if (includePolyfills) {
@@ -251,14 +289,27 @@ if (!document.head.attachShadow) {
 
     /* write "index.html", visualization Javascript and other assets */
     await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
+
+    /* write "data.csv", including changes made in step 2 */
+    const dataset = await dwChart(publishData.chart).load(publishData.data);
+    const isJSON = get(publishData.chart, 'metadata.data.json');
+    const dataFile = `data.${isJSON ? 'json' : 'csv'}`;
+    await fs.writeFile(
+        path.join(outDir, dataFile),
+        isJSON ? JSON.stringify(dataset) : dataset.csv(),
+        { encoding: 'utf-8' }
+    );
+
     const fileMap = [
         ...dependencies,
         ...polyfillFiles,
         ...blocksFiles,
+        ...assetsFiles,
         path.join('lib/', polyfillScript),
         path.join('lib/', coreScript),
         'index.html',
-        'embed.js'
+        'embed.js',
+        dataFile
     ];
 
     async function cleanup() {
@@ -268,7 +319,7 @@ if (!document.head.attachShadow) {
     return { data: publishData.data, outDir, fileMap, cleanup };
 };
 
-async function loadVendorLocale(vendor, locale) {
+async function loadVendorLocale(vendor, locale, team) {
     const basePath = path.resolve(
         __dirname,
         '../../node_modules/@datawrapper/locales/locales/',
@@ -283,7 +334,11 @@ async function loadVendorLocale(vendor, locale) {
     for (let i = 0; i < tryFiles.length; i++) {
         const file = path.join(basePath, tryFiles[i]);
         try {
-            return await fs.readFile(file, 'utf-8');
+            const localeBase = await fs.readFile(file, 'utf-8');
+            return {
+                base: localeBase,
+                custom: get(team, `settings.locales.${vendor}.${locale.replace('_', '-')}`, {})
+            };
         } catch (e) {
             // file not found, so try next
         }

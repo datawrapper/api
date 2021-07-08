@@ -1,65 +1,76 @@
 const test = require('ava');
-
-const { setup } = require('../../../../test/helpers/setup');
+const {
+    createTeamWithUser,
+    createUser,
+    destroy,
+    setup
+} = require('../../../../test/helpers/setup');
 
 test.before(async t => {
-    const { server, getTeamWithUser, getUser } = await setup({
-        usePlugins: false
-    });
+    t.context.server = await setup({ usePlugins: false });
+    t.context.adminObj = await createUser(t.context.server, 'admin');
+});
 
-    t.context.admin = await getUser('admin');
-    t.context.server = server;
-    t.context.getTeamWithUser = getTeamWithUser;
+test.after.always(async t => {
+    await destroy(...Object.values(t.context.adminObj));
 });
 
 test('Admin can set activeTeam for users', async t => {
-    const admin = t.context.admin;
-    const { team, user } = await t.context.getTeamWithUser();
+    const { session: adminSession } = t.context.adminObj;
+    let teamObj;
+    try {
+        teamObj = await createTeamWithUser(t.context.server);
+        const { team, user } = teamObj;
 
-    const res1 = await t.context.server.inject({
-        method: 'PATCH',
-        url: `/v3/users/${user.id}/settings`,
-        headers: {
-            cookie: `DW-SESSION=${admin.session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc',
-            referer: 'http://localhost'
-        },
-        payload: {
-            activeTeam: team.id
+        const res1 = await t.context.server.inject({
+            method: 'PATCH',
+            url: `/v3/users/${user.id}/settings`,
+            headers: {
+                cookie: `DW-SESSION=${adminSession.id}; crumb=abc`,
+                'X-CSRF-Token': 'abc',
+                referer: 'http://localhost'
+            },
+            payload: {
+                activeTeam: team.id
+            }
+        });
+
+        t.is(res1.statusCode, 200);
+        t.is(res1.result.activeTeam, team.id);
+
+        const res2 = await t.context.server.inject({
+            method: 'PATCH',
+            url: `/v3/users/${user.id}/settings`,
+            headers: {
+                cookie: `DW-SESSION=${adminSession.id}; crumb=abc`,
+                'X-CSRF-Token': 'abc',
+                referer: 'http://localhost'
+            },
+            payload: {
+                activeTeam: null
+            }
+        });
+
+        t.is(res2.statusCode, 200);
+        t.is(res2.result.activeTeam, null);
+
+        const res3 = await t.context.server.inject({
+            method: 'PATCH',
+            url: `/v3/users/${user.id}/settings`,
+            headers: {
+                cookie: `DW-SESSION=${adminSession.id}; crumb=abc`,
+                'X-CSRF-Token': 'abc',
+                referer: 'http://localhost'
+            },
+            payload: {
+                activeTeam: 'missing-team'
+            }
+        });
+
+        t.is(res3.statusCode, 404);
+    } finally {
+        if (teamObj) {
+            await destroy(...Object.values(teamObj));
         }
-    });
-
-    t.is(res1.statusCode, 200);
-    t.is(res1.result.activeTeam, team.id);
-
-    const res2 = await t.context.server.inject({
-        method: 'PATCH',
-        url: `/v3/users/${user.id}/settings`,
-        headers: {
-            cookie: `DW-SESSION=${admin.session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc',
-            referer: 'http://localhost'
-        },
-        payload: {
-            activeTeam: null
-        }
-    });
-
-    t.is(res2.statusCode, 200);
-    t.is(res2.result.activeTeam, null);
-
-    const res3 = await t.context.server.inject({
-        method: 'PATCH',
-        url: `/v3/users/${user.id}/settings`,
-        headers: {
-            cookie: `DW-SESSION=${admin.session.id}; crumb=abc`,
-            'X-CSRF-Token': 'abc',
-            referer: 'http://localhost'
-        },
-        payload: {
-            activeTeam: 'missing-team'
-        }
-    });
-
-    t.is(res3.statusCode, 404);
+    }
 });

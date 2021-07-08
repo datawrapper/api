@@ -1,6 +1,6 @@
 const path = require('path');
 const mime = require('mime');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { noContentResponse } = require('../../../schemas/response');
 const { ChartAccessToken } = require('@datawrapper/orm/models');
@@ -14,7 +14,7 @@ module.exports = (server, options) => {
             tags: ['api'],
             description: 'Fetch chart asset',
             auth: {
-                access: { scope: ['chart:read'] }
+                mode: 'try'
             },
             notes: `Request an asset associated with a chart. Requires scope \`chart:read\`.`,
             plugins: {
@@ -79,26 +79,34 @@ async function getChartAsset(request, h) {
 
     const filename = params.asset;
 
-    let isEditable = await chart.isEditableBy(request.auth.artifacts, auth.credentials.session);
-
-    if (!isEditable && query.ott) {
-        // we do not destroy the access token here, because this request might
-        // have been internally injected from the /chart/:id/publish/data endpoint
-        const count = await ChartAccessToken.count({
-            where: {
-                chart_id: params.id,
-                token: query.ott
-            },
-            limit: 1
-        });
-
-        if (count === 1) {
-            isEditable = true;
+    if (filename !== `${chart.id}.public.csv`) {
+        // unauthenticated users can never access non-public assets
+        if (!auth.isAuthenticated) {
+            return Boom.forbidden();
         }
-    }
 
-    if (filename !== `${chart.id}.public.csv` && !isEditable) {
-        return Boom.forbidden();
+        // user is authenticated, but we still need to determine if the user has the rights to edit
+        let isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
+
+        if (!isEditable && query.ott) {
+            // we do not destroy the access token here, because this request might
+            // have been internally injected from the /chart/:id/publish/data endpoint
+            const count = await ChartAccessToken.count({
+                where: {
+                    chart_id: params.id,
+                    token: query.ott
+                },
+                limit: 1
+            });
+
+            if (count === 1) {
+                isEditable = true;
+            }
+        }
+
+        if (!isEditable || auth.credentials.scope.indexOf('chart:read') === -1) {
+            return Boom.forbidden();
+        }
     }
 
     if (!getAssetWhitelist(params.id).includes(params.asset)) {
@@ -135,6 +143,7 @@ function getAssetWhitelist(id) {
     return [
         '{id}.csv',
         '{id}.public.csv',
+        '{id}.metadata.json',
         '{id}.map.json',
         '{id}.minimap.json',
         '{id}.highlight.json'

@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { Op } = require('@datawrapper/orm').db;
 const set = require('lodash/set');
@@ -153,13 +153,9 @@ module.exports = async (server, options) => {
 
 async function getTeamMembers(request, h) {
     const { query, params, auth, server } = request;
+    const user = auth.artifacts;
 
-    const hasTeam = !!(await UserTeam.findOne({
-        where: {
-            user_id: auth.artifacts.id,
-            organization_id: params.id
-        }
-    }));
+    const hasTeam = await user.hasActivatedTeam(params.id);
 
     if (!hasTeam && !server.methods.isAdmin(request)) {
         return Boom.unauthorized();

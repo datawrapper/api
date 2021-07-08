@@ -1,16 +1,17 @@
 const test = require('ava');
-
-const { setup } = require('../../test/helpers/setup');
+const { createUser, destroy, setup } = require('../../test/helpers/setup');
 
 test.before(async t => {
-    const { server, getUser } = await setup({ usePlugins: false });
+    t.context.server = await setup({ usePlugins: false });
+    t.context.userObj = await createUser(t.context.server);
+});
 
-    t.context.user = await getUser();
-    t.context.server = server;
+test.after.always(async t => {
+    await destroy(...Object.values(t.context.userObj));
 });
 
 test('Should accept valid token', async t => {
-    const { user, token } = t.context.user;
+    const { user, token } = t.context.userObj;
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/me',
@@ -43,7 +44,7 @@ test('Should reject invalid token', async t => {
 });
 
 test('Should accept valid session cookie', async t => {
-    const { user, session } = t.context.user;
+    const { user, session } = t.context.userObj;
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/me',
@@ -77,7 +78,7 @@ test('Should reject invalid session cookie', async t => {
 });
 
 test('Invalid token is ignored when session cookie is valid', async t => {
-    const { session } = t.context.user;
+    const { session } = t.context.userObj;
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/me',
@@ -92,7 +93,7 @@ test('Invalid token is ignored when session cookie is valid', async t => {
 });
 
 test('Invalid session cookie is ignored when token is valid', async t => {
-    const { token } = t.context.user;
+    const { token } = t.context.userObj;
     const res = await t.context.server.inject({
         method: 'GET',
         url: '/v3/me',

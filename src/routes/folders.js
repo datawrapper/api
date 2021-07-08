@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { Chart, User, Folder, Team } = require('@datawrapper/orm/models');
 
@@ -72,9 +72,11 @@ const routes = [
                     arr.push({
                         id: folder.id,
                         name: folder.name,
-                        charts: await Chart.findAll({
-                            where: { in_folder: folder.id, deleted: false }
-                        }).map(cleanChart),
+                        charts: (
+                            await Chart.findAll({
+                                where: { in_folder: folder.id, deleted: false }
+                            })
+                        ).map(cleanChart),
                         folders: await getFolders(by, owner, folder.id)
                     });
                 }
@@ -114,7 +116,7 @@ const routes = [
             };
 
             if (payload.organizationId) {
-                if (!isAdmin && !(await user.hasTeam(payload.organizationId))) {
+                if (!isAdmin && !(await user.hasActivatedTeam(payload.organizationId))) {
                     return Boom.unauthorized('User does not have access to the specified team.');
                 }
 
@@ -131,7 +133,7 @@ const routes = [
                     !folder ||
                     (!isAdmin &&
                         folder.user_id !== auth.artifacts.id &&
-                        !(await user.hasTeam(folder.org_id)))
+                        !(await user.hasActivatedTeam(folder.org_id)))
                 ) {
                     return Boom.unauthorized(
                         'User does not have access to the specified parent folder, or it does not exist.'

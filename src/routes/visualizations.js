@@ -1,10 +1,11 @@
 const fs = require('fs-extra');
 const path = require('path');
 const Boom = require('@hapi/boom');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const chartCore = require('@datawrapper/chart-core');
 const get = require('lodash/get');
 const set = require('lodash/set');
+const { translate } = require('@datawrapper/service-utils/l10n');
 
 const { createFontEntries, compileCSS } = require('../publish/compile-css.js');
 
@@ -36,10 +37,16 @@ async function register(server, options) {
     });
 
     async function getVisualization(request, h) {
-        const { params, server } = request;
+        const { params, server, auth } = request;
 
         const vis = server.app.visualizations.get(params.id);
         if (!vis) return Boom.notFound();
+
+        // also include translated title
+        vis.__title = translate(vis.title, {
+            scope: vis.__plugin,
+            language: get(auth.artifacts, 'language') || 'en-US'
+        });
 
         return h.response(vis);
     }
@@ -49,8 +56,7 @@ async function register(server, options) {
         path: '/{id}/styles',
         options: {
             auth: {
-                mode: 'try',
-                access: { scope: ['visualization:read'] }
+                mode: 'try'
             },
             validate: {
                 query: Joi.object({
@@ -134,7 +140,7 @@ async function register(server, options) {
         });
 
         if (statusCode !== 200) {
-            return new Boom(result.message, result);
+            return new Boom.Boom(result.message, result);
         }
 
         const file = result.script;

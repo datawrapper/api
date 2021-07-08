@@ -1,4 +1,5 @@
-const Joi = require('@hapi/joi');
+const Boom = require('@hapi/boom');
+const Joi = require('joi');
 const get = require('lodash/get');
 
 const { createResponseConfig, noContentResponse } = require('../../schemas/response.js');
@@ -130,6 +131,19 @@ async function getMe(request, h) {
 }
 
 async function updateMe(request, h) {
+    if (request.auth.artifacts.role === 'guest' && request.payload.language) {
+        if (!/[a-z]{2}-[a-z]{2}/i.test(request.payload.language)) {
+            return Boom.badRequest('Invalid language');
+        }
+        // allow guests to switch their language
+        const session = request.auth.credentials.data;
+        session.data = { ...session.data, 'dw-lang': request.payload.language };
+        await session.save();
+        return h.response({
+            status: 'ok',
+            language: request.payload.language
+        });
+    }
     const res = await request.server.inject({
         method: 'PATCH',
         url: `/v3/users/${request.auth.artifacts.id}`,

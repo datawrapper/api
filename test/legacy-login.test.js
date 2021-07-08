@@ -1,5 +1,5 @@
 const test = require('ava');
-const { setup } = require('./helpers/setup');
+const { createUser, destroy, setup } = require('./helpers/setup');
 
 const USER_PASSWORD = 'legacy';
 /**
@@ -15,14 +15,16 @@ const CLIENT_HASH = '9574e9327ce73d61c8f5ffdc710e5c21cb07fcb3bef9ce4d892b88e6ad0
 const LEGACY_HASH = 'd51315c3623087d1c4378927b87b80e8e1a3216eb3976a4752e008fe82aff176';
 
 test.before(async t => {
-    const { server, getUser } = await setup({ usePlugins: false });
-    t.context.server = server;
-    t.context.getUser = getUser;
+    t.context.server = await setup({ usePlugins: false });
 });
 
 test.beforeEach(async t => {
-    const { user } = await t.context.getUser('editor', LEGACY_HASH);
-    t.context.userEmail = user.email;
+    t.context.userObj = await createUser(t.context.server, 'editor', LEGACY_HASH);
+    t.context.userEmail = t.context.userObj.user.email;
+});
+
+test.afterEach.always(async t => {
+    await destroy(...Object.values(t.context.userObj));
 });
 
 test('Client hashed password', async t => {
