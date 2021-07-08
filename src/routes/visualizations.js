@@ -129,9 +129,13 @@ async function register(server, options) {
             set(theme, 'data.style.body.background', 'transparent');
         }
 
+        const filePaths = [chartCore.less, vis.less];
+
+        if (chartCore.css) filePaths.push(chartCore.css);
+
         const css = await compileCSS({
             theme,
-            filePaths: [chartCore.less, vis.less]
+            filePaths
         });
 
         if (!transparent) {
