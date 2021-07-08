@@ -176,7 +176,7 @@ module.exports = async function createChartWebsite(
 
     publishData.blocks = publishedBlocks;
 
-    const css = publishData.styles;
+    const { css, fonts } = publishData.styles;
     delete publishData.styles;
 
     /**
@@ -190,7 +190,7 @@ module.exports = async function createChartWebsite(
         CHART_HEAD: head,
         POLYFILL_SCRIPT: getAssetLink(`../../lib/${polyfillScript}`),
         CORE_SCRIPT: getAssetLink(`../../lib/${coreScript}`),
-        CSS: css,
+        CSS: `${fonts}\n${css}`,
         SCRIPTS: dependencies.map(file => getAssetLink(`../../${file}`)),
         CHART_CLASS: [
             `vis-height-${get(publishData.visualization, 'height', 'fit')}`,
