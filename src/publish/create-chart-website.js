@@ -92,6 +92,16 @@ module.exports = async function createChartWebsite(
         polyfillUri: `../../lib/vendor`
     });
 
+    const assetMap = {};
+    const originalAssets = publishData.assets;
+
+    publishData.assets.forEach(({ name, value }) => {
+        assetMap[name] = {
+            value
+        };
+    });
+    publishData.assets = assetMap;
+
     log('rendering');
 
     async function getEmbedJS(parameters) {
@@ -172,7 +182,7 @@ if (!document.head.attachShadow) {
     /* Copy assets */
     const assets = {};
     const assetsFiles = [];
-    for (const asset of publishData.assets) {
+    for (const asset of originalAssets) {
         const { name, prefix, shared, value } = asset;
         if (!shared) {
             assets[name] = {
@@ -245,7 +255,7 @@ if (!document.head.attachShadow) {
 
     publishData.blocks = publishedBlocks;
 
-    const css = publishData.styles;
+    const { css, fonts } = publishData.styles;
     delete publishData.styles;
 
     /**
@@ -260,7 +270,7 @@ if (!document.head.attachShadow) {
         POLYFILL_SCRIPT: getAssetLink(`../../lib/${polyfillScript}`),
         CORE_SCRIPT: getAssetLink(`../../lib/${coreScript}`),
         SCRIPTS: dependencies.map(file => getAssetLink(`../../${file}`)),
-        CSS: `${publishData.styles.fonts}\n${css}`,
+        CSS: `${fonts}\n${css}`,
         CHART_CLASS: [
             `vis-height-${get(publishData.visualization, 'height', 'fit')}`,
             `theme-${get(publishData.theme, 'id')}`,
