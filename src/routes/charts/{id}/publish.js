@@ -338,10 +338,11 @@ async function publishData(request, h) {
 
     // the theme
     const theme = await Theme.findByPk(themeId);
+    const themeFonts = await theme.getAssetFonts();
     data.theme = {
         id: theme.id,
         data: await theme.getMergedData(),
-        fonts: theme.fonts
+        fonts: themeFonts
     };
 
     // the styles
