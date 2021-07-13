@@ -341,7 +341,7 @@ async function publishData(request, h) {
     data.theme = {
         id: theme.id,
         data: await theme.getMergedData(),
-        fonts: theme.fonts
+        fonts: await theme.getMergedAssets()
     };
 
     // the styles
