@@ -102,7 +102,11 @@ module.exports = (server, options) => {
                 return Boom.notFound();
             }
 
-            if (chart.external_data && checkUrl(chart.external_data)) {
+            if (
+                get(chart, 'metadata.data.upload-method') === 'external-data' &&
+                chart.external_data &&
+                checkUrl(chart.external_data)
+            ) {
                 try {
                     const data = (await got(chart.external_data)).body;
 
@@ -116,10 +120,7 @@ module.exports = (server, options) => {
                     await chart.save();
                 } catch (ex) {}
 
-                if (
-                    get(chart, 'metadata.data.upload-method') === 'external-data' &&
-                    get(chart, 'metadata.data.external-metadata')
-                ) {
+                if (get(chart, 'metadata.data.external-metadata')) {
                     try {
                         const metadataUrl = get(chart, 'metadata.data.external-metadata');
 
