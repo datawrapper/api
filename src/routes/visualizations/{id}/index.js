@@ -15,6 +15,7 @@ async function register(server, options) {
         method: 'GET',
         path: '/',
         options: {
+            description: 'Get information about a visualization type',
             auth: {
                 mode: 'try',
                 access: { scope: ['visualization:read'] }
