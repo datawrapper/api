@@ -4,7 +4,7 @@ const Boom = require('@hapi/boom');
 module.exports = (server, options) => {
     server.route({
         method: 'GET',
-        path: '/{id}/script.js',
+        path: '/script.js',
         options: {
             auth: {
                 mode: 'try',

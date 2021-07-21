@@ -4,7 +4,7 @@ const Boom = require('@hapi/boom');
 const Joi = require('joi');
 const get = require('lodash/get');
 const chartCore = require('@datawrapper/chart-core');
-const { createFontEntries, compileCSS } = require('../publish/compile-css.js');
+const { createFontEntries, compileCSS } = require('../../../publish/compile-css.js');
 const set = require('lodash/set');
 
 module.exports = (server, options) => {
@@ -16,7 +16,7 @@ module.exports = (server, options) => {
 
     server.route({
         method: 'GET',
-        path: '/{id}/styles.css',
+        path: '/styles.css',
         options: {
             auth: {
                 mode: 'try'
@@ -33,7 +33,7 @@ module.exports = (server, options) => {
 
     server.route({
         method: 'GET',
-        path: '/{id}/styles',
+        path: '/styles',
         options: {
             auth: {
                 mode: 'try'
