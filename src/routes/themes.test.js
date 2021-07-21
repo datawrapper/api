@@ -37,7 +37,31 @@ test.before(async t => {
                 data: { test: 'test3' },
                 extend: 'my-theme-2',
                 less: 'h1 { z-index: 3 }',
-                assets: { key1: 1, key2: { blue: false } }
+                assets: {
+                    key1: 1,
+                    key2: { blue: false },
+                    Roboto: {
+                        type: 'font',
+                        import: 'https://static.dwcdn.net/css/roboto.css',
+                        method: 'import'
+                    }
+                }
+            }
+        }),
+        await Theme.findOrCreate({
+            where: { id: 'my-theme-4' },
+            defaults: {
+                title: 'Test Theme 4',
+                data: { test: 'test4' },
+                extend: 'my-theme-2',
+                less: 'h1 { z-index: 3 }',
+                assets: {
+                    Roboto: {
+                        type: 'font',
+                        import: 'https://static.dwcdn.net/css/roboto.css',
+                        method: 'import'
+                    }
+                }
             }
         })
     ]);
@@ -59,6 +83,16 @@ test('Should be possible to get theme data', async t => {
     /* remove creation date or snapshots will fail all the time */
     delete res.result.createdAt;
     t.snapshot(res.result);
+});
+
+test('Should be possible to get theme font', async t => {
+    const res = await t.context.server.inject({
+        method: 'GET',
+        url: '/v3/themes/my-theme-4',
+        auth: t.context.auth
+    });
+
+    t.is(res.result.fontsCSS, "@import 'https://static.dwcdn.net/css/roboto.css';");
 });
 
 test('Should be possible to get extended theme data', async t => {
