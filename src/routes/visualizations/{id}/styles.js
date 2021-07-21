@@ -4,7 +4,7 @@ const Boom = require('@hapi/boom');
 const Joi = require('joi');
 const get = require('lodash/get');
 const chartCore = require('@datawrapper/chart-core');
-const { createFontEntries, compileCSS } = require('../../../publish/compile-css.js');
+const { compileCSS } = require('../../../publish/compile-css.js');
 const set = require('lodash/set');
 
 module.exports = (server, options) => {
@@ -31,26 +31,8 @@ module.exports = (server, options) => {
         handler: getVisualizationStyles
     });
 
-    server.route({
-        method: 'GET',
-        path: '/styles',
-        options: {
-            auth: {
-                mode: 'try'
-            },
-            validate: {
-                query: Joi.object({
-                    theme: Joi.string().default('datawrapper'),
-                    transparent: Joi.boolean().optional().default(false)
-                })
-            }
-        },
-        handler: getVisualizationStyles
-    });
-
     async function getVisualizationStyles(request, h) {
         const { query, params, server } = request;
-        const returnCombinedCSS = request.path.includes('styles.css');
 
         const vis = server.app.visualizations.get(params.id);
         if (!vis) return Boom.notFound();
@@ -78,14 +60,9 @@ module.exports = (server, options) => {
         const cacheKey = `${query.theme}__${params.id}__${githead}`;
         const cachedCSS = await styleCache.get(cacheKey);
         const cacheStyles = get(server.methods.config('general'), 'cache.styles', false);
-        const fonts = createFontEntries(theme.fonts, theme.data);
 
         if (cacheStyles && !transparent && cachedCSS) {
-            if (returnCombinedCSS) {
-                return h.response(`${fonts}\n\${cachedCSS}`).header('Content-Type', 'text/css');
-            } else {
-                return { css: cachedCSS, fonts };
-            }
+            return h.response(`${cachedCSS}`).header('Content-Type', 'text/css');
         }
 
         if (transparent) {
@@ -105,10 +82,6 @@ module.exports = (server, options) => {
             await styleCache.set(cacheKey, css);
         }
 
-        if (returnCombinedCSS) {
-            return h.response(`${fonts}\n${css}`).header('Content-Type', 'text/css');
-        } else {
-            return { css, fonts };
-        }
+        return h.response(`${css}`).header('Content-Type', 'text/css');
     }
 };
