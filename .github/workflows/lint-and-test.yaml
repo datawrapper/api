@@ -24,7 +24,7 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}" > ~/.npmrc
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=optional
 
       - name: Code linting
         run: npm run lint
