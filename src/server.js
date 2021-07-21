@@ -339,16 +339,22 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             const publicId = await chart.getPublicId();
             const dest = path.resolve(general.localChartPublishRoot, publicId);
 
-            for (const file of fileMap) {
-                const basename = path.basename(file);
-                const dir = path.dirname(file);
+            if (process.env.NODE_ENV === 'test') {
+                console.warn(
+                    'Skipping copying of published chart files while running tests due to I/O issues'
+                );
+            } else {
+                for (const file of fileMap) {
+                    const basename = path.basename(file);
+                    const dir = path.dirname(file);
 
-                const out =
-                    dir === '.'
-                        ? path.resolve(dest, basename)
-                        : path.resolve(dest, '..', dir, basename);
+                    const out =
+                        dir === '.'
+                            ? path.resolve(dest, basename)
+                            : path.resolve(dest, '..', dir, basename);
 
-                await fs.copy(path.join(outDir, basename), out, { overwrite: dir === '.' });
+                    await fs.copy(path.join(outDir, basename), out, { overwrite: dir === '.' });
+                }
             }
 
             await fs.remove(outDir);
