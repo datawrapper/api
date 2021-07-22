@@ -23,7 +23,6 @@
         "format": "prettier '**/*.js' --write",
         "lint": "prettier --check '**/*.js' && healthier '**/*.js'",
         "test": "DW_CONFIG_PATH=${DW_CONFIG_PATH-test/config.local.js} ava --verbose",
-        "test:ci": "DW_CONFIG_PATH=test/config.ci.js ava --verbose",
         "test:coverage": "DW_CONFIG_PATH=${DW_CONFIG_PATH-tests/config.local.js} nyc --reporter=html --reporter=text ava --verbose",
         "test:update-snapshots": "DW_CONFIG_PATH=${DW_CONFIG_PATH-test/config.local.js} ava --update-snapshots",
         "update-translations": "node scripts/update-translations.js",
@@ -123,7 +122,7 @@
         "lint-staged": "^11.0.0",
         "nodemon": "~2.0.3",
         "nyc": "^15.1.0",
-        "openapi-schema-validator": "^9.0.3",
+        "openapi-schema-validator": "^9.1.0",
         "prettier": "^2.0.5",
         "tap-xunit": "~2.4.1"
     },
