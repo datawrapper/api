@@ -85,7 +85,7 @@ function createFontEntries(fonts, themeData) {
     if (themeData && themeData.typography && themeData.typography.fontFamilies) {
         Object.entries(themeData.typography.fontFamilies).forEach(([fontFamily, familyFonts]) => {
             familyFonts.forEach(props => {
-                if (fonts[props.name]) {
+                if (fonts[props.name] && !props.printOnly) {
                     usedFonts.push(props.name);
                     fontStrings.push(
                         `${createFontCSS(fontFamily, fonts[props.name].files, props)}`
