@@ -176,8 +176,10 @@ module.exports = async function createChartWebsite(
 
     publishData.blocks = publishedBlocks;
 
-    const { css, fonts } = publishData.styles;
+    const css = publishData.styles;
+    const fonts = publishData.theme.fontsCSS;
     delete publishData.styles;
+    delete publishData.theme.fontsCSS;
 
     /**
      * Render the visualizations entry: "index.html"
