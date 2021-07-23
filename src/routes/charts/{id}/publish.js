@@ -16,6 +16,7 @@ const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 const { getAdditionalMetadata, prepareChart } = require('../../../utils/index.js');
 const { getEmbedCodes } = require('./utils');
 const { getScope } = require('@datawrapper/service-utils/l10n');
+const { createFontEntries } = require('../../../publish/compile-css.js');
 
 const configPath = findConfigPath();
 const config = require(configPath);
@@ -343,6 +344,7 @@ async function publishData(request, h) {
         data: await theme.getMergedData(),
         fonts: await theme.getMergedAssets()
     };
+    data.theme.fontsCSS = createFontEntries(data.theme.fonts, data.theme.data);
 
     // the styles
     const styleRes = await request.server.inject({
