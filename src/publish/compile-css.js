@@ -99,7 +99,7 @@ function createFontEntries(fonts, themeData) {
                 }
                 break;
             case 'import':
-                fontStrings.push(`@import '${processUrl(attr.import)}';`);
+                fontStrings.unshift(`@import '${processUrl(attr.import)}';`);
                 break;
             default:
                 break;
