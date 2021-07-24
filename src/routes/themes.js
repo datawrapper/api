@@ -2,7 +2,7 @@ const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const assign = require('assign-deep');
 const { Theme } = require('@datawrapper/orm/models');
-const { createFontEntries } = require('../publish/compile-css.js');
+const { compileFontCSS } = require('../publish/compile-css.js');
 
 module.exports = {
     name: 'routes/themes',
@@ -85,7 +85,7 @@ ${dataValues.less || ''}
 
     const { created_at, ...theme } = dataValues;
     const fonts = getThemeFonts(theme);
-    const fontsCSS = createFontEntries(fonts, theme.data);
+    const fontsCSS = await compileFontCSS(fonts, theme.data);
     return { ...theme, fonts, createdAt: created_at, fontsCSS };
 }
 
