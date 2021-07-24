@@ -19,7 +19,7 @@ const postcss = pCSS([
     require('cssnano')({ preset: ['default', { svgo: false }] })
 ]);
 
-module.exports = { compileCSS, findLessVariables, createFontEntries, flatten };
+module.exports = { compileCSS, findLessVariables, createFontEntries, compileFontCSS, flatten };
 
 /**
  * Compile and concatenate .less files to CSS and run some code optimizations with PostCSS.
@@ -73,6 +73,13 @@ async function compileCSS({ theme, filePaths }) {
     return css;
 }
 
+async function compileFontCSS(fonts, themeData) {
+    const fontCSS = createFontEntries(fonts, themeData);
+    let { css } = await less.render(fontCSS);
+    css = (await postcss.process(css, { from: undefined })).css;
+    return css;
+}
+
 function createFontEntries(fonts, themeData) {
     const usedFonts = [];
     const fontStrings = [];
@@ -99,7 +106,7 @@ function createFontEntries(fonts, themeData) {
                 }
                 break;
             case 'import':
-                fontStrings.unshift(`@import '${processUrl(attr.import)}';`);
+                fontStrings.push(`@import '${processUrl(attr.import)}';`);
                 break;
             default:
                 break;

@@ -92,7 +92,7 @@ test('Should be possible to get theme font', async t => {
         auth: t.context.auth
     });
 
-    t.is(res.result.fontsCSS, "@import 'https://static.dwcdn.net/css/roboto.css';");
+    t.is(res.result.fontsCSS, '@import "https://static.dwcdn.net/css/roboto.css";');
 });
 
 test('Should be possible to get extended theme data', async t => {
