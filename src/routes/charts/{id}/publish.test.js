@@ -183,9 +183,9 @@ test('POST /charts/{id}/publish updates chart properties', async t => {
     });
 
     t.is(res.statusCode, 200);
-    t.is(res.result.publicVersion, 0);
-    t.is(res.result.lastEditStep, 0);
-    t.is(res.result.publishedAt, null);
+    t.falsy(res.result.publicVersion);
+    t.falsy(res.result.lastEditStep);
+    t.falsy(res.result.publishedAt);
 
     res = await t.context.server.inject({
         method: 'POST',
