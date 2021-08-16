@@ -174,7 +174,10 @@ function register(server, options) {
             // also update githead cache of visualization
             const githeadPath = path.join(pluginLocation, '.githead');
             if (await fs.pathExists(githeadPath)) {
-                server.app.visualizations.get(vis).githead = await fs.readFile(githeadPath);
+                server.app.visualizations.get(vis).githead = await fs.readFile(
+                    githeadPath,
+                    'utf-8'
+                );
             }
         }
 
