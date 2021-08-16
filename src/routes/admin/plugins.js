@@ -171,6 +171,11 @@ function register(server, options) {
                 droppedCacheKeys.push(`${id}__${vis}`);
                 dropOperationPromises.push(promise);
             }
+            const githeadPath = path.join(pluginLocation, '.githead');
+            if (await fs.pathExists(githeadPath)) {
+                // update githead
+                server.app.visualizations.get(vis).githead = await fs.readFile(githeadPath);
+            }
         }
 
         await Promise.all(dropOperationPromises);
