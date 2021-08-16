@@ -1,5 +1,3 @@
-const path = require('path');
-const fs = require('fs-extra');
 const Boom = require('@hapi/boom');
 const Joi = require('joi');
 const get = require('lodash/get');
@@ -46,16 +44,7 @@ module.exports = (server, options) => {
         const transparent = !!query.transparent;
 
         // try to find a .githead file in vis plugin
-        const pluginRoot = get(
-            server.methods.config('general'),
-            'localPluginRoot',
-            path.join(__dirname, '../../../../plugins')
-        );
-        const pluginGitHead = path.join(pluginRoot, vis.__plugin, '.githead');
-        let githead = 'head';
-        if (fs.existsSync(pluginGitHead)) {
-            githead = await fs.readFile(pluginGitHead);
-        }
+        const githead = vis.githead || 'head';
 
         const cacheKey = `${query.theme}__${params.id}__${githead}`;
         const cachedCSS = await styleCache.get(cacheKey);

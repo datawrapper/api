@@ -1,5 +1,6 @@
 module.exports = {
     general: {
+        localPluginRoot: '/plugins',
         localChartAssetRoot: '/tmp/data',
         localChartPublishRoot: '/tmp/charts',
         imageDomain: 'charts.datawrapper.local/preview'
