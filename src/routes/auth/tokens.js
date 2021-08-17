@@ -258,6 +258,7 @@ async function getAllTokens(request, h) {
                 last_used_at,
                 comment,
                 scopes,
+                firstTokenCharacters: token.slice(0, 4),
                 lastTokenCharacters: token.slice(-4),
                 url: `${url.pathname}/${id}`
             });
