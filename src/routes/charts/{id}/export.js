@@ -34,7 +34,8 @@ module.exports = (server, options) => {
                     }),
                     fullVector: Joi.boolean().default(false),
                     ligatures: Joi.boolean().default(true),
-                    transparent: Joi.boolean().default(false)
+                    transparent: Joi.boolean().default(false),
+                    logo: Joi.string().optional().valid('auto', 'on', 'off').default('auto')
                 })
             }
         },
@@ -81,7 +82,8 @@ module.exports = (server, options) => {
                     download: Joi.boolean().default(false),
                     fullVector: Joi.boolean().default(false),
                     ligatures: Joi.boolean().default(true),
-                    transparent: Joi.boolean().default(false)
+                    transparent: Joi.boolean().default(false),
+                    logo: Joi.string().optional().valid('auto', 'on', 'off').default('auto')
                 })
             }
         },
