@@ -168,3 +168,43 @@ test('GET /charts/{id}/publish/data returns the data when requested as another u
         }
     }
 });
+
+test('POST /charts/{id}/publish updates chart properties', async t => {
+    const { chart } = t.context;
+
+    const prePublicationDate = new Date();
+    prePublicationDate.setMilliseconds(0);
+
+    let res = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/charts/${chart.id}`,
+        auth: t.context.auth,
+        headers: t.context.headers
+    });
+
+    t.is(res.statusCode, 200);
+    t.falsy(res.result.publicVersion);
+    t.falsy(res.result.lastEditStep);
+    t.falsy(res.result.publishedAt);
+
+    res = await t.context.server.inject({
+        method: 'POST',
+        url: `/v3/charts/${chart.id}/publish`,
+        auth: t.context.auth,
+        headers: t.context.headers
+    });
+
+    t.is(res.statusCode, 200);
+
+    res = await t.context.server.inject({
+        method: 'GET',
+        url: `/v3/charts/${chart.id}`,
+        auth: t.context.auth,
+        headers: t.context.headers
+    });
+
+    t.is(res.statusCode, 200);
+    t.is(res.result.publicVersion, 1);
+    t.is(res.result.lastEditStep, 5);
+    t.is(new Date(res.result.publishedAt) >= prePublicationDate, true);
+});
