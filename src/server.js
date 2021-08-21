@@ -345,8 +345,8 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
                 );
             } else {
                 for (const file of fileMap) {
-                    const basename = path.basename(file);
-                    const dir = path.dirname(file);
+                    const basename = path.basename(file.path);
+                    const dir = path.dirname(file.path);
 
                     const out =
                         dir === '.'
