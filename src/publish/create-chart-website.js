@@ -69,11 +69,6 @@ module.exports = async function createChartWebsite(
         throw Boom.notFound();
     }
 
-    if (!publishData.data) {
-        await log('error-data');
-        throw Boom.conflict('No chart data available.');
-    }
-
     const team = await Team.findByPk(chart.organization_id);
     const chartLocale = publishData.chart.language || 'en-US';
     const locales = {
@@ -103,22 +98,29 @@ module.exports = async function createChartWebsite(
     /* Copy assets */
     const assets = {};
     const assetsFiles = [];
+    let chartData = null;
+
     for (const asset of publishData.assets) {
         const { name, prefix, shared, value } = asset;
-        if (!shared) {
-            assets[name] = {
-                value
-            };
-        } else {
-            const hashed = await writeFileHashed(name, value, outDir);
-            const assetPath = (prefix ? prefix + '/' : '') + hashed;
+        const hashed = await writeFileHashed(name, value, outDir);
+        const assetPath = (shared && prefix ? prefix + '/' : '') + hashed;
 
+        if (name === `${chart.id}.${get(chart, 'metadata.data.json') ? 'json' : 'csv'}`) {
+            chartData = asset.value;
+        }
+
+        if (shared) {
             assets[name] = {
-                shared: true,
                 url: getAssetLink(`../../lib/${assetPath}`)
             };
 
             assetsFiles.push(`lib/${assetPath}`);
+        } else {
+            assets[name] = {
+                url: getAssetLink(assetPath)
+            };
+
+            assetsFiles.push(assetPath);
         }
     }
     publishData.assets = assets;
@@ -181,6 +183,12 @@ module.exports = async function createChartWebsite(
     delete publishData.styles;
     delete publishData.theme.fontsCSS;
 
+    const cssFile = await writeFileHashed(
+        `${chart.type}.${chart.theme}.css`,
+        `${fonts}\n${css}`,
+        outDir
+    );
+
     /**
      * Render the visualizations entry: "index.html"
      */
@@ -192,7 +200,7 @@ module.exports = async function createChartWebsite(
         CHART_HEAD: head,
         POLYFILL_SCRIPT: getAssetLink(`../../lib/${polyfillScript}`),
         CORE_SCRIPT: getAssetLink(`../../lib/${coreScript}`),
-        CSS: `${fonts}\n${css}`,
+        CSS: `../../lib/vis/${cssFile}`,
         SCRIPTS: dependencies.map(file => getAssetLink(`../../${file}`)),
         CHART_CLASS: [
             `vis-height-${get(publishData.visualization, 'height', 'fit')}`,
@@ -218,7 +226,7 @@ module.exports = async function createChartWebsite(
     await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
 
     /* write "data.csv", including changes made in step 2 */
-    const dataset = await dwChart(publishData.chart).load(publishData.data);
+    const dataset = await dwChart(publishData.chart).load(chartData);
     const isJSON = get(publishData.chart, 'metadata.data.json');
     const dataFile = `data.${isJSON ? 'json' : 'csv'}`;
     await fs.writeFile(
@@ -228,21 +236,30 @@ module.exports = async function createChartWebsite(
     );
 
     const fileMap = [
-        ...dependencies,
-        ...polyfillFiles,
-        ...blocksFiles,
-        ...assetsFiles,
-        path.join('lib/', polyfillScript),
-        path.join('lib/', coreScript),
-        'index.html',
-        dataFile
+        ...dependencies.map(path => {
+            return { path, hashed: true };
+        }),
+        ...polyfillFiles.map(path => {
+            return { path, hashed: false };
+        }),
+        ...blocksFiles.map(path => {
+            return { path, hashed: true };
+        }),
+        ...assetsFiles.map(path => {
+            return { path, hashed: true };
+        }),
+        { path: path.join('lib/', polyfillScript), hashed: true },
+        { path: path.join('lib/', coreScript), hashed: true },
+        { path: path.join('lib/vis', cssFile), hashed: true },
+        { path: 'index.html', hashed: false },
+        { path: dataFile, hashed: false }
     ];
 
     async function cleanup() {
         await fs.remove(outDir);
     }
 
-    return { data: publishData, outDir, fileMap, cleanup };
+    return { data: publishData, chartData, outDir, fileMap, cleanup };
 };
 
 async function loadVendorLocale(vendor, locale, team) {

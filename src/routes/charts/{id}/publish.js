@@ -2,6 +2,7 @@ const Boom = require('@hapi/boom');
 const Joi = require('joi');
 const ReadonlyChart = require('@datawrapper/orm/models/ReadonlyChart');
 const set = require('lodash/set');
+const get = require('lodash/get');
 const {
     Action,
     Chart,
@@ -119,7 +120,7 @@ async function publishChart(request, h) {
     }
 
     const options = { auth, headers, server, log: logPublishStatus, publish: true };
-    const { data, outDir, fileMap, cleanup } = await createChartWebsite(chart, options);
+    const { chartData, outDir, fileMap, cleanup } = await createChartWebsite(chart, options);
 
     /**
      * The hard work is done!
@@ -130,7 +131,7 @@ async function publishChart(request, h) {
     /* write public CSV file (used when forking a chart) */
     await events.emit(event.PUT_CHART_ASSET, {
         chart,
-        data: data.data,
+        data: chartData,
         filename: `${chart.id}.public.csv`
     });
 
@@ -318,18 +319,9 @@ async function publishData(request, h) {
         readonlyChart = await ReadonlyChart.fromChart(chart);
     }
 
-    // the csv dataset
-    const res = await request.server.inject({
-        url: `/v3/charts/${params.id}/data${
-            query.published ? '?published=1' : query.ott ? `?ott=${query.ott}` : ''
-        }`,
-        auth,
-        headers
-    });
-
     const additionalData = await getAdditionalMetadata(readonlyChart, { server });
 
-    const data = { data: res.result, chart: await prepareChart(readonlyChart, additionalData) };
+    const data = { chart: await prepareChart(readonlyChart, additionalData) };
 
     // the vis
     data.visualization = server.app.visualizations.get(chart.type);
@@ -381,17 +373,33 @@ async function publishData(request, h) {
     // chart translations
     data.translations = getScope('chart', chart.language || 'en-US');
 
-    data.assets = (
-        await server.app.events.emit(
-            server.app.event.CHART_ASSETS,
-            {
-                chart,
-                auth,
-                ott: query.ott
-            },
-            { filter: 'success' }
-        )
-    ).filter(el => typeof el === 'object');
+    // the csv dataset
+    const res = await request.server.inject({
+        url: `/v3/charts/${params.id}/data${
+            query.published ? '?published=1' : query.ott ? `?ott=${query.ott}` : ''
+        }`,
+        auth,
+        headers
+    });
+
+    data.assets = [
+        {
+            name: `${chart.id}.${get(chart, 'metadata.data.json') ? 'json' : 'csv'}`,
+            value: res.result,
+            shared: false
+        },
+        ...(
+            await server.app.events.emit(
+                server.app.event.CHART_ASSETS,
+                {
+                    chart,
+                    auth,
+                    ott: query.ott
+                },
+                { filter: 'success' }
+            )
+        ).filter(el => typeof el === 'object')
+    ];
 
     data.externalDataUrl = await events.emit(event.EXTERNAL_DATA_URL, null, {
         filter: 'first'
