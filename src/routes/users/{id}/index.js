@@ -143,6 +143,8 @@ async function getUser(request, h) {
             'activate_token',
             'reset_password_token'
         ]);
+    } else {
+        set(options, ['include', 1], { model: Team, attributes: ['id', 'name'] });
     }
 
     const user = await User.findByPk(userId, options);
