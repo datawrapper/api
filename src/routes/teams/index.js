@@ -4,6 +4,7 @@ const { nanoid } = require('nanoid');
 const { Team, UserTeam } = require('@datawrapper/orm/models');
 
 const { listResponse, teamResponse } = require('../../schemas/response.js');
+const { getUserData } = require('@datawrapper/orm/utils/userData');
 
 module.exports = {
     name: 'routes/teams',
@@ -89,6 +90,10 @@ async function getAllTeams(request, h) {
         method: 'GET',
         url: `/v3/admin/teams?userId=${request.auth.artifacts.id}&${request.url.search.slice(1)}`,
         auth: request.auth
+    });
+    const activeTeam = await getUserData(request.auth.artifacts.id, 'active_team');
+    res.result.list.forEach(team => {
+        if (team.id === activeTeam) team.active = true;
     });
     return h.response(res.result).code(res.statusCode);
 }
