@@ -106,20 +106,21 @@ module.exports = async function createChartWebsite(
             chartData = asset.value;
         }
 
-        if (!shared) {
-            assets[name] = {
-                value
-            };
-        } else {
+        if (shared) {
             const hashed = await writeFileHashed(name, value, outDir);
             const assetPath = (prefix ? prefix + '/' : '') + hashed;
 
             assets[name] = {
-                shared: true,
                 url: getAssetLink(`../../lib/${assetPath}`)
             };
-
             assetsFiles.push(`lib/${assetPath}`);
+        } else {
+            await fs.writeFile(path.join(outDir, name), value, { encoding: 'utf-8' });
+
+            assets[name] = {
+                url: name
+            };
+            assetsFiles.push(name);
         }
     }
     publishData.assets = assets;
@@ -225,7 +226,7 @@ module.exports = async function createChartWebsite(
     await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
 
     /* write "data.csv", including changes made in step 2 */
-    const dataset = await dwChart(publishData.chart).load(chartData);
+    const dataset = await dwChart(publishData.chart).load(chartData || '');
     const isJSON = get(publishData.chart, 'metadata.data.json');
     const dataFile = `data.${isJSON ? 'json' : 'csv'}`;
     await fs.writeFile(

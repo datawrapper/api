@@ -385,7 +385,7 @@ async function publishData(request, h) {
     data.assets = [
         {
             name: `dataset.${get(chart, 'metadata.data.json') ? 'json' : 'csv'}`,
-            value: res.status === 200 ? res.result : '',
+            value: res.result,
             shared: false
         },
         ...(
