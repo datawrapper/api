@@ -181,6 +181,12 @@ module.exports = async function createChartWebsite(
     delete publishData.styles;
     delete publishData.theme.fontsCSS;
 
+    const cssFile = await writeFileHashed(
+        `${chart.type}.${chart.theme}.css`,
+        `${fonts}\n${css}`,
+        outDir
+    );
+
     /**
      * Render the visualizations entry: "index.html"
      */
@@ -192,7 +198,7 @@ module.exports = async function createChartWebsite(
         CHART_HEAD: head,
         POLYFILL_SCRIPT: getAssetLink(`../../lib/${polyfillScript}`),
         CORE_SCRIPT: getAssetLink(`../../lib/${coreScript}`),
-        CSS: `${fonts}\n${css}`,
+        CSS: `../../lib/vis/${cssFile}`,
         SCRIPTS: dependencies.map(file => getAssetLink(`../../${file}`)),
         CHART_CLASS: [
             `vis-height-${get(publishData.visualization, 'height', 'fit')}`,
@@ -242,6 +248,7 @@ module.exports = async function createChartWebsite(
         }),
         { path: path.join('lib/', polyfillScript), hashed: true },
         { path: path.join('lib/', coreScript), hashed: true },
+        { path: path.join('lib/vis', cssFile), hashed: true },
         { path: 'index.html', hashed: false },
         { path: dataFile, hashed: false }
     ];
