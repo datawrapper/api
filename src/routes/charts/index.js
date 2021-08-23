@@ -40,7 +40,7 @@ module.exports = {
                             .default('DESC')
                             .description('Result order (ascending or descending)'),
                         orderBy: Joi.string()
-                            .valid('id', 'email', 'name', 'createdAt')
+                            .valid('id', 'email', 'name', 'createdAt', 'lastModifiedAt')
                             .default('createdAt')
                             .description('Attribute to order by'),
                         limit: Joi.number()
