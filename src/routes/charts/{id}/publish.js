@@ -319,6 +319,15 @@ async function publishData(request, h) {
         readonlyChart = await ReadonlyChart.fromChart(chart);
     }
 
+    // the csv dataset
+    const res = await request.server.inject({
+        url: `/v3/charts/${params.id}/data${
+            query.published ? '?published=1' : query.ott ? `?ott=${query.ott}` : ''
+        }`,
+        auth,
+        headers
+    });
+
     const additionalData = await getAdditionalMetadata(readonlyChart, { server });
 
     const data = { chart: await prepareChart(readonlyChart, additionalData) };
@@ -372,15 +381,6 @@ async function publishData(request, h) {
 
     // chart translations
     data.translations = getScope('chart', chart.language || 'en-US');
-
-    // the csv dataset
-    const res = await request.server.inject({
-        url: `/v3/charts/${params.id}/data${
-            query.published ? '?published=1' : query.ott ? `?ott=${query.ott}` : ''
-        }`,
-        auth,
-        headers
-    });
 
     data.assets = [
         {

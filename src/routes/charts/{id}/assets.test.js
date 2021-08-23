@@ -111,13 +111,13 @@ test('Public asset can be read', async t => {
         const asset = `X1,X2
 10,20`;
 
-        res = await putAsset(t.context.server, headers, chart, `${chart.id}.csv`, { data: asset });
+        res = await putAsset(t.context.server, headers, chart, `${chart.id}.csv`, asset);
         t.is(res.statusCode, 204);
 
         // see if that worked
         res = await getAsset(t.context.server, headers, chart, `${chart.id}.csv`);
         t.is(res.statusCode, 200);
-        t.is(JSON.parse(res.result).data, asset);
+        t.is(res.result, asset);
 
         // publish chart
         t.context.server.inject({
