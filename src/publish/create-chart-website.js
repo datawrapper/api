@@ -108,7 +108,7 @@ module.exports = async function createChartWebsite(
 
         if (shared) {
             const hashed = await writeFileHashed(name, value, outDir);
-            const assetPath = (shared && prefix ? prefix + '/' : '') + hashed;
+            const assetPath = (prefix ? prefix + '/' : '') + hashed;
 
             assets[name] = {
                 url: getAssetLink(`../../lib/${assetPath}`)
