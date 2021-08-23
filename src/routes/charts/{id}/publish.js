@@ -384,7 +384,7 @@ async function publishData(request, h) {
 
     data.assets = [
         {
-            name: `${chart.id}.${get(chart, 'metadata.data.json') ? 'json' : 'csv'}`,
+            name: `dataset.${get(chart, 'metadata.data.json') ? 'json' : 'csv'}`,
             value: res.result,
             shared: false
         },
