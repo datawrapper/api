@@ -69,11 +69,6 @@ module.exports = async function createChartWebsite(
         throw Boom.notFound();
     }
 
-    if (!publishData.data) {
-        await log('error-data');
-        throw Boom.conflict('No chart data available.');
-    }
-
     const team = await Team.findByPk(chart.organization_id);
     const chartLocale = publishData.chart.language || 'en-US';
     const locales = {
@@ -103,8 +98,13 @@ module.exports = async function createChartWebsite(
     /* Copy assets */
     const assets = {};
     const assetsFiles = [];
+    let chartData = null;
     for (const asset of publishData.assets) {
         const { name, prefix, shared, value } = asset;
+
+        if (name === `dataset.${get(chart, 'metadata.data.json') ? 'json' : 'csv'}`) {
+            chartData = asset.value;
+        }
 
         if (shared) {
             const hashed = await writeFileHashed(name, value, outDir);
@@ -226,7 +226,7 @@ module.exports = async function createChartWebsite(
     await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
 
     /* write "data.csv", including changes made in step 2 */
-    const dataset = await dwChart(publishData.chart).load(publishData.data);
+    const dataset = await dwChart(publishData.chart).load(chartData);
     const isJSON = get(publishData.chart, 'metadata.data.json');
     const dataFile = `data.${isJSON ? 'json' : 'csv'}`;
     await fs.writeFile(
@@ -259,7 +259,7 @@ module.exports = async function createChartWebsite(
         await fs.remove(outDir);
     }
 
-    return { data: publishData, outDir, fileMap, cleanup };
+    return { data: publishData, chartData, outDir, fileMap, cleanup };
 };
 
 async function loadVendorLocale(vendor, locale, team) {
