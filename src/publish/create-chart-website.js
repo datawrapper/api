@@ -226,7 +226,7 @@ module.exports = async function createChartWebsite(
     await fs.writeFile(path.join(outDir, 'index.html'), indexHTML, { encoding: 'utf-8' });
 
     /* write "data.csv", including changes made in step 2 */
-    const dataset = await dwChart(publishData.chart).load(chartData);
+    const dataset = await dwChart(publishData.chart).load(chartData || '');
     const isJSON = get(publishData.chart, 'metadata.data.json');
     const dataFile = `data.${isJSON ? 'json' : 'csv'}`;
     await fs.writeFile(
