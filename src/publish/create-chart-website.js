@@ -228,14 +228,22 @@ module.exports = async function createChartWebsite(
     );
 
     const fileMap = [
-        ...dependencies,
-        ...polyfillFiles,
-        ...blocksFiles,
-        ...assetsFiles,
-        path.join('lib/', polyfillScript),
-        path.join('lib/', coreScript),
-        'index.html',
-        dataFile
+        ...dependencies.map(path => {
+            return { path, hashed: true };
+        }),
+        ...polyfillFiles.map(path => {
+            return { path, hashed: false };
+        }),
+        ...blocksFiles.map(path => {
+            return { path, hashed: true };
+        }),
+        ...assetsFiles.map(path => {
+            return { path, hashed: true };
+        }),
+        { path: path.join('lib/', polyfillScript), hashed: true },
+        { path: path.join('lib/', coreScript), hashed: true },
+        { path: 'index.html', hashed: false },
+        { path: dataFile, hashed: false }
     ];
 
     async function cleanup() {
