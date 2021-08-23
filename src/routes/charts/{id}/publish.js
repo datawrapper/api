@@ -382,6 +382,10 @@ async function publishData(request, h) {
         headers
     });
 
+    if (res.status !== 200 || !res.result) {
+        throw Boom.conflict('No chart data available.');
+    }
+
     data.assets = [
         {
             name: `dataset.${get(chart, 'metadata.data.json') ? 'json' : 'csv'}`,
