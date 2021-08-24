@@ -5,6 +5,8 @@ const { Op } = require('@datawrapper/orm').db;
 const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
 const set = require('lodash/set');
 const get = require('lodash/get');
+const isEqual = require('lodash/isEqual');
+const cloneDeep = require('lodash/cloneDeep');
 const assignWithEmptyObjects = require('../../../utils/assignWithEmptyObjects');
 const { decamelizeKeys } = require('humps');
 const { getAdditionalMetadata, prepareChart } = require('../../../utils/index.js');
@@ -288,6 +290,7 @@ async function editChart(request, h) {
         );
     }
 
+    const chartOld = cloneDeep(chart.dataValues);
     const newData = assignWithEmptyObjects(await prepareChart(chart), payload);
 
     if (request.method === 'put' && payload.metadata) {
@@ -295,14 +298,30 @@ async function editChart(request, h) {
         newData.metadata = payload.metadata;
     }
 
-    await Chart.update(
-        { ...decamelizeKeys(newData), metadata: newData.metadata },
-        { where: { id: chart.id }, limit: 1 }
+    // check if we have actually changed something
+    const chartNew = {
+        ...chartOld,
+        ...decamelizeKeys(newData),
+        metadata: newData.metadata
+    };
+    const ignoreKeys = new Set(['guest_session', 'public_id', 'created_at']);
+    const hasChanged = Object.keys(chartNew).find(
+        key =>
+            !ignoreKeys.has(key) &&
+            !isEqual(chartNew[key], chartOld[key]) &&
+            (chartNew[key] || chartOld[key])
     );
-    await chart.reload();
-    // log chart/edit
-    await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
 
+    if (hasChanged) {
+        // only update and log edit if something has changed
+        await Chart.update(
+            { ...decamelizeKeys(newData), metadata: newData.metadata },
+            { where: { id: chart.id }, limit: 1 }
+        );
+        await chart.reload();
+        // log chart/edit
+        await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
+    }
     return {
         ...(await prepareChart(chart)),
         url: `${url.pathname}`
