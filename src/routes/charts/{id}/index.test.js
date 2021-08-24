@@ -336,3 +336,63 @@ test('Users can get only published charts', async t => {
         }
     }
 });
+
+test('An empty PATCH should not change last_modified_at ', async t => {
+    let chart;
+    try {
+        let chart = (
+            await t.context.server.inject({
+                method: 'POST',
+                url: '/v3/charts',
+                auth: t.context.auth,
+                headers: t.context.headers
+            })
+        ).result;
+
+        chart = (
+            await t.context.server.inject({
+                method: 'GET',
+                url: `/v3/charts/${chart.id}`,
+                auth: t.context.auth
+            })
+        ).result;
+
+        // a non-empty patch changes last_modified_at
+        let lastModifiedAt = chart.lastModifiedAt;
+        await delay(1000);
+        chart = (
+            await t.context.server.inject({
+                method: 'PATCH',
+                url: `/v3/charts/${chart.id}`,
+                auth: t.context.auth,
+                headers: t.context.headers,
+                payload: {
+                    title: 'New title'
+                }
+            })
+        ).result;
+        t.notDeepEqual(lastModifiedAt, chart.lastModifiedAt);
+
+        // an empty patch does not change last_modified_at
+        lastModifiedAt = chart.lastModifiedAt;
+        await delay(1000);
+        chart = (
+            await t.context.server.inject({
+                method: 'PATCH',
+                url: `/v3/charts/${chart.id}`,
+                auth: t.context.auth,
+                headers: t.context.headers,
+                payload: {}
+            })
+        ).result;
+        t.deepEqual(chart.lastModifiedAt, lastModifiedAt);
+    } finally {
+        if (chart) {
+            await destroy(...Object.values(chart));
+        }
+    }
+});
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
