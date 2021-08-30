@@ -24,6 +24,7 @@ function register(server, options) {
     server.app.adminScopes.add('plugin:write');
 
     const styleCache = server.cache({ segment: 'vis-styles', shared: true });
+    const githeadCache = server.cache({ segment: 'vis-githead', shared: true });
 
     // GET /v3/admin/plugins
     server.route({
@@ -174,10 +175,7 @@ function register(server, options) {
             // also update githead cache of visualization
             const githeadPath = path.join(pluginLocation, '.githead');
             if (await fs.pathExists(githeadPath)) {
-                server.app.visualizations.get(vis).githead = await fs.readFile(
-                    githeadPath,
-                    'utf-8'
-                );
+                await githeadCache.set(vis.id, await fs.readFile(githeadPath, 'utf-8'));
             }
         }
 

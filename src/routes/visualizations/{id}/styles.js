@@ -12,6 +12,12 @@ module.exports = (server, options) => {
         shared: true
     });
 
+    const githeadCache = server.cache({
+        segment: 'vis-githead',
+        expiresIn: 86400000 * 365 /* 1 year */,
+        shared: true
+    });
+
     server.route({
         method: 'GET',
         path: '/styles.css',
@@ -44,7 +50,7 @@ module.exports = (server, options) => {
         const transparent = !!query.transparent;
 
         // try to find a .githead file in vis plugin
-        const githead = vis.githead || 'head';
+        const githead = (await githeadCache.get(vis.id)) || 'head';
 
         const cacheKey = `${query.theme}__${params.id}__${githead}`;
         const cachedCSS = await styleCache.get(cacheKey);
