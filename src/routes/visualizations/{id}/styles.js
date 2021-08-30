@@ -49,7 +49,12 @@ module.exports = (server, options) => {
 
         const transparent = !!query.transparent;
 
-        // try to find a .githead file in vis plugin
+        // if vis.githead was written upon registration, write to githead
+        if (vis.githead) {
+            await githeadCache.set(vis.id, vis.githead);
+            vis.githead = '';
+        }
+
         const githead = (await githeadCache.get(vis.id)) || 'head';
 
         const cacheKey = `${query.theme}__${params.id}__${githead}`;
