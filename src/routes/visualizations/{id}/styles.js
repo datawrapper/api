@@ -49,7 +49,7 @@ module.exports = (server, options) => {
 
         const transparent = !!query.transparent;
 
-        // if vis.githead was written upon registration, write to githead
+        // if vis.githead was written upon registration, write to cache
         if (vis.githead) {
             await githeadCache.set(vis.id, vis.githead);
             vis.githead = '';
