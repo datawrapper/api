@@ -22,7 +22,7 @@ const renderHTML = pug.compileFile(path.resolve(__dirname, './index.pug'));
  * @property {Object} server - Hapi.js `server` object
  * @property {function} [log] - Logging function
  * @property {boolean} [includePolyfills] - Flag to decide if polyfills should get included
- * @property {boolean} [flatRessources] - Flag to rewrite asset paths in index.html
+ * @property {boolean} [zipExport] - Flag to include assets directly for ZIP export
  * @property {boolean} [publish] - Flag to indicate that this chart is to be published (not previewed or exported)
  */
 
@@ -51,7 +51,7 @@ module.exports = async function createChartWebsite(
         server,
         log = noop,
         includePolyfills = true,
-        flatRessources = false,
+        zipExport = false,
         publish = false
     } = {}
 ) {
@@ -106,7 +106,12 @@ module.exports = async function createChartWebsite(
             chartData = asset.value;
         }
 
-        if (shared) {
+        if (zipExport) {
+            // in ZIP export, bake assets directly into HTML
+            assets[name] = {
+                value
+            };
+        } else if (shared) {
             const hashed = await writeFileHashed(name, value, outDir);
             const assetPath = (prefix ? prefix + '/' : '') + hashed;
 
@@ -152,7 +157,7 @@ module.exports = async function createChartWebsite(
     dependencies.push(path.join('lib/vis/', fileName));
 
     function getAssetLink(asset) {
-        return flatRessources ? path.basename(asset) : asset;
+        return zipExport ? path.basename(asset) : asset;
     }
 
     const blocksFilePromises = publishData.blocks
