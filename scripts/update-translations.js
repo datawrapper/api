@@ -186,9 +186,12 @@ const gitStatusCache = new Map();
 const gitNewChanges = new Map();
 
 async function writeTranslationsIfGitClean(file, translations) {
-    if (PREFIX && !file.startsWith(PREFIX)) {
-        // ignore fle
-        return;
+    if (PREFIX) {
+        const relPath = path.relative(path.join(__dirname, '../../..'), file);
+        if (!relPath.startsWith(PREFIX)) {
+            // ignore file
+            return;
+        }
     }
     // read existing translations and compare
     if (fs.existsSync(file)) {
