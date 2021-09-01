@@ -3,6 +3,8 @@ const Boom = require('@hapi/boom');
 const ReadonlyChart = require('@datawrapper/orm/models/ReadonlyChart');
 const { Op } = require('@datawrapper/orm').db;
 const { Chart, ChartPublic, User, Folder } = require('@datawrapper/orm/models');
+const { getUserData, setUserData } = require('@datawrapper/orm/utils/userData');
+const uniq = require('lodash/uniq');
 const set = require('lodash/set');
 const get = require('lodash/get');
 const isEqual = require('lodash/isEqual');
@@ -321,6 +323,19 @@ async function editChart(request, h) {
         await chart.reload();
         // log chart/edit
         await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
+        // log recently edited charts
+        try {
+            const recentlyEdited = JSON.parse(await getUserData(user.id, 'recently_edited', '[]'));
+            if (recentlyEdited[0] !== chart.id) {
+                await setUserData(
+                    user.id,
+                    'recently_edited',
+                    JSON.stringify(uniq([chart.id, ...recentlyEdited]).slice(0, 100))
+                );
+            }
+        } catch (err) {
+            request.logger.error(`Broken user_data 'recently_edited' for user [${user.id}]`);
+        }
     }
     return {
         ...(await prepareChart(chart)),
