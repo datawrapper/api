@@ -321,20 +321,26 @@ async function editChart(request, h) {
             { where: { id: chart.id }, limit: 1 }
         );
         await chart.reload();
+
         // log chart/edit
         await request.server.methods.logAction(user.id, `chart/edit`, chart.id);
-        // log recently edited charts
-        try {
-            const recentlyEdited = JSON.parse(await getUserData(user.id, 'recently_edited', '[]'));
-            if (recentlyEdited[0] !== chart.id) {
-                await setUserData(
-                    user.id,
-                    'recently_edited',
-                    JSON.stringify(uniq([chart.id, ...recentlyEdited]).slice(0, 100))
+
+        if (user.role !== 'guest') {
+            // log recently edited charts
+            try {
+                const recentlyEdited = JSON.parse(
+                    await getUserData(user.id, 'recently_edited', '[]')
                 );
+                if (recentlyEdited[0] !== chart.id) {
+                    await setUserData(
+                        user.id,
+                        'recently_edited',
+                        JSON.stringify(uniq([chart.id, ...recentlyEdited]).slice(0, 100))
+                    );
+                }
+            } catch (err) {
+                request.logger.error(`Broken user_data 'recently_edited' for user [${user.id}]`);
             }
-        } catch (err) {
-            request.logger.error(`Broken user_data 'recently_edited' for user [${user.id}]`);
         }
     }
     return {
