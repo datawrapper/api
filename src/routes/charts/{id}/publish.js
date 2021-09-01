@@ -220,13 +220,19 @@ async function publishChart(request, h) {
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
 
     // log recently published charts
-    const recentlyPublished = JSON.parse(await getUserData(user.id, 'recently_published', '[]'));
-    if (recentlyPublished[0] !== chart.id) {
-        await setUserData(
-            user.id,
-            'recently_published',
-            JSON.stringify(uniq([chart.id, ...recentlyPublished]).slice(0, 100))
+    try {
+        const recentlyPublished = JSON.parse(
+            await getUserData(user.id, 'recently_published', '[]')
         );
+        if (recentlyPublished[0] !== chart.id) {
+            await setUserData(
+                user.id,
+                'recently_published',
+                JSON.stringify(uniq([chart.id, ...recentlyPublished]).slice(0, 100))
+            );
+        }
+    } catch (err) {
+        request.logger.error(`Broken user_data 'recently_published' for user [${user.id}]`);
     }
     // refresh external data if request isn't coming from the app
     if (headers.origin !== `http${config.frontend.https ? 's' : ''}://${config.frontend.domain}`) {
