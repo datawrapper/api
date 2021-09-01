@@ -1,6 +1,8 @@
 const Boom = require('@hapi/boom');
 const Joi = require('joi');
 const ReadonlyChart = require('@datawrapper/orm/models/ReadonlyChart');
+const { getUserData, setUserData } = require('@datawrapper/orm/utils/userData');
+const uniq = require('lodash/uniq');
 const set = require('lodash/set');
 const get = require('lodash/get');
 const {
@@ -217,6 +219,15 @@ async function publishChart(request, h) {
     // log action that chart has been published
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
 
+    // log recently published charts
+    const recentlyPublished = JSON.parse(await getUserData(user.id, 'recently_published', '[]'));
+    if (recentlyPublished[0] !== chart.id) {
+        await setUserData(
+            user.id,
+            'recently_published',
+            JSON.stringify(uniq([chart.id, ...recentlyPublished]).slice(0, 100))
+        );
+    }
     // refresh external data if request isn't coming from the app
     if (headers.origin !== `http${config.frontend.https ? 's' : ''}://${config.frontend.domain}`) {
         try {
