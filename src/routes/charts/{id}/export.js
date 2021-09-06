@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 
 module.exports = (server, options) => {
@@ -34,7 +34,8 @@ module.exports = (server, options) => {
                     }),
                     fullVector: Joi.boolean().default(false),
                     ligatures: Joi.boolean().default(true),
-                    transparent: Joi.boolean().default(false)
+                    transparent: Joi.boolean().default(false),
+                    logo: Joi.string().optional().valid('auto', 'on', 'off').default('auto')
                 })
             }
         },
@@ -81,7 +82,8 @@ module.exports = (server, options) => {
                     download: Joi.boolean().default(false),
                     fullVector: Joi.boolean().default(false),
                     ligatures: Joi.boolean().default(true),
-                    transparent: Joi.boolean().default(false)
+                    transparent: Joi.boolean().default(false),
+                    logo: Joi.string().optional().valid('auto', 'on', 'off').default('auto')
                 })
             }
         },
@@ -130,7 +132,7 @@ async function exportChart(request, h) {
             })
         ).find(res => res.status === 'success' && res.data);
 
-        if (!result) return Boom.badImplementation();
+        if (!result) return Boom.badRequest();
 
         await request.server.methods.logAction(user.id, `chart/export/${params.format}`, params.id);
 
@@ -151,6 +153,7 @@ async function exportChart(request, h) {
             // this seems to be an orderly error
             return Boom[error.code](error.message);
         }
+
         // this is an unexpected error, so let's log it
         request.logger.error(error);
         return Boom.badImplementation();

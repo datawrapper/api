@@ -4,8 +4,10 @@ require('dotenv').config({
 
 module.exports = {
     general: {
+        localPluginRoot: '/plugins',
         localChartAssetRoot: '/tmp/data',
-        localChartPublishRoot: '/tmp/charts'
+        localChartPublishRoot: '/tmp/charts',
+        imageDomain: process.env.DW_THUMBNAIL_URL
     },
     frontend: {
         domain: 'localhost',

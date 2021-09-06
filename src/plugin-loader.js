@@ -14,13 +14,32 @@ module.exports = {
         const config = server.methods.config();
         const root = config.general.localPluginRoot || path.join(process.cwd(), 'plugins');
 
-        const plugins = Object.keys(config.plugins || []).map(registerPlugin);
+        const plugins = Object.keys(config.plugins || [])
+            .reduce(getPluginPath, [])
+            .map(registerPlugin);
 
-        function registerPlugin(name) {
+        function getPluginPath(plugins, name) {
+            // If available, use .cjs file (ES Module plugin):
+            const cjsPath = path.join(root, name, 'api.cjs');
+            if (fs.existsSync(cjsPath)) {
+                plugins.push({ name, pluginPath: cjsPath });
+                return plugins;
+            }
+
+            // Else, use .js file (legacy plugin):
+            const jsPath = path.join(root, name, 'api.js');
+            if (fs.existsSync(jsPath)) {
+                plugins.push({ name, pluginPath: jsPath });
+                return plugins;
+            }
+
+            // No plugin file found — don't add anything:
+            return plugins;
+        }
+
+        function registerPlugin({ name, pluginPath }) {
             try {
-                const pluginPath = path.join(root, name, 'api.js');
                 const { options = {}, ...plugin } = require(pluginPath);
-
                 const { routes, ...opts } = options;
                 return [
                     {
@@ -43,10 +62,11 @@ module.exports = {
         if (plugins.length) {
             for (const [{ plugin, options, error, name }, pluginOptions] of plugins) {
                 if (error) {
-                    server.logger().warn(`[Plugin] ${name}`, logError(root, name, error));
+                    server.logger.warn(`[Plugin] ${name}\n\n${logError(root, name, error)}`);
+                    server.logger.warn(error);
                 } else {
                     const version = get(plugin, ['pkg', 'version'], plugin.version);
-                    server.logger().info(`[Plugin] ${name}@${version}`);
+                    server.logger.info(`[Plugin] ${name}@${version}`);
                     // try to load locales
                     try {
                         const localePath = path.join(root, name, 'locale');
@@ -82,7 +102,7 @@ module.exports = {
 function logError(root, name, error) {
     if (error.code === 'MODULE_NOT_FOUND') {
         return `- skipped
-    Reason: \`api.js\` doesn't exist or a dependency is not installed (${error})`;
+    Reason: \`api.[cjs,js]\` doesn't exist or a dependency is not installed (${error})`;
     }
 
     return `

@@ -1,5 +1,5 @@
 const Boom = require('@hapi/boom');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const { User } = require('@datawrapper/orm/models');
 
 module.exports = (server, options) => {

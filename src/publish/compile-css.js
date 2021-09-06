@@ -22,7 +22,7 @@ const postcss = pCSS([
     require('cssnano')({ preset: ['default', { svgo: false }] })
 ]);
 
-module.exports = { compileCSS, findLessVariables, createFontEntries, flatten };
+module.exports = { compileCSS, findLessVariables, createFontEntries, compileFontCSS, flatten };
 
 /**
  * Compile and concatenate .less files to CSS and run some code optimizations with PostCSS.
@@ -66,7 +66,6 @@ async function compileCSS({ theme, filePaths }) {
     const inputLess = [
         createCssVariables(theme.data, schemeKeys),
         varString,
-        createFontEntries(theme.fonts, theme.data),
         lessString,
         theme.less
     ].join('');
@@ -98,6 +97,13 @@ async function compileCSS({ theme, filePaths }) {
     return css;
 }
 
+async function compileFontCSS(fonts, themeData) {
+    const fontCSS = createFontEntries(fonts, themeData);
+    let { css } = await less.render(fontCSS);
+    css = (await postcss.process(css, { from: undefined })).css;
+    return css;
+}
+
 function createCssVariables(themeData, keys) {
     /* default scheme */
     const schemeVariables = [createDefaultSchemeVariables(themeData, keys)];
@@ -116,9 +122,7 @@ function createCssVariables(themeData, keys) {
                 return `--${keyToVariable(key)}: ${get(themeData, key)};`;
             })
             .join('\n\t');
-        return `body {
-    ${variables}
-}`;
+        return `body { ${variables} }`;
     }
 
     function createSchemeVariables(scheme, schemeName) {
@@ -127,9 +131,7 @@ function createCssVariables(themeData, keys) {
                 return `--${keyToVariable(key)}: ${scheme[key]};`;
             })
             .join('\n\t');
-        return `body.scheme-${schemeName} {
-    ${variables}
-}`;
+        return `body.scheme-${schemeName} { ${variables} }`;
     }
 }
 
@@ -140,7 +142,7 @@ function createFontEntries(fonts, themeData) {
     if (themeData && themeData.typography && themeData.typography.fontFamilies) {
         Object.entries(themeData.typography.fontFamilies).forEach(([fontFamily, familyFonts]) => {
             familyFonts.forEach(props => {
-                if (fonts[props.name]) {
+                if (fonts[props.name] && !props.printOnly) {
                     usedFonts.push(props.name);
                     fontStrings.push(
                         `${createFontCSS(fontFamily, fonts[props.name].files, props)}`

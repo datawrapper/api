@@ -1,0 +1,39 @@
+# https://docs.github.com/en/actions/guides/creating-postgresql-service-containers#running-jobs-in-containers
+name: Lint and test
+on: push
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    container: "node:14"
+
+    services:
+      mysql:
+        image: "mysql/mysql-server:5.7"
+        env:
+          MYSQL_USER: test
+          MYSQL_PASSWORD: test
+          MYSQL_DATABASE: test
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      - name: Create npmrc
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}" > ~/.npmrc
+
+      - name: Install dependencies
+        run: npm ci --no-optional
+
+      - name: Code linting
+        run: npm run lint
+
+      - name: Sync database
+        run: scripts/sync-db.js
+
+      - name: Run tests
+        run: npm test
+
+    env:
+      DW_CONFIG_PATH: test/config.docker.js

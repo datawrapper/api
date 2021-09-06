@@ -1,16 +1,29 @@
-const fs = require('fs');
-const os = require('os');
-const { promisify } = require('util');
 const path = require('path');
-const nanoid = require('nanoid');
+const { ForeignKeyConstraintError } = require('sequelize');
+const { addScope } = require('@datawrapper/service-utils/l10n');
 const { init } = require('../../src/server');
-
-const appendFile = promisify(fs.appendFile);
-
-const cleanupFile = path.join(os.tmpdir(), 'cleanup.csv');
+const { nanoid } = require('nanoid');
 
 /* bcrypt hash for string "test-password" */
 const PASSWORD_HASH = '$2a$05$6B584QgS5SOXi1m.jM/H9eV.2tCaqNc5atHnWfYlFe5riXVW9z7ja';
+
+const ALL_SCOPES = [
+    'user:read',
+    'user:write',
+    'auth:read',
+    'auth:write',
+    'chart:read',
+    'chart:write',
+    'team:read',
+    'team:write',
+    'folder:read',
+    'folder:write',
+    'plugin:read',
+    'plugin:write',
+    'theme:read',
+    'product:read',
+    'visualization:read'
+];
 
 function getCredentials() {
     return {
@@ -21,120 +34,194 @@ function getCredentials() {
 
 async function setup(options) {
     const server = await init(options);
-    const models = require('@datawrapper/orm/models');
 
-    async function addToCleanup(name, id) {
-        await appendFile(cleanupFile, `${name};${id}\n`, { encoding: 'utf-8' });
-    }
+    // Register fake d3-bars type.
+    server.methods.registerVisualization('d3-bars', [
+        {
+            id: 'd3-bars',
+            dependencies: {},
+            less: path.join(__dirname, '../data/chart.less'),
+            script: path.join(__dirname, '../data/chart.js')
+        }
+    ]);
 
-    const allScopes = [
-        'user:read',
-        'user:write',
-        'auth:read',
-        'auth:write',
-        'chart:read',
-        'chart:write',
-        'team:read',
-        'team:write',
-        'folder:read',
-        'folder:write',
-        'plugin:read',
-        'plugin:write',
-        'theme:read',
-        'product:read',
-        'visualization:read'
-    ];
+    // Add fake 'chart' scope.
+    addScope('chart', {
+        'en-US': {}
+    });
 
-    async function getUser(role = 'editor', pwd = PASSWORD_HASH) {
-        const credentials = getCredentials();
-        const user = await models.User.create({
-            name: `name-${credentials.email.split('@').shift()}`,
-            email: credentials.email,
-            pwd,
-            role
-        });
+    // Create default theme if it doesn't exist.
+    const { Theme } = require('@datawrapper/orm/models');
+    await Theme.findOrCreate({
+        where: { id: 'default' },
+        defaults: {
+            data: {},
+            assets: {}
+        }
+    });
 
-        const session = await models.Session.create({
-            id: server.methods.generateToken(),
-            data: {
-                'dw-user-id': user.id,
-                persistent: true,
-                last_action_time: Math.floor(Date.now() / 1000)
+    return server;
+}
+
+async function createUser(server, role = 'editor', pwd = PASSWORD_HASH) {
+    const { AccessToken, Session, User } = require('@datawrapper/orm/models');
+    const credentials = getCredentials();
+    const user = await User.create({
+        name: `name-${credentials.email.split('@').shift()}`,
+        email: credentials.email,
+        pwd,
+        role
+    });
+
+    const session = await Session.create({
+        id: server.methods.generateToken(),
+        data: {
+            'dw-user-id': user.id,
+            persistent: true,
+            last_action_time: Math.floor(Date.now() / 1000)
+        }
+    });
+
+    const { token } = await AccessToken.newToken({
+        user_id: user.id,
+        type: 'api-token',
+        data: {
+            comment: 'API TEST',
+            scopes: ALL_SCOPES
+        }
+    });
+
+    session.scope = ALL_SCOPES;
+
+    return {
+        user,
+        session,
+        token
+    };
+}
+
+async function createTeamWithUser(server, role = 'owner') {
+    const { Team, UserTeam } = require('@datawrapper/orm/models');
+    const teamPromise = Team.create({
+        id: `test-${nanoid(5)}`,
+        name: 'Test Team',
+        settings: {
+            default: {
+                locale: 'en-US'
+            },
+            flags: {
+                embed: true,
+                byline: true,
+                pdf: false
+            },
+            css: 'body {background:red;}',
+            embed: {
+                custom_embed: {
+                    text: '',
+                    title: 'Chart ID',
+                    template: '%chart_id%'
+                },
+                preferred_embed: 'responsive'
             }
-        });
+        }
+    });
 
-        const { token } = await models.AccessToken.newToken({
-            user_id: user.id,
-            type: 'api-token',
-            data: {
-                comment: 'API TEST',
-                scopes: allScopes
-            }
-        });
+    const [team, userObj] = await Promise.all([teamPromise, createUser(server)]);
+    const { user, session, token } = userObj;
 
-        await Promise.all([
-            addToCleanup('token', token),
-            addToCleanup('session', session.id),
-            addToCleanup('user', user.id)
-        ]);
+    await UserTeam.create({
+        user_id: user.id,
+        organization_id: team.id,
+        team_role: role
+    });
 
-        session.scope = allScopes;
-
-        return {
-            user,
-            session,
-            token
-        };
-    }
-
-    async function getTeamWithUser(role = 'owner') {
-        const teamPromise = models.Team.create({
-            id: `test-${nanoid(5)}`,
-            name: 'Test Team'
-        });
-
-        const [team, userData] = await Promise.all([teamPromise, getUser()]);
-        const { user, session } = userData;
-
-        await models.UserTeam.create({
+    async function addUser(role = 'owner') {
+        const userObj = await createUser(server);
+        const { user } = userObj;
+        await UserTeam.create({
             user_id: user.id,
             organization_id: team.id,
             team_role: role
         });
-
-        const usersToCleanup = [];
-        async function addUser(role = 'owner') {
-            const user = await getUser();
-
-            await models.UserTeam.create({
-                user_id: user.user.id,
-                organization_id: team.id,
-                team_role: role
-            });
-            usersToCleanup.push(user.cleanup);
-            return user;
-        }
-
-        const data = `team;${team.id}\n`;
-
-        await appendFile(cleanupFile, data, { encoding: 'utf-8' });
-
-        session.scope = allScopes;
-
-        return { team, user, session, addUser };
+        return userObj;
     }
 
-    async function createTheme(themeData) {
-        const theme = await models.Theme.findOrCreate({
-            where: { id: themeData.id },
-            defaults: themeData
-        });
+    session.scope = ALL_SCOPES;
 
-        await addToCleanup('theme', themeData.id);
-        return theme;
-    }
-
-    return { server, models, getUser, getTeamWithUser, addToCleanup, createTheme, getCredentials };
+    return { team, user, session, token, addUser };
 }
 
-module.exports = { setup };
+async function destroyChart(chart) {
+    const { Chart, ChartPublic } = require('@datawrapper/orm/models');
+    await ChartPublic.destroy({ where: { id: chart.id }, force: true });
+    await Chart.destroy({ where: { forked_from: chart.id }, force: true });
+    await chart.destroy({ force: true });
+}
+
+async function destroyTeam(team) {
+    const { Chart, TeamProduct, UserTeam } = require('@datawrapper/orm/models');
+    const charts = await Chart.findAll({ where: { organization_id: team.id } });
+    for (const chart of charts) {
+        await destroyChart(chart);
+    }
+    await TeamProduct.destroy({ where: { organization_id: team.id }, force: true });
+    await UserTeam.destroy({ where: { organization_id: team.id }, force: true });
+    await team.destroy({ force: true });
+}
+
+async function destroyUser(user) {
+    const {
+        AccessToken,
+        Action,
+        Chart,
+        Session,
+        UserData,
+        UserProduct,
+        UserTeam
+    } = require('@datawrapper/orm/models');
+    await AccessToken.destroy({ where: { user_id: user.id }, force: true });
+    await Action.destroy({ where: { user_id: user.id }, force: true });
+    await Session.destroy({ where: { user_id: user.id }, force: true });
+    const charts = await Chart.findAll({ where: { author_id: user.id } });
+    for (const chart of charts) {
+        await destroyChart(chart);
+    }
+    await UserData.destroy({ where: { user_id: user.id }, force: true });
+    await UserProduct.destroy({ where: { user_id: user.id }, force: true });
+    await UserTeam.destroy({ where: { user_id: user.id }, force: true });
+    try {
+        await user.destroy({ force: true });
+    } catch (e) {
+        if (e instanceof ForeignKeyConstraintError) {
+            // TODO Don't just log and ignore this error, but rather figure out how to delete the
+            // associated model instances correctly.
+            console.error(e);
+        }
+    }
+}
+
+async function destroy(...instances) {
+    const { Team, User } = require('@datawrapper/orm/models');
+    for (const instance of instances) {
+        if (!instance) {
+            continue;
+        }
+        if (Array.isArray(instance)) {
+            await destroy(...instance);
+        } else if (instance instanceof Team) {
+            await destroyTeam(instance);
+        } else if (instance instanceof User) {
+            await destroyUser(instance);
+        } else if (instance.destroy) {
+            await instance.destroy({ force: true });
+        }
+    }
+}
+
+module.exports = {
+    createTeamWithUser,
+    createUser,
+    destroy,
+    getCredentials,
+    setup
+};

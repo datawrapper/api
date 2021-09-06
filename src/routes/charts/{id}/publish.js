@@ -1,12 +1,28 @@
-const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
-const { createResponseConfig } = require('../../../schemas/response');
-const { Chart, Action, ChartPublic, ChartAccessToken, User } = require('@datawrapper/orm/models');
-const get = require('lodash/get');
+const Joi = require('joi');
+const ReadonlyChart = require('@datawrapper/orm/models/ReadonlyChart');
+const { getUserData, setUserData } = require('@datawrapper/orm/utils/userData');
+const uniq = require('lodash/uniq');
 const set = require('lodash/set');
-const { prepareChart } = require('../../../utils/index.js');
+const get = require('lodash/get');
+const {
+    Action,
+    Chart,
+    ChartAccessToken,
+    ChartPublic,
+    User,
+    Theme
+} = require('@datawrapper/orm/models');
 const { Op } = require('@datawrapper/orm').db;
+const { createResponseConfig } = require('../../../schemas/response');
+const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
+const { getAdditionalMetadata, prepareChart } = require('../../../utils/index.js');
+const { getEmbedCodes } = require('./utils');
 const { getScope } = require('@datawrapper/service-utils/l10n');
+const { compileFontCSS } = require('../../../publish/compile-css.js');
+
+const configPath = findConfigPath();
+const config = require(configPath);
 
 module.exports = (server, options) => {
     // POST /v3/charts/{id}/publish
@@ -106,7 +122,7 @@ async function publishChart(request, h) {
     }
 
     const options = { auth, headers, server, log: logPublishStatus, publish: true };
-    const { data, outDir, fileMap, cleanup } = await createChartWebsite(chart, options);
+    const { chartData, outDir, fileMap, cleanup } = await createChartWebsite(chart, options);
 
     /**
      * The hard work is done!
@@ -117,7 +133,7 @@ async function publishChart(request, h) {
     /* write public CSV file (used when forking a chart) */
     await events.emit(event.PUT_CHART_ASSET, {
         chart,
-        data,
+        data: chartData,
         filename: `${chart.id}.public.csv`
     });
 
@@ -141,7 +157,7 @@ async function publishChart(request, h) {
             { filter: 'first' }
         );
     } catch (error) {
-        server.logger().error(error);
+        server.logger.error(error);
         eventError = error;
     }
 
@@ -203,6 +219,33 @@ async function publishChart(request, h) {
     // log action that chart has been published
     await request.server.methods.logAction(user.id, `chart/publish`, chart.id);
 
+    // log recently published charts
+    try {
+        const recentlyPublished = JSON.parse(
+            await getUserData(user.id, 'recently_published', '[]')
+        );
+        if (recentlyPublished[0] !== chart.id) {
+            await setUserData(
+                user.id,
+                'recently_published',
+                JSON.stringify(uniq([chart.id, ...recentlyPublished]).slice(0, 100))
+            );
+        }
+    } catch (err) {
+        request.logger.error(`Broken user_data 'recently_published' for user [${user.id}]`);
+    }
+    // refresh external data if request isn't coming from the app
+    if (headers.origin !== `http${config.frontend.https ? 's' : ''}://${config.frontend.domain}`) {
+        try {
+            await server.inject({
+                url: `/v3/charts/${chart.id}/data/refresh`,
+                method: 'POST',
+                auth,
+                headers
+            });
+        } catch (ex) {}
+    }
+
     // for image publishing and things that we want to (optionally)
     // make the user wait for and/or inform about in publish UI
     await server.app.events.emit(server.app.event.CHART_PUBLISHED, {
@@ -250,54 +293,47 @@ async function publishChartStatus(request, h) {
 
 async function publishData(request, h) {
     const { query, params, server, auth, headers } = request;
+    const { events, event, visualizations } = server.app;
 
-    let chart;
-
-    if (query.published) {
-        const ogChart = await Chart.findOne({
-            where: { id: params.id, deleted: { [Op.not]: true } },
-            attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
-        });
-
-        chart = await ChartPublic.findOne({
-            where: { id: params.id }
-        });
-
-        if (!chart) throw Boom.notFound();
-
-        chart.dataValues.theme = ogChart.theme;
-    } else {
-        chart = await Chart.findOne({
-            where: { id: params.id, deleted: { [Op.not]: true } },
-            attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
-        });
-    }
+    const chart = await Chart.findOne({
+        where: { id: params.id, deleted: { [Op.not]: true } },
+        attributes: { exclude: ['deleted', 'deleted_at', 'utf8'] }
+    });
 
     if (!chart) throw Boom.notFound();
 
     let user = auth.artifacts;
 
-    let hasAccess =
-        query.published || (await chart.isEditableBy(auth.artifacts, auth.credentials.session));
-
-    if (!hasAccess && query.ott) {
-        const count = await ChartAccessToken.count({
-            where: {
-                chart_id: params.id,
-                token: query.ott
-            },
-            limit: 1
-        });
-
-        hasAccess = !!count;
-
-        if (hasAccess && chart.author_id) {
-            user = await User.findByPk(chart.author_id);
+    let readonlyChart;
+    if (query.published) {
+        const publicChart = await ChartPublic.findByPk(chart.id);
+        if (!publicChart) {
+            throw Boom.notFound();
         }
-    }
+        readonlyChart = await ReadonlyChart.fromPublicChart(chart, publicChart);
+    } else {
+        const isEditable = await chart.isEditableBy(auth.artifacts, auth.credentials.session);
+        if (!isEditable) {
+            if (!query.ott) {
+                throw Boom.unauthorized();
+            }
 
-    if (!hasAccess) {
-        throw Boom.unauthorized();
+            const count = await ChartAccessToken.count({
+                where: {
+                    chart_id: params.id,
+                    token: query.ott
+                },
+                limit: 1
+            });
+            if (!count) {
+                throw Boom.unauthorized();
+            }
+
+            if (chart.author_id) {
+                user = await User.findByPk(chart.author_id);
+            }
+        }
+        readonlyChart = await ReadonlyChart.fromChart(chart);
     }
 
     // the csv dataset
@@ -309,14 +345,39 @@ async function publishData(request, h) {
         headers
     });
 
-    const additionalData = await getAdditionalMetadata(chart, { server });
+    const additionalData = await getAdditionalMetadata(readonlyChart, { server });
 
-    const data = { data: res.result, chart: await prepareChart(chart, additionalData) };
+    const data = { chart: await prepareChart(readonlyChart, additionalData) };
 
-    const htmlBodyResults = await server.app.events.emit(
-        server.app.event.CHART_AFTER_BODY_HTML,
+    // the vis
+    data.visualization = server.app.visualizations.get(chart.type);
+    const themeId = query.theme || chart.theme;
+
+    data.chart.theme = themeId;
+
+    // the theme
+    const theme = await Theme.findByPk(themeId);
+    data.theme = {
+        id: theme.id,
+        data: await theme.getMergedData(),
+        fonts: await theme.getMergedAssets()
+    };
+    data.theme.fontsCSS = await compileFontCSS(data.theme.fonts, data.theme.data);
+
+    // the styles
+    const styleRes = await request.server.inject({
+        url: `/v3/visualizations/${
+            data.visualization.id
+        }/styles.css?theme=${themeId}&transparent=${!!query.transparent}`,
+        auth,
+        headers
+    });
+    data.styles = styleRes.result;
+
+    const htmlBodyResults = await events.emit(
+        event.CHART_AFTER_BODY_HTML,
         {
-            chart,
+            chart: readonlyChart,
             data,
             publish: query.publish === 'true'
         },
@@ -324,10 +385,10 @@ async function publishData(request, h) {
     );
     data.chartAfterBodyHTML = htmlBodyResults.join('\n');
 
-    const htmlHeadResults = await server.app.events.emit(
-        server.app.event.CHART_AFTER_HEAD_HTML,
+    const htmlHeadResults = await events.emit(
+        event.CHART_AFTER_HEAD_HTML,
         {
-            chart,
+            chart: readonlyChart,
             data,
             publish: query.publish === 'true'
         },
@@ -335,18 +396,30 @@ async function publishData(request, h) {
     );
     data.chartAfterHeadHTML = htmlHeadResults.join('\n');
 
-    // chart locales
-    data.locales = getScope('chart', chart.language || 'en-US');
+    // chart translations
+    data.translations = getScope('chart', chart.language || 'en-US');
 
-    data.externalDataUrl = await server.app.events.emit(server.app.event.EXTERNAL_DATA_URL, null, {
+    data.assets = [
+        {
+            name: `dataset.${get(chart, 'metadata.data.json') ? 'json' : 'csv'}`,
+            value: res.result,
+            shared: false
+        },
+        ...(
+            await server.app.events.emit(
+                server.app.event.CHART_ASSETS,
+                {
+                    chart,
+                    auth,
+                    ott: query.ott
+                },
+                { filter: 'success' }
+            )
+        ).filter(el => typeof el === 'object')
+    ];
+
+    data.externalDataUrl = await events.emit(event.EXTERNAL_DATA_URL, null, {
         filter: 'first'
-    });
-
-    await server.app.events.emit(server.app.event.CHART_PUBLISH_DATA, {
-        chart,
-        auth,
-        ott: query.ott,
-        data
     });
 
     if (query.ott) {
@@ -359,10 +432,10 @@ async function publishData(request, h) {
         });
     }
 
-    const chartBlocks = await server.app.events.emit(
-        server.app.event.CHART_BLOCKS,
+    const chartBlocks = await events.emit(
+        event.CHART_BLOCKS,
         {
-            chart,
+            chart: readonlyChart,
             user,
             data
         },
@@ -370,47 +443,28 @@ async function publishData(request, h) {
     );
     data.blocks = chartBlocks.filter(d => d);
 
-    return data;
-}
+    if (query.publish === 'true') {
+        /* when publishing, we set the embed codes in the metadata now already,
+         * so that the chart footer embed links are up to date */
+        const publicUrl = await events.emit(
+            event.GET_NEXT_PUBLIC_URL,
+            { chart: readonlyChart },
+            { filter: 'first' }
+        );
 
-async function getAdditionalMetadata(chart, { server }) {
-    const data = {};
-    let additionalMetadata = await server.app.events.emit(
-        server.app.event.ADDITIONAL_CHART_DATA,
-        {
-            chartId: chart.id,
-            forkedFromId: chart.forked_from
-        },
-        { filter: 'success' }
-    );
-
-    additionalMetadata = Object.assign({}, ...additionalMetadata);
-
-    if (chart.forked_from && chart.is_fork) {
-        const forkedFromChart = await Chart.findByPk(chart.forked_from, {
-            attributes: ['metadata']
-        });
-        const basedOnBylineText = get(forkedFromChart, 'metadata.describe.byline', null);
-
-        if (basedOnBylineText) {
-            let basedOnUrl = get(additionalMetadata, 'river.source_url', null);
-
-            if (!basedOnUrl) {
-                let results = await server.app.events.emit(
-                    server.app.event.GET_CHART_DISPLAY_URL,
-                    {
-                        chart
-                    },
-                    { filter: 'success' }
-                );
-
-                results = Object.assign({}, ...results);
-                basedOnUrl = results.url;
-            }
-
-            data.basedOnByline = basedOnUrl
-                ? `<a href='${basedOnUrl}' target='_blank' rel='noopener'>${basedOnBylineText}</a>`
-                : basedOnBylineText;
+        if (publicUrl) {
+            const embedCodes = {};
+            const res = await getEmbedCodes({
+                chart: readonlyChart,
+                visualizations,
+                user,
+                publicUrl,
+                publicVersion: chart.public_version + 1
+            });
+            res.forEach(embed => {
+                embedCodes[`embed-method-${embed.id}`] = embed.code;
+            });
+            set(data.chart, 'metadata.publish.embed-codes', embedCodes);
         }
     }
 

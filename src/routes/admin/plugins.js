@@ -2,7 +2,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { Theme } = require('@datawrapper/orm/models');
 const some = require('lodash/some');
@@ -24,6 +24,7 @@ function register(server, options) {
     server.app.adminScopes.add('plugin:write');
 
     const styleCache = server.cache({ segment: 'vis-styles', shared: true });
+    const githeadCache = server.cache({ segment: 'vis-githead', shared: true });
 
     // GET /v3/admin/plugins
     server.route({
@@ -76,7 +77,7 @@ function register(server, options) {
     async function updatePlugin(request, h) {
         const { server, payload } = request;
         const { general, plugins } = server.methods.config();
-        const log = server.logger();
+        const log = server.logger;
 
         const name = getNormalizedName(payload.name);
 
@@ -109,8 +110,11 @@ function register(server, options) {
         let needsPm2Reload = some(
             [
                 'api.js',
+                'api.cjs',
                 'crons.js',
+                'crons.cjs',
                 'frontend.js',
+                'frontend.cjs',
                 /^src\/api\//,
                 /^src\/crons\//,
                 /^src\/frontend\/$/
@@ -163,10 +167,15 @@ function register(server, options) {
         for (const vis of visualizations) {
             for (const { id } of themes) {
                 const promise = styleCache.drop(`${id}__${vis}`).catch(() => {
-                    server.logger().info(`Unable to drop cache key [${id}__${vis}]`);
+                    server.logger.info(`Unable to drop cache key [${id}__${vis}]`);
                 });
                 droppedCacheKeys.push(`${id}__${vis}`);
                 dropOperationPromises.push(promise);
+            }
+            // also update githead cache of visualization
+            const githeadPath = path.join(pluginLocation, '.githead');
+            if (await fs.pathExists(githeadPath)) {
+                await githeadCache.set(vis.id, await fs.readFile(githeadPath, 'utf-8'));
             }
         }
 

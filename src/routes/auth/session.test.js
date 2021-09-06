@@ -1,13 +1,8 @@
 const test = require('ava');
-
 const { setup } = require('../../../test/helpers/setup');
 
 test.before(async t => {
-    const { server } = await setup({
-        usePlugins: false
-    });
-
-    t.context.server = server;
+    t.context.server = await setup({ usePlugins: false });
 });
 
 test('Can create guest sessions', async t => {

@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { Chart, User, Folder, Team } = require('@datawrapper/orm/models');
 
@@ -72,9 +72,11 @@ const routes = [
                     arr.push({
                         id: folder.id,
                         name: folder.name,
-                        charts: await Chart.findAll({
-                            where: { in_folder: folder.id, deleted: false }
-                        }).map(cleanChart),
+                        charts: (
+                            await Chart.findAll({
+                                where: { in_folder: folder.id, deleted: false }
+                            })
+                        ).map(cleanChart),
                         folders: await getFolders(by, owner, folder.id)
                     });
                 }

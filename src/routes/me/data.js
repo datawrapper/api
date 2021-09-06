@@ -1,4 +1,4 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const { createResponseConfig } = require('../../schemas/response');
 
 module.exports = async (server, options) => {

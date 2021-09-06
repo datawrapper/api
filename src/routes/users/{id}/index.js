@@ -1,10 +1,11 @@
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const Boom = require('@hapi/boom');
 const { decamelizeKeys, camelizeKeys } = require('humps');
 const set = require('lodash/set');
 const { logAction } = require('@datawrapper/orm/utils/action');
 const { User, Chart, Team, UserTeam, Session } = require('@datawrapper/orm/models');
 const { serializeTeam } = require('../../teams/utils');
+const { getUserData } = require('@datawrapper/orm/utils/userData');
 const { noContentResponse, userResponse } = require('../../../schemas/response');
 
 const attributes = ['id', 'email', 'name', 'role', 'language'];
@@ -142,14 +143,20 @@ async function getUser(request, h) {
             'activate_token',
             'reset_password_token'
         ]);
+    } else {
+        set(options, ['include', 1], { model: Team, attributes: ['id', 'name'] });
     }
 
     const user = await User.findByPk(userId, options);
 
     const { charts, teams, ...data } = user.dataValues;
 
+    const activeTeam = await getUserData(user.id, 'active_team');
+
     if (teams) {
-        data.teams = teams.map(serializeTeam);
+        data.teams = teams
+            .map(serializeTeam)
+            .map(team => ({ ...team, ...(activeTeam === team.id ? { active: true } : {}) }));
     }
 
     if (isAdmin) {
@@ -165,20 +172,15 @@ async function getUser(request, h) {
         ...data,
         role: user.role,
         chartCount: charts.length,
-        url: url.pathname
+        url: url.pathname,
+        activeTeam
     });
 }
 
 async function editUser(request, h) {
     const { auth, params, payload, server } = request;
-    const {
-        generateToken,
-        isAdmin,
-        userIsDeleted,
-        hashPassword,
-        comparePassword,
-        config
-    } = server.methods;
+    const { generateToken, isAdmin, userIsDeleted, hashPassword, comparePassword, config } =
+        server.methods;
     const userId = params.id;
 
     await userIsDeleted(userId);

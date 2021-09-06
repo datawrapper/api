@@ -1,7 +1,7 @@
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
 const Crumb = require('@hapi/crumb');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const HapiSwagger = require('hapi-swagger');
 const get = require('lodash/get');
 const ORM = require('@datawrapper/orm');
@@ -16,7 +16,7 @@ const {
 const schemas = require('@datawrapper/schemas');
 const { findConfigPath } = require('@datawrapper/service-utils/findConfig');
 const registerVisualizations = require('@datawrapper/service-utils/registerVisualizations');
-const { generateToken, loadChart } = require('./utils');
+const { generateToken, loadChart, copyChartAssets } = require('./utils');
 const { addScope, translate } = require('@datawrapper/service-utils/l10n');
 const { ApiEventEmitter, eventList } = require('./utils/events');
 
@@ -25,6 +25,14 @@ const configPath = findConfigPath();
 const config = require(configPath);
 
 const DW_DEV_MODE = JSON.parse(process.env.DW_DEV_MODE || 'false');
+
+const CSRF_COOKIE_NAME = 'crumb';
+const CSRF_COOKIE_OPTIONS = {
+    domain: '.' + config.api.domain,
+    isHttpOnly: false,
+    isSameSite: 'Lax',
+    isSecure: config.frontend.https
+};
 
 validateAPI(config.api);
 validateORM(config.orm);
@@ -173,13 +181,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         {
             plugin: Crumb,
             options: {
-                cookieOptions: {
-                    domain: '.' + config.api.domain,
-                    isHttpOnly: false,
-                    isSameSite: 'Lax',
-                    isSecure: config.frontend.https
-                },
-                logUnauthorized: true,
+                key: CSRF_COOKIE_NAME,
+                cookieOptions: CSRF_COOKIE_OPTIONS,
+                logUnauthorized: config.api.logCSRFUnauthorized,
                 restful: true,
                 skip: function (request) {
                     // Allow cross-site requests that are not authenticated with a cookie, because
@@ -190,7 +194,17 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         }
     ]);
 
-    server.logger().info(
+    server.ext('onPostAuth', (request, h) => {
+        if (request.auth.credentials?.data?.get && request._states[CSRF_COOKIE_NAME]) {
+            const sessionType = request.auth.credentials.data.get('data').type;
+            if (sessionType === 'token') {
+                request._states[CSRF_COOKIE_NAME].options.isSameSite = 'None';
+            }
+        }
+        return h.continue;
+    });
+
+    server.logger.info(
         {
             VERSION: version,
             CONFIG_FILE: configPath,
@@ -254,6 +268,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     });
     server.method('validateThemeData', validateThemeData);
     server.method('loadChart', loadChart);
+    server.method('copyChartAssets', copyChartAssets(server));
 
     if (DW_DEV_MODE) {
         server.register([require('@hapi/inert'), require('@hapi/vision')]);
@@ -283,11 +298,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
         registeredEvents.includes(event.PUT_CHART_ASSET);
 
     if (localChartAssetRoot === undefined && !hasRegisteredDataPlugins) {
-        server
-            .logger()
-            .error(
-                '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
-            );
+        server.logger.error(
+            '[Config] You need to configure `general.localChartAssetRoot` or install a plugin that implements chart asset storage.'
+        );
         process.exit(1);
     }
 
@@ -315,11 +328,9 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
     const hasRegisteredPublishPlugin = registeredEvents.includes(event.PUBLISH_CHART);
 
     if (general.localChartPublishRoot === undefined && !hasRegisteredPublishPlugin) {
-        server
-            .logger()
-            .error(
-                '[Config] You need to configure `general.localChartPublishRoot` or install a plugin that implements chart publication.'
-            );
+        server.logger.error(
+            '[Config] You need to configure `general.localChartPublishRoot` or install a plugin that implements chart publication.'
+        );
         process.exit(1);
     }
 
@@ -328,20 +339,31 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
             const publicId = await chart.getPublicId();
             const dest = path.resolve(general.localChartPublishRoot, publicId);
 
-            for (const file of fileMap) {
-                const basename = path.basename(file);
-                const dir = path.dirname(file);
+            if (process.env.NODE_ENV === 'test') {
+                console.warn(
+                    'Skipping copying of published chart files while running tests due to I/O issues'
+                );
+            } else {
+                for (const file of fileMap) {
+                    const basename = path.basename(file.path);
+                    const dir = path.dirname(file.path);
 
-                const out =
-                    dir === '.'
-                        ? path.resolve(dest, basename)
-                        : path.resolve(dest, '..', dir, basename);
+                    const out =
+                        dir === '.'
+                            ? path.resolve(dest, basename)
+                            : path.resolve(dest, '..', dir, basename);
 
-                await fs.copy(path.join(outDir, basename), out, { overwrite: dir === '.' });
+                    await fs.copy(path.join(outDir, basename), out, { overwrite: dir === '.' });
+                }
             }
 
             await fs.remove(outDir);
 
+            return `${scheme}://${general.chart_domain}/${publicId}`;
+        });
+
+        events.on(event.GET_NEXT_PUBLIC_URL, async function ({ chart }) {
+            const publicId = await chart.getPublicId();
             return `${scheme}://${general.chart_domain}/${publicId}`;
         });
     }
@@ -364,7 +386,7 @@ async function configure(options = { usePlugins: true, useOpenAPI: true }) {
 }
 
 process.on('unhandledRejection', err => {
-    server.logger().error(err);
+    server.logger.error(err);
     process.exit(1);
 });
 
@@ -379,7 +401,7 @@ async function start() {
     await configure();
 
     if (process.argv.includes('--check') || process.argv.includes('-c')) {
-        server.logger().info("\n\n[Check successful] The server shouldn't crash on startup");
+        server.logger.info("\n\n[Check successful] The server shouldn't crash on startup");
         process.exit(0);
     }
 
@@ -387,15 +409,15 @@ async function start() {
 
     setTimeout(() => {
         if (process.send) {
-            server.logger().info('sending READY signal to pm2');
+            server.logger.info('sending READY signal to pm2');
             process.send('ready');
         }
     }, 100);
 
     process.on('SIGINT', async function () {
-        server.logger().info('received SIGINT signal, closing all connections...');
+        server.logger.info('received SIGINT signal, closing all connections...');
         await server.stop();
-        server.logger().info('server has stopped');
+        server.logger.info('server has stopped');
         process.exit(0);
     });
 

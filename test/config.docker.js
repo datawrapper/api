@@ -1,7 +1,9 @@
 module.exports = {
     general: {
+        localPluginRoot: '/plugins',
         localChartAssetRoot: '/tmp/data',
-        localChartPublishRoot: '/tmp/charts'
+        localChartPublishRoot: '/tmp/charts',
+        imageDomain: 'charts.datawrapper.local/preview'
     },
     frontend: {
         domain: 'localhost',
@@ -12,18 +14,20 @@ module.exports = {
         sessionID: 'DW-SESSION',
         enableMigration: true,
         hashRounds: 5,
-        secretAuthSalt: process.env.SECRET_AUTH_SALT,
+        secretAuthSalt: 'MY_SECRET_AUTH_KEY',
         cors: ['*']
     },
     plugins: {},
     orm: {
+        chartIdSalt: 'TEST_SALT',
+        skipTableTest: true,
         db: {
             dialect: 'mysql',
-            host: process.env.DB_HOST,
-            port: process.env.DB_PORT,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME_API
+            host: 'mysql',
+            port: 3306,
+            user: 'test',
+            password: 'test',
+            database: 'test'
         }
     }
 };
