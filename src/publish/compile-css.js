@@ -3,10 +3,13 @@ const path = require('path');
 const less = require('less');
 const postcssLess = require('postcss-less');
 const pCSS = require('postcss');
+const get = require('lodash/get');
+const uniq = require('lodash/uniq');
 
 /* needed for variable parsing, otherwise postcss logs annoying messages we don't care about */
 const { noop } = require('../utils/index.js');
 const CSS_ELIMINATION_KEYWORD = '__UNDEFINED__';
+const keyToVariable = key => key.replace(/\./g, '_');
 
 const postcss = pCSS([
     /* removes all declarations with value of CSS_ELIMINATION_KEYWORD */
@@ -36,15 +39,36 @@ async function compileCSS({ theme, filePaths }) {
 
     theme = JSON.parse(JSON.stringify(theme));
 
-    const lessString = (await Promise.all(filePaths.map(saveReadFile))).join('');
+    let lessString = (await Promise.all(filePaths.map(saveReadFile))).join('');
 
     const lessVariables = await findLessVariables(lessString, { paths });
+
+    const schemes = get(theme.data, 'colors.schemes', {});
+
+    const schemeKeys = uniq(
+        Object.keys(schemes).reduce((acc, key) => {
+            acc.push(...Object.keys(schemes[key]));
+            return acc;
+        }, [])
+    );
+
+    schemeKeys.forEach(key => {
+        const keyString = keyToVariable(key);
+        const re = new RegExp(`@${keyString}`, 'g');
+        lessString = lessString.replace(re, `var(--${keyString});`);
+    });
+
     let varString = '';
     for (const variable of lessVariables) {
         varString = varString.concat(`${variable}: ${CSS_ELIMINATION_KEYWORD};`);
     }
 
-    const inputLess = [varString, lessString, theme.less].join('');
+    const inputLess = [
+        createCssVariables(theme.data, schemeKeys),
+        varString,
+        lessString,
+        theme.less
+    ].join('');
 
     // todo: find a better solution or clean up map styles
     if (theme.data.vis && theme.data.vis['locator-maps']) {
@@ -78,6 +102,37 @@ async function compileFontCSS(fonts, themeData) {
     let { css } = await less.render(fontCSS);
     css = (await postcss.process(css, { from: undefined })).css;
     return css;
+}
+
+function createCssVariables(themeData, keys) {
+    /* default scheme */
+    const schemeVariables = [createDefaultSchemeVariables(themeData, keys)];
+
+    /* additional schemes */
+    const schemes = get(themeData, 'colors.schemes', {});
+    Object.keys(schemes).forEach(scheme => {
+        schemeVariables.push(createSchemeVariables(schemes[scheme], scheme));
+    });
+
+    return schemeVariables.join('\n');
+
+    function createDefaultSchemeVariables(themeData, variables) {
+        variables = variables
+            .map(key => {
+                return `--${keyToVariable(key)}: ${get(themeData, key)};`;
+            })
+            .join('\n\t');
+        return `body { ${variables} }`;
+    }
+
+    function createSchemeVariables(scheme, schemeName) {
+        const variables = Object.keys(scheme)
+            .map(key => {
+                return `--${keyToVariable(key)}: ${scheme[key]};`;
+            })
+            .join('\n\t');
+        return `body.scheme-${schemeName} { ${variables} }`;
+    }
 }
 
 function createFontEntries(fonts, themeData) {
