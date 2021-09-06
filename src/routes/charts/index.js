@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const { Op } = require('@datawrapper/orm').db;
+const { Op, literal } = require('@datawrapper/orm').db;
 const { decamelizeKeys, decamelize } = require('humps');
 const set = require('lodash/set');
 const { Chart, User } = require('@datawrapper/orm/models');
@@ -184,12 +184,12 @@ async function getAllCharts(request, h) {
 
     if (query.search) {
         const search = [
-            { title: { [Op.like]: `%${query.search}%` } },
-            { metadata: { describe: { intro: { [Op.like]: `%${query.search}%` } } } },
-            { metadata: { describe: { byline: { [Op.like]: `%${query.search}%` } } } },
-            { metadata: { describe: { 'source-name': { [Op.like]: `%${query.search}%` } } } },
-            { metadata: { describe: { 'source-url': { [Op.like]: `%${query.search}%` } } } },
-            { metadata: { annotate: { notes: { [Op.like]: `%${query.search}%` } } } }
+            literal(
+                `MATCH(title, keywords) AGAINST ('${query.search.replace(
+                    /'/g,
+                    ''
+                )}' IN BOOLEAN MODE)`
+            )
         ];
         set(options, ['where', Op.or], search);
     }
